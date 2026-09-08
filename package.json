@@ -1,0 +1,26 @@
+{
+  "name": "t-educare",
+  "version": "0.1.0",
+  "private": true,
+  "description": "T-Educare monorepo — frontend (Next.js) and backend.",
+  "scripts": {
+    "prepare": "husky",
+    "dev:frontend": "pnpm --dir frontend dev",
+    "build:frontend": "pnpm --dir frontend build",
+    "lint:frontend": "pnpm --dir frontend lint",
+    "format:frontend": "pnpm --dir frontend format"
+  },
+  "lint-staged": {
+    "frontend/**/*.{ts,tsx}": [
+      "pnpm --dir frontend exec eslint --fix",
+      "pnpm --dir frontend exec prettier --write"
+    ],
+    "frontend/**/*.{js,jsx,json,css,md}": [
+      "pnpm --dir frontend exec prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0"
+  }
+}
