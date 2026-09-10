@@ -10,3 +10,6 @@ node_modules/
 .vscode/*
 !.vscode/extensions.json
 *.tsbuildinfo
+
+# Agent instruction files (not shared via the repo)
+CLAUDE.md

@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "teacher" | "student" | "parent";
+export type UserRole = "super_admin" | "institution_admin";
 
 export interface AuthenticatedUser {
   id: string;
@@ -7,6 +7,9 @@ export interface AuthenticatedUser {
   email: string;
   role: UserRole;
   avatarUrl?: string;
+  institutionName?: string;
+  /** institution_admin only — the Role (src/store/rbac.store.ts) governing their menu access. Absent or a system role means unrestricted. */
+  roleId?: string;
 }
 
 export interface LoginRequest {

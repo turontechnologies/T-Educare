@@ -6,19 +6,11 @@ Not yet scaffolded. This folder is reserved for the API service the
 
 ## Expected contract
 
-The frontend already assumes a conventional REST-ish shape (see
-`frontend/src/services/auth.service.ts` and
-`frontend/src/lib/validations/auth.schema.ts`):
-
-- `POST /auth/login` → `{ user, token }`
-- `GET /auth/me` → `user`
-- `POST /auth/logout`
-- Errors as `4xx`/`5xx` with a JSON body containing a human-readable message
-  (`src/lib/axios.ts` on the frontend reads `error.response.data.error`) —
-  keep the backend's error shape consistent with that, or update the
-  interceptor to match whatever shape is chosen.
-- Auth via `Authorization: Bearer <token>` on every request except
-  `/auth/login`.
+See **[API_CONTRACT.md](./API_CONTRACT.md)** for the full spec — auth, the
+institution/role/permission (RBAC) model, and every resource the frontend
+currently calls (mocked client-side for now). Keep it updated as new
+frontend pages land; it's written to track `frontend/src/config/nav.ts` and
+the mocked `src/store/*.ts` files 1:1.
 
 ## Setting this up
 

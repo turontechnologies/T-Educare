@@ -1,3 +1,5 @@
+"use client";
+
 import { User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -8,20 +10,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useDashboardStore } from "@/store/dashboard.store";
 
-interface RecentStudent {
-  name: string;
-  registeredAt: string;
+const registeredAtFormatter = new Intl.RelativeTimeFormat("en", {
+  numeric: "auto",
+});
+
+function formatRegisteredAt(iso: string) {
+  const hours = Math.round((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (hours < 24) return registeredAtFormatter.format(-hours, "hour");
+  return registeredAtFormatter.format(-Math.round(hours / 24), "day");
 }
 
-const RECENT_STUDENTS: RecentStudent[] = [
-  { name: "Amaka Chukwu", registeredAt: "Today · 9:12 AM" },
-  { name: "Daniel Okafor", registeredAt: "Today · 8:47 AM" },
-  { name: "Fatima Bello", registeredAt: "Yesterday · 4:30 PM" },
-  { name: "Michael Adeyemi", registeredAt: "Yesterday · 2:05 PM" },
-];
-
 export function RecentStudentsCard() {
+  const recentStudents = useDashboardStore((state) => state.recentStudents);
+
   return (
     <Card>
       <CardHeader>
@@ -30,8 +33,8 @@ export function RecentStudentsCard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {RECENT_STUDENTS.map((student) => (
-          <div key={student.name} className="flex items-center gap-3">
+        {recentStudents.map((student) => (
+          <div key={student.id} className="flex items-center gap-3">
             <Avatar>
               <AvatarFallback className="bg-muted text-muted-foreground">
                 <User className="size-4" />
@@ -42,7 +45,7 @@ export function RecentStudentsCard() {
                 {student.name}
               </p>
               <p className="text-xs text-muted-foreground">
-                Registered {student.registeredAt}
+                Registered {formatRegisteredAt(student.registeredAt)}
               </p>
             </div>
           </div>

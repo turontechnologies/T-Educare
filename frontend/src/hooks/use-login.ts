@@ -16,7 +16,7 @@ export function useLogin() {
       setUser(user);
       setToken(token);
       toast.success(`Welcome back, ${user.firstName}`);
-      router.push("/dashboard");
+      router.push(user.role === "super_admin" ? "/super-admin" : "/dashboard");
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Login failed");

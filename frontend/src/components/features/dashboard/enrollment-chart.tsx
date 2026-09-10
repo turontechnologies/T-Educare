@@ -18,46 +18,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  useDashboardStore,
+  type EnrollmentRange,
+} from "@/store/dashboard.store";
 
-const RANGE_OPTIONS = ["Day", "Week", "Month"] as const;
-type Range = (typeof RANGE_OPTIONS)[number];
-
-type Point = { label: string; value: number };
-
-const DATA: Record<Range, Point[]> = {
-  Month: [
-    { label: "Feb", value: 180 },
-    { label: "Mar", value: 420 },
-    { label: "Apr", value: 260 },
-    { label: "May", value: 400 },
-    { label: "Jun", value: 220 },
-    { label: "Jul", value: 340 },
-    { label: "Aug", value: 200 },
-    { label: "Sep", value: 260 },
-    { label: "Oct", value: 360 },
-  ],
-  Week: [
-    { label: "Mon", value: 60 },
-    { label: "Tue", value: 90 },
-    { label: "Wed", value: 70 },
-    { label: "Thu", value: 110 },
-    { label: "Fri", value: 95 },
-    { label: "Sat", value: 50 },
-    { label: "Sun", value: 40 },
-  ],
-  Day: [
-    { label: "6am", value: 8 },
-    { label: "9am", value: 22 },
-    { label: "12pm", value: 18 },
-    { label: "3pm", value: 26 },
-    { label: "6pm", value: 14 },
-    { label: "9pm", value: 6 },
-  ],
-};
+const RANGE_OPTIONS: { label: string; value: EnrollmentRange }[] = [
+  { label: "Day", value: "day" },
+  { label: "Week", value: "week" },
+  { label: "Month", value: "month" },
+];
 
 export function EnrollmentChart() {
-  const [range, setRange] = useState<Range>("Day");
-  const data = DATA[range];
+  const [range, setRange] = useState<EnrollmentRange>("day");
+  const data = useDashboardStore((state) => state.enrollment[range]);
 
   return (
     <Card className="lg:col-span-2">
@@ -69,17 +43,17 @@ export function EnrollmentChart() {
           <div className="flex items-center gap-1 rounded-lg border border-border bg-muted p-1">
             {RANGE_OPTIONS.map((option) => (
               <button
-                key={option}
+                key={option.value}
                 type="button"
-                onClick={() => setRange(option)}
+                onClick={() => setRange(option.value)}
                 className={cn(
                   "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                  range === option
+                  range === option.value
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {option}
+                {option.label}
               </button>
             ))}
           </div>

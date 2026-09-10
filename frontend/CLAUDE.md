@@ -55,6 +55,21 @@ next-themes, sonner.
   visual language. Literal placeholder _data_ in a mockup (fake names,
   repeated rows) doesn't need byte-for-byte reproduction — visual _design_
   does.
+- **The sidebar is locked.** `<SidebarContent>` (`src/components/layouts/app-sidebar.tsx`)
+  was corrected against an explicit Figma reference and must not be
+  restyled again without a new reference screenshot from the user — this
+  has already happened once (colors/icons were "redesigned" during an
+  unrelated scroll-bug fix and had to be reverted). The rules, as given:
+  nav icons are **always** gold (`text-tertiary`), regardless of
+  active/inactive state — only the label text and group chevron change
+  color; a collapsed group's chevron points right (`ChevronRight`) and
+  rotates 90° to point down when expanded; the brand header band is gold
+  with **white** logo + text (`variant="light"` on `<Logo>`), not navy; a
+  dashed `border-secondary` divider separates the nav list from Logout, not
+  a solid one. If a future change to this component is unavoidable (e.g. a
+  genuine bug fix), touch only what the fix requires — layout/overflow
+  classes, not color or iconography — and call out explicitly in your
+  response that you touched it and why.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -77,6 +92,62 @@ next-themes, sonner.
   is defined once via Tailwind v4 `@utility` blocks at the bottom of
   `globals.css` — extend that set rather than inlining new `@keyframes` in a
   component file.
+
+- **Roles & areas**: two authenticated areas, gated by `AuthenticatedUser.role`
+  in `src/types/auth.ts` — `super_admin` (`src/app/super-admin/`, platform
+  owner) and `institution_admin` (`src/app/dashboard/`, one institution).
+  Both share the `<AppSidebar>`/`<AppHeader>` shell
+  (`src/components/layouts/`); each area's `layout.tsx` picks the nav tree
+  and redirects a logged-in user of the wrong role to their own area.
+- **Menus are data, not JSX**: `src/config/nav.ts` (`INSTITUTION_NAV`,
+  `SUPER_ADMIN_NAV`) is the single source of truth for every sidebar entry —
+  label, href, icon, nested children. Add a new page's nav entry there, not
+  inline in a sidebar component, and give it a stable `key` (RBAC roles
+  reference these keys — never reuse or rename one already referenced by a
+  `Role.menuKeys`).
+- **RBAC**: `src/store/rbac.store.ts` holds custom `Role`s (name + which
+  `nav.ts` keys they grant, via `menuKeys`) and `ManagedUser`s (staff, each
+  assigned a `roleId`), persisted client-side. The institution's root admin
+  uses the seeded system role (`ROOT_ADMIN_ROLE_ID`, unrestricted); every
+  other institution user goes through `/dashboard/user-management` — create a
+  `Role` with the menu items it should see, then assign staff to it.
+  `filterNavByAccess()` (`src/config/nav.ts`) turns a role's `menuKeys` into
+  the actual filtered tree a given user's sidebar renders — this is computed
+  reactively in `dashboard/layout.tsx` from the live store, so an edit to a
+  role takes effect immediately (next login re-resolves `roleId` too, see
+  `authService.login`). Never gate a page's _content_ by role inline; gate it
+  by not putting it in the user's menu, and if a page needs real protection
+  beyond "not linked," add the check where the other layout role-redirects
+  live.
+- **No backend yet** (`backend/` is unscaffolded — see
+  `backend/API_CONTRACT.md` for the spec every mock store below stands in
+  for): every store in `src/store/` — `rbac.store.ts`,
+  `institutions.store.ts`, `academics.store.ts`, `staff.store.ts` — is a
+  `persist`-backed Zustand store standing in for a real API, seeded with
+  demo data. `dashboard.store.ts` is the one exception: it's read-only mock
+  data for the two dashboards' stat cards/chart/recent-list, so it's
+  intentionally _not_ `persist`-backed (nothing ever mutates it locally) —
+  when wiring it to a real API, call its `setStats`/`setEnrollment`/
+  `setRecentStudents` after each fetch rather than adding persistence.
+  `authService.login`
+  (`src/services/auth.service.ts`) hardcodes three demo accounts (see its
+  header comment for credentials) covering all three cases worth testing:
+  the super admin, an unrestricted institution root admin, and a
+  RBAC-restricted staff account. When wiring a new page to data, follow this
+  same pattern — a small typed Zustand store with seed data — rather than
+  reaching for a real fetch call, until `backend/` exists. Because
+  `persist` only rehydrates in the browser, any component reading one of
+  these stores **must** be a Client Component using the store's hook
+  (`useXStore((s) => s.thing)`) — never `useXStore.getState()` in a Server
+  Component, which would silently always show the seed data and never a
+  user's changes.
+- **New nav pages**: most `INSTITUTION_NAV`/`SUPER_ADMIN_NAV` entries beyond
+  the ones with real pages currently render `<ModulePlaceholder>`
+  (`src/components/shared/module-placeholder.tsx`) — a styled "not built yet"
+  state, not a 404, so every link in both sidebars always goes somewhere real.
+  Replace a placeholder with a real page (reusing `<PageHeader>` for the
+  breadcrumb/date row) as its mockup arrives, rather than building ahead of
+  the reference images.
 
 ## Commands
 

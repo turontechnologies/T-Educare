@@ -188,3 +188,46 @@
 @utility animate-progress-indeterminate {
   animation: progress-indeterminate 1.4s ease-in-out infinite;
 }
+
+/* Branded scrollbars — thin, rounded, colored to match the app rather than
+   the browser default. `-light` is for scrollable areas on a light surface
+   (main content); the unsuffixed one is for dark surfaces (the sidebar). */
+@utility scrollbar-brand {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, white 35%, transparent) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, white 35%, transparent);
+    border-radius: 9999px;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, white 55%, transparent);
+  }
+}
+
+@utility scrollbar-brand-light {
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, var(--secondary) 50%, transparent);
+    border-radius: 9999px;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background-color: var(--secondary);
+  }
+}

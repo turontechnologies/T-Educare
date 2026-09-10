@@ -7,6 +7,7 @@ interface StatCardProps {
   value: string;
   icon: LucideIcon;
   iconClassName?: string;
+  className?: string;
 }
 
 export function StatCard({
@@ -14,10 +15,16 @@ export function StatCard({
   value,
   icon: Icon,
   iconClassName,
+  className,
 }: StatCardProps) {
   return (
-    <Card>
-      <CardContent className="flex items-center justify-between gap-4">
+    <Card
+      className={cn(
+        "animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500 transition-shadow hover:shadow-md",
+        className,
+      )}
+    >
+      <CardContent className="group flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs leading-snug font-medium text-muted-foreground">
             {label}
@@ -26,7 +33,7 @@ export function StatCard({
         </div>
         <div
           className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-full",
+            "flex size-11 shrink-0 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110",
             iconClassName,
           )}
         >
