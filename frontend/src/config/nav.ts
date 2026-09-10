@@ -28,6 +28,14 @@ export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  /**
+   * Key from `src/config/modules.ts` this item requires to be activated for
+   * the institution (see `filterNavByModules`). Omit for items that aren't
+   * gated by a super-admin-toggleable module (e.g. Dashboard, User
+   * Management, or setup pages with no module counterpart yet like Academic
+   * Sessions) — those are always available once their parent is reachable.
+   */
+  moduleKey?: string;
   children?: NavItem[];
 }
 
@@ -43,6 +51,7 @@ export const INSTITUTION_NAV: NavItem[] = [
     label: "Registration",
     href: "/dashboard/registration",
     icon: UserPlus,
+    moduleKey: "registration",
   },
   {
     key: "academics",
@@ -61,18 +70,21 @@ export const INSTITUTION_NAV: NavItem[] = [
         label: "School Management",
         href: "/dashboard/academics/schools",
         icon: School,
+        moduleKey: "school",
       },
       {
         key: "academics.faculties",
         label: "Faculty Management",
         href: "/dashboard/academics/faculties",
         icon: Building2,
+        moduleKey: "faculty",
       },
       {
         key: "academics.departments",
         label: "Department Management",
         href: "/dashboard/academics/departments",
         icon: Boxes,
+        moduleKey: "department",
       },
       {
         key: "academics.programs",
@@ -97,6 +109,7 @@ export const INSTITUTION_NAV: NavItem[] = [
         label: "Courses Management",
         href: "/dashboard/academics/courses",
         icon: School,
+        moduleKey: "courses",
       },
     ],
   },
@@ -105,6 +118,7 @@ export const INSTITUTION_NAV: NavItem[] = [
     label: "Student Management",
     href: "/dashboard/students",
     icon: Users,
+    moduleKey: "students",
   },
   {
     key: "staff",
@@ -137,30 +151,35 @@ export const INSTITUTION_NAV: NavItem[] = [
     label: "Lecture Management",
     href: "/dashboard/lectures",
     icon: School,
+    moduleKey: "lecturer",
   },
   {
     key: "financials",
     label: "Financials",
     href: "/dashboard/financials",
     icon: Wallet,
+    moduleKey: "payment",
   },
   {
     key: "results",
     label: "Results Management",
     href: "/dashboard/results",
     icon: ClipboardCheck,
+    moduleKey: "results",
   },
   {
     key: "hostel",
     label: "Hostel Management",
     href: "/dashboard/hostel",
     icon: Building2,
+    moduleKey: "hotels",
   },
   {
     key: "transport",
     label: "Transport Management",
     href: "/dashboard/transport",
     icon: Bus,
+    moduleKey: "transport",
   },
   {
     key: "announcements",
@@ -227,6 +246,34 @@ export function collectAllMenuKeys(items: NavItem[]): string[] {
     item.key,
     ...(item.children ? collectAllMenuKeys(item.children) : []),
   ]);
+}
+
+/**
+ * Filters a nav tree down to what an institution's activated modules unlock
+ * (see `src/config/modules.ts` and the super-admin Modules page). An item
+ * with no `moduleKey` is always available — it isn't gated by a toggleable
+ * module. A parent survives if it's ungated/active itself or if any child
+ * survives. This runs *before* `filterNavByAccess`: it caps what exists for
+ * the institution at all; role-based access then narrows that further.
+ */
+export function filterNavByModules(
+  items: NavItem[],
+  activeModuleKeys: string[],
+): NavItem[] {
+  const active = new Set(activeModuleKeys);
+
+  const walk = (list: NavItem[]): NavItem[] =>
+    list.reduce<NavItem[]>((acc, item) => {
+      const children = item.children ? walk(item.children) : undefined;
+      const isActive = !item.moduleKey || active.has(item.moduleKey);
+      const survives = isActive || (children && children.length > 0);
+      if (survives) {
+        acc.push(children ? { ...item, children } : item);
+      }
+      return acc;
+    }, []);
+
+  return walk(items);
 }
 
 /**

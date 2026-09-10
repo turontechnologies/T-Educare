@@ -144,6 +144,51 @@ const SEEDED_USER_MANAGERS: UserManagerAccount[] = [
     createdAt: "2026-03-08T11:15:00.000Z",
     archivedAt: null,
   },
+  {
+    // Email matches the ManagedUser seeded in rbac.store.ts so login
+    // resolves this account's *live* Role assignment — see
+    // `src/services/auth.service.ts`. This is also the account behind the
+    // long-standing "Turon_Admin" demo login (root/unrestricted access).
+    id: "um-christian-smart",
+    code: "009",
+    firstName: "Christian",
+    otherName: "",
+    lastName: "Smart",
+    gender: "Male",
+    email: "christian.smart@turontech.com",
+    phone: "08023778912",
+    username: "turon_admin",
+    password: "Turon@2024",
+    institutionName: "XYZ College of Technology",
+    isPrimaryAdmin: true,
+    status: "active",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    archivedAt: null,
+  },
+  {
+    // A different institution from Christian Smart above — one User
+    // Manager account per institution, so each is a clean, independent
+    // login to test. Logs in with the restricted "Front Desk Officer" Role
+    // (see the matching ManagedUser in rbac.store.ts): Ahmadu Bello
+    // University has more modules active than her role grants, so what she
+    // *doesn't* see proves the Role is the thing limiting her, not the
+    // institution.
+    id: "um-amara-bello",
+    code: "010",
+    firstName: "Amara",
+    otherName: "",
+    lastName: "Bello",
+    gender: "Female",
+    email: "amara.bello@turontech.com",
+    phone: "08023110098",
+    username: "amara_bello",
+    password: "Amara@2024",
+    institutionName: "Ahmadu Bello University",
+    isPrimaryAdmin: false,
+    status: "active",
+    createdAt: "2026-01-06T00:00:00.000Z",
+    archivedAt: null,
+  },
 ];
 
 interface UserManagersState {
@@ -219,7 +264,7 @@ export const useUserManagersStore = create<UserManagersState>()(
     }),
     {
       name: "t-educare-user-managers",
-      version: 1,
+      version: 3,
       // Mock data standing in for a real API (see frontend/CLAUDE.md) — a
       // version bump means "discard whatever was cached and reseed" rather
       // than migrate field by field.

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { PLATFORM_MODULES } from "@/config/modules";
 import type { Institution } from "@/types/institution";
 
 function makeId() {
@@ -12,7 +13,10 @@ function makeTokenKey() {
   ).join("-");
 }
 
-const SEEDED_INSTITUTIONS: Institution[] = [
+const BASE_SEEDED_INSTITUTIONS: Omit<
+  Institution,
+  "moduleKeys" | "modulesLastEditedAt"
+>[] = [
   {
     id: "inst-xyz-college",
     code: "001",
@@ -659,12 +663,151 @@ const SEEDED_INSTITUTIONS: Institution[] = [
   },
 ];
 
+/**
+ * Institutions "linked" via the Modules page (see
+ * `src/app/super-admin/modules/page.tsx`) — every other seeded institution
+ * starts with an empty `moduleKeys` and is simply absent from that table
+ * until a super admin links it there.
+ *
+ * `inst-xyz-college` gets every module: it's the demo institution behind
+ * the `turon_admin`/`amara_bello` login accounts (see
+ * `src/services/auth.service.ts`), and an institution's activated modules
+ * now cap what its own dashboard nav and Role menu-access picker can offer
+ * (`filterNavByModules` in `src/config/nav.ts`) — without this, those demo
+ * logins would see an almost-empty sidebar.
+ */
+const MODULE_LINK_OVERRIDES: Record<
+  string,
+  { moduleKeys: string[]; modulesLastEditedAt: string }
+> = {
+  "inst-xyz-college": {
+    moduleKeys: PLATFORM_MODULES.map((module) => module.key),
+    modulesLastEditedAt: "2026-03-07T09:00:00.000Z",
+  },
+  // Amara Bello's institution (see user-managers.store.ts) — deliberately
+  // has more active modules than her restricted "Front Desk Officer" Role
+  // grants, so logging in as her demonstrates the Role limiting her, not
+  // the institution.
+  "inst-ahmadubellouniversit-1": {
+    moduleKeys: ["registration", "students", "results", "lecturer", "payment"],
+    modulesLastEditedAt: "2026-03-04T09:00:00.000Z",
+  },
+  "inst-babcock": {
+    moduleKeys: [
+      "payment",
+      "students",
+      "lecturer",
+      "exams",
+      "results",
+      "reports",
+      "sms-integration",
+      "ussd-services",
+      "hotels",
+      "accommodations",
+    ],
+    modulesLastEditedAt: "2026-03-05T10:00:00.000Z",
+  },
+  "inst-madonnauniversity-24": {
+    moduleKeys: ["payment", "students", "exams", "results", "registration"],
+    modulesLastEditedAt: "2026-03-06T09:30:00.000Z",
+  },
+  "inst-yabacollegeoftechnol-11": {
+    moduleKeys: [
+      "payment",
+      "students",
+      "lecturer",
+      "exams",
+      "results",
+      "reports",
+      "registration",
+      "courses",
+    ],
+    modulesLastEditedAt: "2026-03-04T14:15:00.000Z",
+  },
+  // These five are also linked because a User Manager account is assigned
+  // to each (see `src/store/user-managers.store.ts`) — an institution with
+  // a real admin login should have a real, non-empty module set to log
+  // into, not a blank dashboard.
+  "inst-universityoflagos-0": {
+    moduleKeys: [
+      "registration",
+      "students",
+      "lecturer",
+      "results",
+      "transport",
+    ],
+    modulesLastEditedAt: "2026-03-04T12:30:00.000Z",
+  },
+  "inst-bayerouniversitykano-7": {
+    moduleKeys: ["payment", "students", "faculty", "department", "courses"],
+    modulesLastEditedAt: "2026-03-05T14:20:00.000Z",
+  },
+  "inst-redeemersuniversity-17": {
+    moduleKeys: [
+      "registration",
+      "students",
+      "lecturer",
+      "results",
+      "hotels",
+      "transport",
+    ],
+    modulesLastEditedAt: "2026-03-06T09:45:00.000Z",
+  },
+  "inst-afebabalolauniversit-18": {
+    moduleKeys: [
+      "payment",
+      "students",
+      "lecturer",
+      "exams",
+      "results",
+      "school",
+      "courses",
+    ],
+    modulesLastEditedAt: "2026-03-07T16:10:00.000Z",
+  },
+  "inst-landmarkuniversity-19": {
+    moduleKeys: [
+      "registration",
+      "students",
+      "faculty",
+      "department",
+      "school",
+      "courses",
+      "transport",
+    ],
+    modulesLastEditedAt: "2026-03-08T11:20:00.000Z",
+  },
+};
+
+const SEEDED_INSTITUTIONS: Institution[] = BASE_SEEDED_INSTITUTIONS.map(
+  (institution) => {
+    const override = MODULE_LINK_OVERRIDES[institution.id];
+    const moduleKeys = override?.moduleKeys ?? [];
+    return {
+      ...institution,
+      moduleKeys,
+      modulesLastEditedAt: override?.modulesLastEditedAt ?? null,
+      // Always derived from moduleKeys, per backend/API_CONTRACT.md § 4.6 —
+      // never the base seed's old placeholder number. An institution with
+      // no override is simply unlinked, so it's 0, not whatever arbitrary
+      // count the pre-Modules-feature mock data happened to have.
+      modulesCount: moduleKeys.length,
+    };
+  },
+);
+
 interface InstitutionsState {
   institutions: Institution[];
   createInstitution: (
     institution: Omit<
       Institution,
-      "id" | "code" | "createdAt" | "tokenKey" | "archivedAt"
+      | "id"
+      | "code"
+      | "createdAt"
+      | "tokenKey"
+      | "archivedAt"
+      | "moduleKeys"
+      | "modulesLastEditedAt"
     >,
   ) => Institution;
   updateInstitution: (id: string, patch: Partial<Institution>) => void;
@@ -686,6 +829,8 @@ export const useInstitutionsStore = create<InstitutionsState>()(
           tokenKey: makeTokenKey(),
           createdAt: new Date().toISOString(),
           archivedAt: null,
+          moduleKeys: [],
+          modulesLastEditedAt: null,
         };
         set((state) => ({
           institutions: [newInstitution, ...state.institutions],
@@ -723,7 +868,7 @@ export const useInstitutionsStore = create<InstitutionsState>()(
     }),
     {
       name: "t-educare-institutions",
-      version: 1,
+      version: 5,
       // No real migration path — this is mock data standing in for a real
       // API (see frontend/CLAUDE.md), so a version bump just means "discard
       // whatever shape was cached and reseed" rather than transform it field

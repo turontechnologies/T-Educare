@@ -1,5 +1,7 @@
 import { apiClient } from "@/lib/axios";
+import { useInstitutionsStore } from "@/store/institutions.store";
 import { ROOT_ADMIN_ROLE_ID, useRbacStore } from "@/store/rbac.store";
+import { useUserManagersStore } from "@/store/user-managers.store";
 import type {
   AuthenticatedUser,
   LoginRequest,
@@ -7,75 +9,84 @@ import type {
 } from "@/types/auth";
 
 /**
- * backend/ has no `/auth/login` yet (see backend/README.md) — these hardcoded
- * demo accounts stand in so the login → dashboard flow can be built and
- * exercised end-to-end, including role-based menu access. Swap this block for
- * the real `apiClient.post` call (still below, commented) once the endpoint
- * exists.
+ * backend/ has no `/auth/login` yet (see backend/README.md) — this stands in
+ * so the login → dashboard flow can be built and exercised end-to-end.
  *
- * Demo accounts:
- *  - Super_Admin  / Super@2024   → platform super admin
- *  - Turon_Admin  / Turon@2024   → institution root admin (full access)
- *  - Amara_Bello  / Amara@2024   → restricted institution staff (Front Desk
- *    Officer role — only Dashboard/Registration/Student Management), to prove
- *    the RBAC menu filtering actually works, not just the root admin's view.
+ * - `super_admin` is the only hardcoded account — there's no "manage super
+ *   admins" screen, it's the platform owner, singular.
+ * - Every `institution_admin` login authenticates against the real
+ *   `useUserManagersStore` records — the exact accounts shown on
+ *   `/super-admin/user-manager`, including "Turon_Admin"/"Amara_Bello". So
+ *   creating, editing, resetting the password of, or deactivating an
+ *   account there changes what works at `/login` immediately, the same way
+ *   it would against a real backend. Its Role is then resolved *live* from
+ *   `useRbacStore` by matching email — no match (an account nobody has
+ *   assigned a restricted Role to) falls back to unrestricted, since a
+ *   provisioned admin account defaults to full access until told otherwise.
  */
-const DEMO_ACCOUNTS: Record<
-  string,
-  { password: string; user: AuthenticatedUser }
-> = {
-  super_admin: {
-    password: "Super@2024",
-    user: {
-      id: "demo-super-admin",
-      firstName: "Ada",
-      lastName: "Okoye",
-      email: "ada.okoye@turontech.com",
-      role: "super_admin",
-    },
-  },
-  turon_admin: {
-    password: "Turon@2024",
-    user: {
-      id: "demo-admin-1",
-      firstName: "Christian",
-      lastName: "Smart",
-      email: "christian.smart@turontech.com",
-      role: "institution_admin",
-      roleId: ROOT_ADMIN_ROLE_ID,
-      institutionName: "XYZ College of Technology",
-    },
-  },
-  amara_bello: {
-    password: "Amara@2024",
-    user: {
-      id: "user-amara-bello",
-      firstName: "Amara",
-      lastName: "Bello",
-      email: "amara.bello@turontech.com",
-      role: "institution_admin",
-      roleId: "role-front-desk",
-      institutionName: "XYZ College of Technology",
-    },
+const SUPER_ADMIN_ACCOUNT: { password: string; user: AuthenticatedUser } = {
+  password: "Super@2024",
+  user: {
+    id: "demo-super-admin",
+    firstName: "Ada",
+    lastName: "Okoye",
+    email: "ada.okoye@turontech.com",
+    role: "super_admin",
   },
 };
 
 export const authService = {
   async login(payload: LoginRequest): Promise<LoginResponse> {
-    const account = DEMO_ACCOUNTS[payload.username.trim().toLowerCase()];
+    const usernameKey = payload.username.trim().toLowerCase();
 
-    if (account && payload.password === account.password) {
-      // Resolve the *current* role assignment from the RBAC store rather than
-      // the static seed, so edits made in User Management take effect on the
-      // next login.
+    if (
+      usernameKey === "super_admin" &&
+      payload.password === SUPER_ADMIN_ACCOUNT.password
+    ) {
+      const user = SUPER_ADMIN_ACCOUNT.user;
+      return { user, token: `demo-session-token-${user.id}` };
+    }
+
+    const account = useUserManagersStore
+      .getState()
+      .userManagers.find(
+        (u) => !u.archivedAt && u.username.toLowerCase() === usernameKey,
+      );
+
+    if (account && account.password === payload.password) {
+      if (account.status !== "active") {
+        throw new Error("This account has been deactivated.");
+      }
+
+      // institutionName is a denormalized display string (see
+      // institution-modules-dialog.tsx and the User Manager dialog) rather
+      // than a stored FK, so this match breaks if an institution is
+      // renamed after an admin account is assigned to it — an accepted
+      // limitation of the mock data layer, same as elsewhere in this app.
+      const institution = useInstitutionsStore
+        .getState()
+        .institutions.find(
+          (i) => !i.archivedAt && i.name === account.institutionName,
+        );
+
+      if (!institution) {
+        throw new Error("This account's institution could not be found.");
+      }
+
       const managedUser = useRbacStore
         .getState()
-        .users.find((u) => u.email === account.user.email);
+        .users.find((u) => u.email === account.email);
 
-      const user: AuthenticatedUser =
-        managedUser && account.user.role === "institution_admin"
-          ? { ...account.user, roleId: managedUser.roleId }
-          : account.user;
+      const user: AuthenticatedUser = {
+        id: account.id,
+        firstName: account.firstName,
+        lastName: account.lastName,
+        email: account.email,
+        role: "institution_admin",
+        institutionId: institution.id,
+        institutionName: institution.name,
+        roleId: managedUser?.roleId ?? ROOT_ADMIN_ROLE_ID,
+      };
 
       return { user, token: `demo-session-token-${user.id}` };
     }

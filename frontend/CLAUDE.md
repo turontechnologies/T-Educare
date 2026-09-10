@@ -141,6 +141,46 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   by not putting it in the user's menu, and if a page needs real protection
   beyond "not linked," add the check where the other layout role-redirects
   live.
+- **RBAC has a second, module-gating layer above roles**: a `NavItem` in
+  `nav.ts` can carry an optional `moduleKey` (one of the keys in
+  `src/config/modules.ts`), and `filterNavByModules()` filters a nav tree
+  down to only items whose `moduleKey` is in the current institution's
+  `Institution.moduleKeys` (set by a super admin on `/super-admin/modules` —
+  see `institution-modules-dialog.tsx`); items with no `moduleKey` are
+  ungated and always available. `dashboard/layout.tsx` and
+  `role-dialog.tsx`'s `RoleForm` both apply `filterNavByModules` **before**
+  `filterNavByAccess` — so an institution's root admin ("unrestricted") only
+  ever sees what their institution has been switched on for, and a custom
+  Role's menu-access picker can never offer a menu item the institution
+  itself doesn't have. Not every nav item has a matching module yet (e.g.
+  Academic Sessions, Programs, Announcements) — those stay ungated rather
+  than forcing a dubious mapping; only add a `moduleKey` where the
+  correspondence is genuinely clear. `turon_admin` is pinned to
+  `inst-xyz-college`, deliberately seeded with every module active, so it
+  always shows a full nav — verified during development that pointing a
+  login at a partially-linked institution (e.g. Babcock's 10-of-19 module
+  set) correctly hides Registration, Transport, and most of Academics.
+- **Institution admin logins authenticate against `UserManagerAccount`
+  records, not a separate hardcoded list.** `authService.login`
+  (`src/services/auth.service.ts`) only hardcodes `super_admin`; every other
+  login matches `username`/`password` against `useUserManagersStore`,
+  requires `status === "active"`, resolves the institution by matching
+  `institutionName` against `useInstitutionsStore` (a denormalized string
+  match, not a real FK — an accepted limitation of the mock layer), and then
+  resolves the live Role by matching email against `useRbacStore`'s
+  `ManagedUser` list (falling back to unrestricted if no match). So editing,
+  resetting the password of, or deactivating an account on
+  `/super-admin/user-manager` changes what actually works at `/login`
+  immediately — there's no separate seed to keep in sync. **Keep one User
+  Manager account per institution** — `turon_admin` → XYZ College of
+  Technology, `amara_bello` → Ahmadu Bello University (a restricted "Front
+  Desk Officer" Role tested against an institution that has _more_ modules
+  active than her Role grants, so what she can't see proves the Role is
+  limiting her, not the institution), `chrissmart10` → Babcock University,
+  and so on for the rest of `user-managers.store.ts`'s seed — each is a
+  distinct, independently-testable login. If you add a new demo scenario,
+  add a new `UserManagerAccount` rather than reusing an institution that
+  already has one.
 - **No backend yet** (`backend/` is unscaffolded — see
   `backend/API_CONTRACT.md` for the spec every mock store below stands in
   for): every store in `src/store/` — `rbac.store.ts`,

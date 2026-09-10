@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { INSTITUTION_NAV } from "@/config/nav";
+import { filterNavByModules, INSTITUTION_NAV } from "@/config/nav";
+import { useAuthStore } from "@/store/auth.store";
+import { useInstitutionsStore } from "@/store/institutions.store";
 import { useRbacStore } from "@/store/rbac.store";
 import type { Role } from "@/types/rbac";
 import { MenuAccessTree } from "./menu-access-tree";
@@ -54,6 +56,16 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 function RoleForm({ role, onDone }: { role?: Role; onDone: () => void }) {
   const createRole = useRbacStore((state) => state.createRole);
   const updateRole = useRbacStore((state) => state.updateRole);
+  const authUser = useAuthStore((state) => state.user);
+  const institutions = useInstitutionsStore((state) => state.institutions);
+
+  const availableNav = useMemo(() => {
+    const institution = institutions.find(
+      (i) => i.id === authUser?.institutionId,
+    );
+    return filterNavByModules(INSTITUTION_NAV, institution?.moduleKeys ?? []);
+  }, [institutions, authUser?.institutionId]);
+
   const [menuKeys, setMenuKeys] = useState<string[]>(role?.menuKeys ?? []);
 
   const { register, handleSubmit, formState } = useForm<RoleFormValues>({
@@ -105,9 +117,11 @@ function RoleForm({ role, onDone }: { role?: Role; onDone: () => void }) {
           <Label>Menu access</Label>
           <p className="text-xs text-muted-foreground">
             Users assigned this role will only see the menu items checked below.
+            Only modules your institution has been given access to (via the
+            platform&apos;s Modules setup) are offered here.
           </p>
           <MenuAccessTree
-            items={INSTITUTION_NAV}
+            items={availableNav}
             selected={menuKeys}
             onChange={setMenuKeys}
           />

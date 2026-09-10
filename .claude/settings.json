@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"Root\")",
+      "Bash(xargs cat)",
+      "Bash(grep -n \"^### \\\\`POST /auth/login\\\\`\" -A 45 backend/API_CONTRACT.md)",
+      "Bash(sed -i 's|await page.waitForSelector\\(\"text=User manager\"\\);|await page.waitForSelector\\(\"text=User manager\"\\);\\\\n  await page.fill\\(\"#user-manager-search\", \"amara\"\\);|' /tmp/pw_abu_consistency.js)",
+      "Bash(node /tmp/pw_abu_consistency.js)",
+      "Bash(grep -n \"modulesCount.*default\\\\|defaults \\\\`0\\\\`\" backend/API_CONTRACT.md)"
+    ]
+  }
+}

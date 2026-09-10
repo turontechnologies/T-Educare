@@ -123,7 +123,9 @@ erDiagram
         string adminUser "primary admin's name — this is who the institution's root login belongs to"
         string adminEmail
         string logoUrl "nullable"
-        int modulesCount
+        string[] moduleKeys "keys from GET /modules — see 4.6"
+        datetime modulesLastEditedAt "nullable — null until first linked, see 4.6"
+        int modulesCount "always derived: moduleKeys.length — 0 for an unlinked institution, never a separate stored number"
         int studentCount
         int revenue
         string licenseType "Freemium | Premium"
@@ -223,12 +225,36 @@ erDiagram
 }
 ```
 
+- **An `institution_admin` login authenticates against `UserManagerAccount`
+  records (4.5), not a separate identity.** The username/password an
+  institution admin logs in with are exactly the credentials shown (and
+  editable — see 4.5.3's reset-password) on the super admin's User Manager
+  screen. There is no separate "staff directory" of login identities:
+  `USER_MANAGER_ACCOUNT.institutionId` decides *which* institution this
+  login lands in, and a deactivated (`status: "inactive"`) or archived
+  account must be rejected at login even with a correct password. A Role
+  (5) is then resolved separately, by whatever mechanism links a Role to a
+  person within that institution (today's mock keys this off matching
+  email between `UserManagerAccount` and the institution's own staff
+  directory — a real implementation should use a proper FK instead, but the
+  two-step "which account, then which Role" shape should stay the same).
 - `role` is `"super_admin"` or `"institution_admin"`.
 - `menuKeys` is the **resolved** permission set for this login, so the
   frontend can render the sidebar without a second round trip:
   - `null` → unrestricted (root admin of the institution, or super admin).
   - `string[]` → exactly the keys from `frontend/src/config/nav.ts` this user
     may see, resolved server-side from their `Role.menuKeys` at login time.
+  - **Resolution must apply two layers, not one**: a nav key only belongs in
+    the resolved set if (a) the user's Role grants it (or the Role is
+    unrestricted) **and** (b) it isn't gated behind a `moduleKey` the
+    institution hasn't activated (see 4.6.3) — an unrestricted root admin is
+    still capped by their institution's `moduleKeys`, only a restricted Role
+    is capped further on top of that. Today's mocked frontend computes this
+    same two-layer intersection client-side
+    (`filterNavByModules` then `filterNavByAccess` in
+    `frontend/src/config/nav.ts`) since it has no login endpoint yet — once
+    this exists, move that resolution here and simplify the frontend to just
+    render whatever `menuKeys` it's given.
 - Wrong credentials → `401 { "error": "Invalid username or password." }`
   (exact copy the frontend already shows for its mocked version — keep it,
   or update `frontend/src/services/auth.service.ts` to match a new one).
@@ -441,6 +467,100 @@ POST /user-managers/:id/restore   → 200, sets archivedAt = null
 `GET /user-managers` excludes archived records unless
 `?includeArchived=true` is passed. Archiving is orthogonal to `status`
 (active/inactive) — restoring an account doesn't change `status`.
+
+### 4.6 Modules — linking institutions to platform features
+
+The "Modules" screen (`/super-admin/modules`) lets a super admin activate a
+fixed catalog of platform features per institution. This extends the
+`Institution` resource (4.1) rather than introducing a new one — see the two
+new fields on `INSTITUTION` in the ER diagram above:
+
+- `moduleKeys: string[]` — keys from the catalog below that are activated
+  for this institution. Empty (`[]`) until the institution is first linked.
+- `modulesLastEditedAt: datetime | null` — set whenever `moduleKeys` is
+  saved; `null` if never linked.
+
+#### 4.6.1 Module catalog
+
+```
+GET /modules   → 200, { "data": [ { "key": "payment", "label": "Payment module" }, ... ] }
+```
+
+A small, fixed, server-owned list (not institution-specific) — the frontend
+currently hardcodes it at `frontend/src/config/modules.ts` (19 entries:
+Payment module, Students, Lecturer, Exams, Results, Reports, SMS
+Integration, USSD Services, Hotels, Accommodations, Registration, Faculty,
+Department, School, Courses, Transport, Referral Application, Resit
+Module, Admission). Expose it as a real endpoint so the catalog can grow
+without a frontend redeploy; keep the same `key`s if so, since they're
+referenced by every institution's `moduleKeys`.
+
+#### 4.6.2 List / link / edit
+
+The Modules table only lists institutions with at least one activated
+module — i.e. `GET /institutions` filtered client-side (today) by
+`moduleKeys.length > 0`; no separate list endpoint is needed for the table
+itself.
+
+```
+PATCH /institutions/:id/modules
+{ "moduleKeys": ["payment", "students", "exams"] }
+→ 200, sets moduleKeys, modulesCount = moduleKeys.length,
+  modulesLastEditedAt = now, and status = "active"
+```
+
+That last side effect — activating an institution's status as part of
+saving its modules — matches the frontend copy shown after picking an
+institution in the "Link New Institution" dialog ("X is been selected and
+made active"). The dialog only calls this endpoint once on Save; selecting
+an institution and toggling checkboxes beforehand is local-only, so
+cancelling the dialog persists nothing.
+
+**The "Select an Institution" dropdown inside that dialog is a different
+query from the table above — and it matters which one the backend serves:**
+
+```
+GET /institutions?unlinkedOnly=true
+```
+
+This must return **only** institutions with `moduleKeys.length === 0` (i.e.
+never linked yet) — the same institutions that exist on the Institutions
+page (4.1), just filtered to the ones nobody has assigned modules to. It
+must never return an institution that already has `moduleKeys` set; editing
+an already-linked institution's modules happens by clicking its name in the
+Modules table instead (which opens the same dialog pre-filled via
+`GET /institutions/:id`, not this endpoint). Getting this filter wrong
+either lets a super admin silently overwrite an existing institution's
+module set through the wrong entry point, or makes an unlinked institution
+impossible to find once the list grows past a page or two.
+
+#### 4.6.3 Effect on the institution's own dashboard
+
+An institution's `moduleKeys` don't just drive this super-admin table —
+they cap what that institution's *own* staff can ever be granted access to.
+`frontend/src/config/nav.ts` maps a subset of `INSTITUTION_NAV` items to a
+`moduleKey` (e.g. the `students` nav item requires the `students` module;
+see the file for the full mapping — several nav items, like Dashboard,
+Academic Sessions, and User Management, are intentionally ungated and
+always available). Two places consume this:
+
+- The institution dashboard's sidebar (`src/app/dashboard/layout.tsx`) —
+  even the institution's unrestricted root admin only sees nav items backed
+  by an activated module; "full access" means full access to what's been
+  switched on for that institution, not the entire platform nav.
+- The Role editor's menu-access picker
+  (`src/components/features/user-management/role-dialog.tsx`) — an
+  institution admin can only grant a custom Role access to menu items their
+  own institution has been given, so a Role can never be built with reach
+  beyond what the super admin allowed.
+
+No new endpoint is needed for this — the frontend already has the calling
+user's `institutionId` (from `POST /auth/login`, see 3) and that
+institution's `moduleKeys` (from `GET /institutions/:id`, implicitly scoped
+server-side to the caller's own institution per the multi-tenancy rule in
+§1). Just make sure `moduleKeys` is included in whatever the institution
+admin's own session/profile calls return — it's load-bearing for their nav,
+not only for the super admin's Modules screen.
 
 ---
 
