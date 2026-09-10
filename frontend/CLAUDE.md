@@ -141,6 +141,20 @@ next-themes, sonner.
   (`useXStore((s) => s.thing)`) — never `useXStore.getState()` in a Server
   Component, which would silently always show the seed data and never a
   user's changes.
+- **Bump `version` whenever you change a persisted store's shape.** Every
+  `persist(...)` config above has an explicit `version: 1`. When you add,
+  rename, or remove a field on `rbac.store.ts`, `institutions.store.ts`,
+  `academics.store.ts`, or `staff.store.ts` — or edit their seed data — bump
+  that store's `version` by one in the same change. Without it, a browser
+  that already ran an older build keeps its stale `localStorage` payload
+  forever (zustand's `persist` only discards mismatched-version state; a
+  matching version is trusted as-is and never reconciled against new seed
+  data or fields) — the symptom is old/incomplete rows sitting next to
+  blank columns for fields that didn't exist yet when that browser first
+  loaded the app. There's no `migrate` function configured on any of these
+  stores on purpose — the intent is "discard and reseed," not "carry old
+  shapes forward," since this is all mock data standing in for a real API
+  anyway.
 - **New nav pages**: most `INSTITUTION_NAV`/`SUPER_ADMIN_NAV` entries beyond
   the ones with real pages currently render `<ModulePlaceholder>`
   (`src/components/shared/module-placeholder.tsx`) — a styled "not built yet"

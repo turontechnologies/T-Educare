@@ -18,8 +18,32 @@ interface SidebarContentProps {
   onNavigate?: () => void;
 }
 
-function isActivePath(pathname: string, href: string) {
+function matchesPath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Finds the single best-matching nav item for the current path, by longest
+ * matching href — not "does this item's href prefix-match the path" done
+ * independently per item. That naive approach marks an area's own root item
+ * (e.g. Dashboard at "/dashboard") active on every sibling page too, since
+ * "/dashboard" is a string-prefix of "/dashboard/students" and everything
+ * else in the section. Longest-match makes the more specific route win.
+ */
+function findActiveKey(items: NavItem[], pathname: string): string | null {
+  let bestKey: string | null = null;
+  let bestLength = -1;
+
+  function consider(item: NavItem) {
+    if (matchesPath(pathname, item.href) && item.href.length > bestLength) {
+      bestKey = item.key;
+      bestLength = item.href.length;
+    }
+    item.children?.forEach(consider);
+  }
+
+  items.forEach(consider);
+  return bestKey;
 }
 
 /**
@@ -54,17 +78,15 @@ function NavLeaf({
 
 function NavGroup({
   item,
-  pathname,
+  activeKey,
   onNavigate,
 }: {
   item: NavItem;
-  pathname: string;
+  activeKey: string | null;
   onNavigate?: () => void;
 }) {
   const children = item.children ?? [];
-  const childActive = children.some((child) =>
-    isActivePath(pathname, child.href),
-  );
+  const childActive = children.some((child) => child.key === activeKey);
   const [open, setOpen] = useState(childActive);
   const Icon = item.icon;
 
@@ -97,7 +119,7 @@ function NavGroup({
         <div className="overflow-hidden">
           <div className="flex flex-col gap-0.5 py-1 pl-11">
             {children.map((child) => {
-              const active = isActivePath(pathname, child.href);
+              const active = child.key === activeKey;
               return (
                 <Link
                   key={child.key}
@@ -131,6 +153,7 @@ export function SidebarContent({
   const pathname = usePathname();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const activeKey = findActiveKey(menu, pathname);
 
   const handleLogout = () => {
     logout();
@@ -164,14 +187,14 @@ export function SidebarContent({
             <NavGroup
               key={item.key}
               item={item}
-              pathname={pathname}
+              activeKey={activeKey}
               onNavigate={onNavigate}
             />
           ) : (
             <NavLeaf
               key={item.key}
               item={item}
-              active={isActivePath(pathname, item.href)}
+              active={item.key === activeKey}
               onNavigate={onNavigate}
             />
           ),

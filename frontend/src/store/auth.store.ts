@@ -26,6 +26,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "t-educare-auth",
+      version: 1,
+      // A stale session from an older `AuthenticatedUser` shape (e.g.
+      // missing `roleId` before RBAC existed) is unsafe to carry forward —
+      // sign out cleanly instead of silently misrendering menus.
+      migrate: () => ({ user: null, token: null }),
       partialize: (state) => ({ user: state.user, token: state.token }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

@@ -95,6 +95,15 @@ export const useAcademicsStore = create<AcademicsState>()(
         }));
       },
     }),
-    { name: "t-educare-academics" },
+    {
+      name: "t-educare-academics",
+      version: 1,
+      // Discard-and-reseed on a shape change — see the identical note in
+      // institutions.store.ts.
+      migrate: () => ({
+        sessions: SEEDED_SESSIONS,
+        semesters: SEEDED_SEMESTERS,
+      }),
+    },
   ),
 );

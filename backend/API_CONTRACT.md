@@ -80,12 +80,27 @@ erDiagram
 
     INSTITUTION {
         string id PK
+        string code "display-only sequential code, e.g. 001 — not the PK"
         string name
+        string institutionType "University | Polytechnic | College | Secondary School | Primary School"
+        string address
+        string city
+        string countryState "e.g. Nigeria - Ogun State"
+        string principalName
+        string principalEmail
+        string principalPhone
+        string adminUser "primary admin's name — this is who the institution's root login belongs to"
+        string adminEmail
+        string logoUrl "nullable"
         int modulesCount
         int studentCount
         int revenue
-        string status "active | inactive"
+        string licenseType "Freemium | Premium"
+        datetime expiringAt "nullable — null for Freemium"
+        string tokenKey "institution's API/license token"
+        string status "active | inactive — toggled by activate/deactivate, never by archiving"
         datetime createdAt
+        datetime archivedAt "nullable — soft-delete, see 4.4"
     }
     ROLE {
         string id PK
@@ -202,14 +217,87 @@ sequenceDiagram
 
 All routes below require `role: "super_admin"` → otherwise `403`.
 
+### 4.1 List / create / edit
+
 | Method | Path                    | Body                                          | Notes |
 |--------|-------------------------|------------------------------------------------|-------|
-| GET    | `/institutions`         | —                                              | list, supports pagination |
-| POST   | `/institutions`         | `{ name, modulesCount }`                       | `studentCount`/`revenue` default `0`, `status` defaults `"active"` |
-| PATCH  | `/institutions/:id`     | any subset of `Institution` fields             | |
-| DELETE | `/institutions/:id`     | —                                              | |
+| GET    | `/institutions`         | —                                              | list, supports pagination + `?search=` (matches name or adminUser) + `?includeArchived=true` (default `false` — see 4.4) |
+| POST   | `/institutions`         | see 4.2                                        | `modulesCount`/`studentCount`/`revenue` default `0`, `licenseType` defaults `"Freemium"`, `expiringAt` defaults `null`, `status` defaults `"active"` |
+| PATCH  | `/institutions/:id`     | any subset of `Institution` fields             | for editing; also accepts `{ status }` alone but prefer 4.3 for that so the intent (and audit trail) is explicit |
 
 `Institution` response shape — see the ER diagram above.
+
+### 4.2 Creating an institution — form fields
+
+The "Add New Institution" form collects everything **except** `modulesCount`
+and `licenseType` — those are configured afterwards via the Modules and
+License Manager screens (still placeholders on the frontend today), so a
+freshly created institution always starts at `modulesCount: 0`,
+`licenseType: "Freemium"`, `expiringAt: null`.
+
+```json
+// POST /institutions request body
+{
+  "name": "Covenant University",
+  "institutionType": "University",
+  "address": "KM 10 Idiroko Road",
+  "city": "Ota",
+  "countryState": "Nigeria - Ogun State",
+  "principalName": "Prof. David Oyedepo",
+  "principalEmail": "principal@covenantuniversity.edu.ng",
+  "principalPhone": "08011112222",
+  "adminUser": "Ngozi Eze",
+  "adminEmail": "admin@covenantuniversity.edu.ng",
+  "logoUrl": "https://cdn.example.com/logos/covenant.png"
+}
+```
+
+`logoUrl` — the frontend currently only previews the picked file locally
+(via `URL.createObjectURL`, never uploaded anywhere). A real backend should
+expose a small upload endpoint (e.g. `POST /uploads/institution-logo`,
+multipart, returning `{ "url": "..." }`) that the frontend calls first, then
+sends the resulting `url` as `logoUrl` in this request.
+
+`code` and `tokenKey` are server-generated — never accept them from the
+client. `id` and `createdAt` are standard server-generated fields.
+
+### 4.3 Activate / deactivate
+
+```
+PATCH /institutions/:id/status
+{ "status": "active" }   // or "inactive"
+```
+
+The frontend always confirms this with the user first ("Are you sure you
+want to activate/deactivate X?") before calling it — that's a client-side
+UX guard, not something the backend needs to enforce, but do treat this as
+a meaningful state transition worth its own audit log entry (an institution
+losing access is a significant event for whoever their `adminUser` is).
+
+### 4.4 Archive / restore — soft delete only
+
+**There is no hard-delete endpoint for institutions.** The frontend's
+"delete" action archives instead — it sets `archivedAt` and hides the record
+from the default list view; nothing is ever destroyed.
+
+```
+POST /institutions/:id/archive   → 200, sets archivedAt = now
+POST /institutions/:id/restore   → 200, sets archivedAt = null
+```
+
+`GET /institutions` excludes archived records unless `?includeArchived=true`
+is passed (that's what the frontend's "View archived" toggle calls). An
+archived institution keeps its `status` field as-is (archiving is
+orthogonal to active/inactive) — restoring one doesn't change `status`
+either, it comes back exactly as it was archived.
+
+```mermaid
+flowchart LR
+    A[Institution record] -->|"activate/deactivate"| B[status: active ⇄ inactive]
+    A -->|archive| C[archivedAt: set]
+    C -->|restore| A
+    C -.->|"never"| D[hard delete]
+```
 
 ---
 
@@ -333,8 +421,13 @@ institution just to sum three numbers (it can still cross-check against
 `GET /institutions` — see §4 — but shouldn't have to).
 
 ```json
-{ "institutionsCount": 3, "totalStudents": 210, "totalRevenue": 255000 }
+{ "institutionsCount": 27, "totalStudents": 5622, "totalRevenue": 1528600 }
 ```
+
+(The frontend's mock seed currently has 27 institutions, for a realistic
+pagination/search demo — see `institutions.store.ts`. Numbers above match
+that seed; a real backend obviously computes them from actual rows and
+should exclude archived institutions from the count, same as §4.4.)
 
 The "Recent Added Institutions" table on this same dashboard is just
 `GET /institutions` (§4) sorted by `createdAt` desc, `limit=5` — no separate

@@ -127,6 +127,12 @@ export const useRbacStore = create<RbacState>()(
         return role.menuKeys;
       },
     }),
-    { name: "t-educare-rbac" },
+    {
+      name: "t-educare-rbac",
+      version: 1,
+      // Discard-and-reseed on a shape change — see the identical note in
+      // institutions.store.ts.
+      migrate: () => ({ roles: SEEDED_ROLES, users: SEEDED_USERS }),
+    },
   ),
 );

@@ -69,6 +69,12 @@ export const useStaffStore = create<StaffState>()(
         }));
       },
     }),
-    { name: "t-educare-staff" },
+    {
+      name: "t-educare-staff",
+      version: 1,
+      // Discard-and-reseed on a shape change — see the identical note in
+      // institutions.store.ts.
+      migrate: () => ({ designations: SEEDED_DESIGNATIONS }),
+    },
   ),
 );

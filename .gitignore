@@ -13,3 +13,4 @@ node_modules/
 
 # Agent instruction files (not shared via the repo)
 CLAUDE.md
+.claude.md
