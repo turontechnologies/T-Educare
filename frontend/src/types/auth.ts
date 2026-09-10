@@ -10,7 +10,7 @@ export interface AuthenticatedUser {
 }
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
