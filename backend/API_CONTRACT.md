@@ -87,6 +87,13 @@ need to work against this API once it exists:
   Never accept a client-supplied `institutionId` on these routes; a request
   from institution A must be structurally incapable of reading or writing
   institution B's data, regardless of what a client sends.
+- **Every admin table follows the same Edit / Activate-Deactivate / Delete
+  pattern**, deliberately kept identical across resources (institutions,
+  user managers, and any future admin list): a single actions menu per row,
+  a confirmation prompt before every activate/deactivate/delete, and delete
+  always meaning archive (soft-delete, restorable) — never a hard delete.
+  This is a frontend/UX convention, not a per-resource quirk, so treat any
+  new admin-facing list the same way rather than inventing a new pattern.
 
 ---
 
@@ -98,6 +105,7 @@ erDiagram
     INSTITUTION ||--o{ USER : "employs"
     INSTITUTION ||--o{ ACADEMIC_SESSION : "runs"
     INSTITUTION ||--o{ STAFF_DESIGNATION : "defines"
+    INSTITUTION ||--o{ USER_MANAGER_ACCOUNT : "assigned"
     ACADEMIC_SESSION ||--o{ ACADEMIC_SEMESTER : "contains"
     ROLE ||--o{ USER : "assigned to"
 
@@ -166,6 +174,24 @@ erDiagram
         string name
         string description
         string category "Academic Staff | Non-Academic Staff"
+    }
+    USER_MANAGER_ACCOUNT {
+        string id PK
+        string code "display-only sequential code, e.g. 001 — not the PK"
+        string institutionId FK "the institution this admin account is assigned to"
+        string firstName
+        string otherName "nullable"
+        string lastName
+        string gender "Male | Female | Other"
+        string email
+        string phone
+        string username "unique"
+        string passwordHash
+        bool isPrimaryAdmin "true = this institution's root login (see USER.adminUser)"
+        string avatarUrl "nullable"
+        string status "active | inactive"
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete, see 4.5.5"
     }
 ```
 
@@ -321,6 +347,100 @@ flowchart LR
     C -->|restore| A
     C -.->|"never"| D[hard delete]
 ```
+
+### 4.5 User Manager — super admin only
+
+Platform-level admin accounts, each assigned to one institution (the "User
+Manager" screen at `/super-admin/user-manager`). This is distinct from
+section 6 (`USER`/roles) — that's institution-scoped staff managed by an
+*institution admin*; this is the super admin provisioning the institution's
+own admin accounts.
+
+#### 4.5.1 List / create / edit
+
+| Method | Path                     | Body                                          | Notes |
+|--------|--------------------------|------------------------------------------------|-------|
+| GET    | `/user-managers`         | —                                              | list, supports pagination + `?search=` (matches username, email, or institution name) + `?includeArchived=true` (default `false` — see 4.5.5) |
+| POST   | `/user-managers`         | see 4.5.2                                      | `status` defaults `"active"` |
+| PATCH  | `/user-managers/:id`     | any subset of `UserManagerAccount` fields       | for editing |
+
+`UserManagerAccount` response shape — see the ER diagram above. Never
+returns `passwordHash`.
+
+#### 4.5.2 Creating an account — form fields
+
+```json
+// POST /user-managers request body
+{
+  "firstName": "Chris",
+  "otherName": "Oluwakemi",
+  "lastName": "Smart",
+  "gender": "Male",
+  "email": "chrissmart10@gmail.com",
+  "phone": "08023778912",
+  "username": "chrissmart10",
+  "password": "a-plaintext-password-hashed-server-side",
+  "institutionId": "inst-babcock",
+  "isPrimaryAdmin": true,
+  "avatarUrl": "https://cdn.example.com/avatars/chris.png"
+}
+```
+
+The frontend's "Generate username" / "Generate password" buttons are purely
+client-side conveniences (random suggestions the admin can edit before
+submitting) — the server should still validate `username` uniqueness and
+apply its own password policy, never trust the generated value's strength.
+
+`avatarUrl` — same convention as institution `logoUrl` (4.2): frontend only
+previews the picked file locally today; wire it to a real upload endpoint
+when one exists.
+
+`code` is server-generated — never accept it from the client. `id` and
+`createdAt` are standard server-generated fields.
+
+#### 4.5.3 Activate / deactivate
+
+```
+PATCH /user-managers/:id/status
+{ "status": "active" }   // or "inactive"
+```
+
+Same convention as institutions (4.3): the frontend always confirms this
+with the user first ("Are you sure you want to activate/deactivate X?"),
+and it's worth its own audit log entry — a deactivated account should be
+rejected at login even if its `passwordHash` still matches.
+
+Both this and the institutions table drive their Edit / Activate-Deactivate
+/ Delete actions from the same dropdown-menu pattern in the frontend (see
+`src/components/ui/dropdown-menu.tsx`) — kept deliberately identical across
+every admin table for consistency, not just this one.
+
+#### 4.5.4 Reset password
+
+```
+POST /user-managers/:id/reset-password   → 200, { "password": "<new-plaintext-password>" }
+```
+
+The frontend always confirms this with the user first ("Are you sure you
+want to reset the password for X?") before calling it. The server generates
+a new password, hashes and stores it, and returns the plaintext exactly
+once in the response so the admin can hand it to the account owner — it is
+never retrievable again after that.
+
+#### 4.5.5 Archive / restore — soft delete only
+
+**There is no hard-delete endpoint for user manager accounts** — same
+convention as institutions (4.4). The frontend's "delete" action archives
+instead.
+
+```
+POST /user-managers/:id/archive   → 200, sets archivedAt = now
+POST /user-managers/:id/restore   → 200, sets archivedAt = null
+```
+
+`GET /user-managers` excludes archived records unless
+`?includeArchived=true` is passed. Archiving is orthogonal to `status`
+(active/inactive) — restoring an account doesn't change `status`.
 
 ---
 
@@ -486,7 +606,7 @@ sequenceDiagram
 Until the above exists, the frontend fakes all of it client-side with three
 hardcoded demo accounts (see `frontend/src/services/auth.service.ts`) and
 Zustand stores seeded with fixture data (`persist`-backed for anything a user
-edits — roles, users, institutions, sessions, designations; plain, unpersisted
-for read-only dashboard data — see `dashboard.store.ts`) — swap each store's
-actions for real calls to the routes above one domain at a time; nothing
-else in the UI needs to change.
+edits — roles, users, institutions, user managers, sessions, designations;
+plain, unpersisted for read-only dashboard data — see `dashboard.store.ts`)
+— swap each store's actions for real calls to the routes above one domain
+at a time; nothing else in the UI needs to change.

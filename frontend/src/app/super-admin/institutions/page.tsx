@@ -2,16 +2,26 @@
 
 import { useMemo, useState } from "react";
 import {
-  Archive,
   ArchiveRestore,
   Eye,
   EyeOff,
+  MoreHorizontal,
   Pencil,
   Plus,
+  Power,
+  PowerOff,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -163,7 +172,7 @@ export default function InstitutionsPage() {
       </div>
 
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
-        <CardHeader className="flex-row items-center justify-between gap-4">
+        <CardHeader className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Show</span>
             <Select
@@ -267,27 +276,16 @@ export default function InstitutionsPage() {
                     </TableCell>
                     <TableCell>
                       {view === "active" ? (
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={institution.status === "active"}
-                            onCheckedChange={(checked) =>
-                              setPendingStatus({
-                                institution,
-                                nextActive: checked,
-                              })
-                            }
-                          />
-                          <span
-                            className={cn(
-                              "text-xs font-medium capitalize",
-                              institution.status === "active"
-                                ? "text-emerald-600"
-                                : "text-muted-foreground",
-                            )}
-                          >
-                            {institution.status}
-                          </span>
-                        </div>
+                        <span
+                          className={cn(
+                            "text-xs font-medium capitalize",
+                            institution.status === "active"
+                              ? "text-emerald-600"
+                              : "text-destructive",
+                          )}
+                        >
+                          {institution.status}
+                        </span>
                       ) : (
                         <span className="text-xs font-medium text-muted-foreground">
                           Archived
@@ -296,27 +294,50 @@ export default function InstitutionsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       {view === "active" ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            aria-label={`Edit ${institution.name}`}
-                            onClick={() => {
-                              setEditingInstitution(institution);
-                              setDialogOpen(true);
-                            }}
-                            className="inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-secondary transition-colors hover:bg-secondary/10"
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            aria-label={`Actions for ${institution.name}`}
+                            className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-open:bg-muted data-open:text-foreground"
                           >
-                            <Pencil className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`Archive ${institution.name}`}
-                            onClick={() => setPendingArchive(institution)}
-                            className="inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Archive className="size-3.5" />
-                          </button>
-                        </div>
+                            <MoreHorizontal className="size-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditingInstitution(institution);
+                                setDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="size-3.5" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setPendingStatus({
+                                  institution,
+                                  nextActive: institution.status !== "active",
+                                })
+                              }
+                            >
+                              {institution.status === "active" ? (
+                                <PowerOff className="size-3.5" />
+                              ) : (
+                                <Power className="size-3.5" />
+                              )}
+                              {institution.status === "active"
+                                ? "Deactivate"
+                                : "Activate"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => setPendingArchive(institution)}
+                            >
+                              <Trash2 className="size-3.5" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       ) : (
                         <button
                           type="button"
@@ -417,14 +438,14 @@ export default function InstitutionsPage() {
       <ConfirmDialog
         open={!!pendingArchive}
         onOpenChange={(open) => !open && setPendingArchive(null)}
-        title="Archive this institution?"
-        description={`Are you sure you want to archive ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
-        confirmLabel="Archive"
+        title="Delete this institution?"
+        description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
+        confirmLabel="Delete"
         variant="destructive"
         onConfirm={() => {
           if (!pendingArchive) return;
           archiveInstitution(pendingArchive.id);
-          toast.success(`${pendingArchive.name} archived`);
+          toast.success(`${pendingArchive.name} deleted`);
         }}
       />
     </div>

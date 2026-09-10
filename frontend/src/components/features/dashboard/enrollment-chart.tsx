@@ -35,7 +35,7 @@ export function EnrollmentChart() {
 
   return (
     <Card className="lg:col-span-2">
-      <CardHeader className="flex-row items-center justify-between">
+      <CardHeader className="flex flex-wrap items-center justify-between gap-3">
         <CardTitle className="text-primary">
           Registered students per program
         </CardTitle>

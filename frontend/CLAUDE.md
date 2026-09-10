@@ -76,6 +76,22 @@ next-themes, sonner.
   genuine bug fix), touch only what the fix requires — layout/overflow
   classes, not color or iconography — and call out explicitly in your
   response that you touched it and why.
+- **Admin tables must stay identical to each other.** Institutions
+  (`src/app/super-admin/institutions/page.tsx`) and User Manager
+  (`src/app/super-admin/user-manager/page.tsx`) are the reference — same
+  Card/CardHeader (Show-entries + Search, `flex flex-wrap items-center
+justify-between gap-4` — not `flex-row`, which doesn't override
+  `CardHeader`'s default `grid` and silently stacks the two instead of
+  placing them on one row), same row entrance animation
+  (`animate-in fade-in duration-300` per `<TableRow>`), same Action column: a
+  single kebab (`MoreHorizontal`) button opening a `DropdownMenu` — never
+  separate icon buttons and never an inline `Switch` for status. Item order
+  is always Edit → resource-specific actions (e.g. Activate/Deactivate) →
+  separator → destructive Delete. Every activate/deactivate/delete is
+  confirmed via `<ConfirmDialog>` first, and delete always archives
+  (soft-delete, restorable via the "View archived" toggle) — never a hard
+  delete. Build every new admin list this exact way; if the pattern needs to
+  change, change it in both tables at once, not one at a time.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
