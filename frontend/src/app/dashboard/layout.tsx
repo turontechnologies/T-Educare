@@ -34,6 +34,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     // Either still hydrating (AppSplash covers this) or unauthenticated/wrong
     // role and about to be redirected — render nothing rather than flash the
     // wrong shell.
+
     return null;
   }
 

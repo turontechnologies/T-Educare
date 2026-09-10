@@ -127,12 +127,15 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }
+
   /* Anything clickable shows a pointer cursor by default; components that need
      a different cursor (disabled states, drag handles, etc.) opt out explicitly. */
   button:not(:disabled),
@@ -150,6 +153,7 @@
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-12px);
   }
@@ -159,6 +163,7 @@
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -168,9 +173,11 @@
   0% {
     transform: translateX(-100%) scaleX(0.4);
   }
+
   50% {
     transform: translateX(0%) scaleX(0.6);
   }
+
   100% {
     transform: translateX(100%) scaleX(0.4);
   }
@@ -200,13 +207,16 @@
     width: 6px;
     height: 6px;
   }
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
+
   &::-webkit-scrollbar-thumb {
     background-color: color-mix(in oklch, white 35%, transparent);
     border-radius: 9999px;
   }
+
   &:hover::-webkit-scrollbar-thumb {
     background-color: color-mix(in oklch, white 55%, transparent);
   }
@@ -220,13 +230,16 @@
     width: 6px;
     height: 6px;
   }
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
+
   &::-webkit-scrollbar-thumb {
     background-color: color-mix(in oklch, var(--secondary) 50%, transparent);
     border-radius: 9999px;
   }
+
   &:hover::-webkit-scrollbar-thumb {
     background-color: var(--secondary);
   }
