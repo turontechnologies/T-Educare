@@ -5,6 +5,12 @@
 Next.js App Router app. Package manager is **pnpm**. See the repo root
 [CLAUDE.md](../CLAUDE.md) for the monorepo layout.
 
+**Deployed** to Vercel at https://t-educare.vercel.app/, in addition to
+local dev at `http://localhost:3000`. Once `backend/` exists, it needs CORS
+open to both origins (see `backend/API_CONTRACT.md` § Deployment) —
+`NEXT_PUBLIC_API_URL` gets set per-environment (local `.env` vs. the Vercel
+project's env vars) to point at wherever that backend is deployed.
+
 ## Stack
 
 TypeScript, Tailwind CSS v4, shadcn/ui (`base-nova` preset, `base-ui` under

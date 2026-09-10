@@ -28,12 +28,35 @@ conventions below and get added here as each one is built.
 [README.md](./README.md) for scaffolding steps. This file is what to build
 *against*.
 
+## Deployment
+
+The frontend is deployed and live at **https://t-educare.vercel.app/**
+(Vercel), in addition to local dev at `http://localhost:3000`. Both origins
+need to work against this API once it exists:
+
+- **CORS**: allow both `http://localhost:3000` and
+  `https://t-educare.vercel.app` as origins (`Access-Control-Allow-Origin`),
+  with credentials enabled if the auth scheme ends up needing cookies rather
+  than the bearer-token approach described below. Don't hardcode just one —
+  local dev and the deployed preview both need to reach the API throughout
+  development.
+- Vercel also generates a preview-deployment URL per branch/PR
+  (`https://t-educare-<hash>-<team>.vercel.app` or similar) — if the backend
+  needs to support those too, allow-list by suffix/pattern rather than a
+  fixed list of exact origins, since each preview gets a new one.
+- The frontend currently has no backend to call yet (see Status above), so
+  none of this is exercised until `NEXT_PUBLIC_API_URL` is set on both the
+  local `.env` and the Vercel project's environment variables to point at
+  wherever this API ends up deployed.
+
 ---
 
 ## 1. Conventions
 
 - **Base URL**: `NEXT_PUBLIC_API_URL` (frontend `.env`), all paths below are
   relative to it.
+- **CORS**: allow `http://localhost:3000` (local dev) and
+  `https://t-educare.vercel.app` (deployed frontend) — see Deployment above.
 - **Auth**: `Authorization: Bearer <token>` on every request except
   `POST /auth/login`. An invalid/expired token → `401`, which the frontend's
   axios interceptor treats as a forced logout.

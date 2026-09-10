@@ -4,6 +4,12 @@ Not yet scaffolded. This folder is reserved for the API service the
 [frontend](../frontend) talks to via `NEXT_PUBLIC_API_URL`
 (see `frontend/src/lib/axios.ts`).
 
+The frontend is already deployed and live at
+**https://t-educare.vercel.app/** (Vercel), alongside local dev at
+`http://localhost:3000` — whatever stack this backend ends up using needs
+CORS open to both. See [API_CONTRACT.md § Deployment](./API_CONTRACT.md#deployment)
+for details.
+
 ## Expected contract
 
 See **[API_CONTRACT.md](./API_CONTRACT.md)** for the full spec — auth, the
