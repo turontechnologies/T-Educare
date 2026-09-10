@@ -40,7 +40,43 @@ next-themes, sonner.
 - **Toasts**: `sonner`'s `toast()`, rendered via the `<Toaster />` mounted
   once in `src/app/layout.tsx`.
 - **Theming**: `next-themes` `ThemeProvider` (`attribute="class"`), also
-  mounted in the root layout — don't add a second theme provider.
+  mounted in the root layout — don't add a second theme provider. Dark mode
+  is currently disabled (`defaultTheme="light"`, `enableSystem={false}` in
+  `src/app/layout.tsx`) — the `.dark` CSS and `<ThemeToggle />`
+  (`src/components/theme/theme-toggle.tsx`) still exist and work, just
+  unmounted, ready to re-enable later.
+- **Design fidelity**: the iEducare/TEduCare screenshots supplied for the
+  login and dashboard pages are the authoritative visual spec, not
+  inspiration — layout, proportions, colors, spacing, icon placement, and
+  positioning must match them, not a "modernized" reinterpretation. This
+  applies to every future page too: before building a new screen, match its
+  spacing, typography, card/button/sidebar/header style to what's already in
+  `src/app/login/` and `src/app/dashboard/` rather than introducing a new
+  visual language. Literal placeholder _data_ in a mockup (fake names,
+  repeated rows) doesn't need byte-for-byte reproduction — visual _design_
+  does.
+- **Brand tokens**: the iEducare brand colors (navy `primary`, blue
+  `secondary`, gold `tertiary`) and body text color live as CSS custom
+  properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
+  via the `@theme inline` block — the single source of truth for both. Never
+  hardcode a brand hex (`#03045e`, `#1619ab`, `#fdc600`, `#333333`) in a
+  component; use the semantic Tailwind classes (`bg-primary`,
+  `text-secondary`, `bg-tertiary`, `text-tertiary-foreground`, etc.) so a
+  token edit in one place repaints every consumer, in both themes, with no
+  hunting through components. The brand SVGs/photo in `public/`
+  (`ieducare-logo-navy.svg`, `ieducare-logo-white.svg`, `form-bg.svg` = tan
+  doodle pattern, `auth-hero-illustration.svg` = footer illustration,
+  `img.png` = hero photo) are likewise referenced only through `<Logo />`
+  (`src/components/shared/logo.tsx`) and the auth feature components — reuse
+  those rather than re-importing the raw asset paths elsewhere.
+- **Motion**: `tw-animate-css` (already imported in `globals.css`) provides
+  `animate-in`/`animate-out` + `fade-in`/`slide-in-from-*`/`zoom-in-*` +
+  `delay-*`/`fill-mode-both` utilities — use these for entrance transitions
+  instead of hand-rolled `@keyframes`. Project-specific motion
+  (`animate-float-slow`, `animate-progress-indeterminate`, `animate-shimmer`)
+  is defined once via Tailwind v4 `@utility` blocks at the bottom of
+  `globals.css` — extend that set rather than inlining new `@keyframes` in a
+  component file.
 
 ## Commands
 

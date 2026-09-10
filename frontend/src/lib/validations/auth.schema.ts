@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.email("Enter a valid email address"),
+  username: z
+    .string()
+    .min(1, "Enter your username")
+    .max(64, "Username is too long"),
   password: z.string().min(1, "Enter your password"),
 });
 
