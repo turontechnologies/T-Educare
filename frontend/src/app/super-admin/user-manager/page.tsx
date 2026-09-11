@@ -42,6 +42,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { UserManagerDialog } from "@/components/features/user-manager/user-manager-dialog";
 import { cn } from "@/lib/utils";
+import { notifyPlatform, notifyUser } from "@/lib/notify";
 import { useUserManagersStore } from "@/store/user-managers.store";
 import type { UserManagerAccount } from "@/types/user-manager";
 
@@ -316,6 +317,11 @@ export default function UserManagerPage() {
                         onClick={() => {
                           restoreUserManager(account.id);
                           toast.success(`${account.username} restored`);
+                          notifyPlatform(
+                            "Account restored",
+                            `${account.username} was restored from the archive.`,
+                            "/super-admin/user-manager",
+                          );
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -395,6 +401,11 @@ export default function UserManagerPage() {
           if (!pendingArchive) return;
           archiveUserManager(pendingArchive.id);
           toast.success(`${pendingArchive.username} deleted`);
+          notifyPlatform(
+            "Account deleted",
+            `${pendingArchive.username} was archived.`,
+            "/super-admin/user-manager",
+          );
         }}
       />
 
@@ -411,11 +422,22 @@ export default function UserManagerPage() {
         variant={pendingStatus?.nextActive ? "default" : "destructive"}
         onConfirm={() => {
           if (!pendingStatus) return;
+          const verb = pendingStatus.nextActive ? "activated" : "deactivated";
           updateUserManager(pendingStatus.account.id, {
             status: pendingStatus.nextActive ? "active" : "inactive",
           });
-          toast.success(
-            `${pendingStatus.account.username} ${pendingStatus.nextActive ? "activated" : "deactivated"}`,
+          toast.success(`${pendingStatus.account.username} ${verb}`);
+          notifyPlatform(
+            `Account ${verb}`,
+            `${pendingStatus.account.username} was ${verb}.`,
+            "/super-admin/user-manager",
+          );
+          notifyUser(
+            pendingStatus.account.id,
+            `Your account was ${verb}`,
+            pendingStatus.nextActive
+              ? "Your account has regained access."
+              : "Your account has lost access until reactivated.",
           );
         }}
       />
@@ -431,6 +453,16 @@ export default function UserManagerPage() {
           const newPassword = resetPassword(pendingReset.id);
           toast.success(
             `New password for ${pendingReset.username}: ${newPassword}`,
+          );
+          notifyPlatform(
+            "Password reset",
+            `${pendingReset.username}'s password was reset.`,
+            "/super-admin/user-manager",
+          );
+          notifyUser(
+            pendingReset.id,
+            "Your password was reset",
+            "An administrator reset your password. Use the new password they shared with you to log in.",
           );
         }}
       />

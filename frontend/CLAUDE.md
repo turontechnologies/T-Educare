@@ -121,6 +121,23 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   logo) must be visible both to the super admin later and to that
   account/institution's own login session — `URL.createObjectURL` cannot
   do that, `readFileAsDataUrl` can and does (verified in development).
+- **In-app notifications are real and automated, not a static bell icon.**
+  `src/store/notifications.store.ts` holds them (`persist`-backed);
+  `src/lib/notify.ts` exports `notifyPlatform`/`notifyInstitution`/
+  `notifyUser` — thin one-line wrappers, called at the exact same place as
+  the existing `toast.success(...)` for every meaningful action
+  (institution create/update/activate/deactivate/delete/restore, modules
+  linked, license created/regenerated/revoked, a User Manager account
+  create/update/activate/deactivate/delete/restore, a password reset).
+  When adding a new mutating action anywhere, add its `notify*` call right
+  next to its `toast.success` — don't let the two drift apart. Scoping
+  (`platform` = every super admin; `institution` = that institution's own
+  admins; `user` = one specific account) is resolved by
+  `notificationsForUser()` in the same store file, shared by both the
+  header's `NotificationsBell` dropdown
+  (`src/components/features/notifications/`) and the full
+  `/super-admin/notifications` / `/dashboard/notifications` list pages —
+  never duplicate that filtering logic elsewhere.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind

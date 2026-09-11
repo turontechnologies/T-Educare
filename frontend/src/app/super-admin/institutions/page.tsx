@@ -43,6 +43,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { InstitutionDialog } from "@/components/features/institutions/institution-dialog";
 import { cn } from "@/lib/utils";
+import { notifyInstitution, notifyPlatform } from "@/lib/notify";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import type { Institution } from "@/types/institution";
 
@@ -344,6 +345,16 @@ export default function InstitutionsPage() {
                           onClick={() => {
                             restoreInstitution(institution.id);
                             toast.success(`${institution.name} restored`);
+                            notifyPlatform(
+                              "Institution restored",
+                              `${institution.name} was restored from the archive.`,
+                              "/super-admin/institutions",
+                            );
+                            notifyInstitution(
+                              institution.id,
+                              "Institution restored",
+                              "Your institution has been restored and is visible on the platform again.",
+                            );
                           }}
                           className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                         >
@@ -429,8 +440,19 @@ export default function InstitutionsPage() {
           updateInstitution(pendingStatus.institution.id, {
             status: pendingStatus.nextActive ? "active" : "inactive",
           });
-          toast.success(
-            `${pendingStatus.institution.name} ${pendingStatus.nextActive ? "activated" : "deactivated"}`,
+          const verb = pendingStatus.nextActive ? "activated" : "deactivated";
+          toast.success(`${pendingStatus.institution.name} ${verb}`);
+          notifyPlatform(
+            `Institution ${verb}`,
+            `${pendingStatus.institution.name} was ${verb}.`,
+            "/super-admin/institutions",
+          );
+          notifyInstitution(
+            pendingStatus.institution.id,
+            `Your institution was ${verb}`,
+            pendingStatus.nextActive
+              ? "Your institution has regained full access to the platform."
+              : "Your institution has lost access to the platform until reactivated.",
           );
         }}
       />
@@ -446,6 +468,16 @@ export default function InstitutionsPage() {
           if (!pendingArchive) return;
           archiveInstitution(pendingArchive.id);
           toast.success(`${pendingArchive.name} deleted`);
+          notifyPlatform(
+            "Institution deleted",
+            `${pendingArchive.name} was moved to the archive.`,
+            "/super-admin/institutions",
+          );
+          notifyInstitution(
+            pendingArchive.id,
+            "Your institution was deleted",
+            "Your institution was archived by the platform administrator.",
+          );
         }}
       />
     </div>

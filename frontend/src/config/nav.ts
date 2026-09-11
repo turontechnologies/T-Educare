@@ -188,6 +188,12 @@ export const INSTITUTION_NAV: NavItem[] = [
     icon: Megaphone,
   },
   {
+    key: "notifications",
+    label: "Notifications",
+    href: "/dashboard/notifications",
+    icon: Bell,
+  },
+  {
     key: "requests",
     label: "Requests",
     href: "/dashboard/requests",

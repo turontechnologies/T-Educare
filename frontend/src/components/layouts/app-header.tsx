@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import {
-  Bell,
   Building2,
   GraduationCap,
   LogOut,
@@ -21,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { NotificationsBell } from "@/components/features/notifications/notifications-bell";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
@@ -102,14 +102,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           <Search className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
         </div>
 
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Bell className="size-5" />
-          <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive" />
-        </button>
+        <NotificationsBell />
 
         <DropdownMenu>
           <DropdownMenuTrigger

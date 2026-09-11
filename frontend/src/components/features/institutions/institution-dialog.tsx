@@ -17,6 +17,7 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { readFileAsDataUrl } from "@/lib/files";
+import { notifyInstitution, notifyPlatform } from "@/lib/notify";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import type { Institution, LicenseType } from "@/types/institution";
 
@@ -154,8 +155,18 @@ function InstitutionForm({
         logoUrl: logoPreview,
       });
       toast.success(`${values.name} updated`);
+      notifyPlatform(
+        "Institution updated",
+        `${values.name}'s details were updated.`,
+        "/super-admin/institutions",
+      );
+      notifyInstitution(
+        institution.id,
+        "Your institution's details were updated",
+        "The platform administrator updated your institution's profile.",
+      );
     } else {
-      createInstitution({
+      const created = createInstitution({
         ...values,
         institutionType,
         countryState,
@@ -168,6 +179,11 @@ function InstitutionForm({
         status: "active",
       });
       toast.success(`${values.name} added`);
+      notifyPlatform(
+        "New institution added",
+        `${created.name} was added to the platform.`,
+        "/super-admin/institutions",
+      );
     }
     onDone();
   };

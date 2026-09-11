@@ -20,6 +20,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { readFileAsDataUrl } from "@/lib/files";
 import { generatePassword, generateUsername } from "@/lib/mock-generators";
+import { notifyInstitution, notifyPlatform, notifyUser } from "@/lib/notify";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { useUserManagersStore } from "@/store/user-managers.store";
 import type {
@@ -167,8 +168,18 @@ function UserManagerForm({
         avatarUrl: avatarPreview,
       });
       toast.success(`${values.firstName} ${values.lastName} updated`);
+      notifyPlatform(
+        "Account updated",
+        `${values.firstName} ${values.lastName}'s account was updated.`,
+        "/super-admin/user-manager",
+      );
+      notifyUser(
+        account.id,
+        "Your profile was updated",
+        "An administrator updated your account details.",
+      );
     } else {
-      createUserManager({
+      const created = createUserManager({
         ...values,
         gender,
         institutionName,
@@ -177,6 +188,21 @@ function UserManagerForm({
         status: "active",
       });
       toast.success(`${values.firstName} ${values.lastName} added`);
+      notifyPlatform(
+        "New account added",
+        `${created.firstName} ${created.lastName} was added as an admin for ${institutionName}.`,
+        "/super-admin/user-manager",
+      );
+      const assignedInstitution = institutions.find(
+        (i) => i.name === institutionName,
+      );
+      if (assignedInstitution) {
+        notifyInstitution(
+          assignedInstitution.id,
+          "A new admin was assigned",
+          `${created.firstName} ${created.lastName} was added as an admin for your institution.`,
+        );
+      }
     }
     onDone();
   };

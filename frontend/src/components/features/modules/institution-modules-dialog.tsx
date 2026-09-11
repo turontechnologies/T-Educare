@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { NotchedComboboxField } from "@/components/shared/notched-field";
 import { PLATFORM_MODULES } from "@/config/modules";
+import { notifyInstitution, notifyPlatform } from "@/lib/notify";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
 interface InstitutionModulesDialogProps {
@@ -141,6 +142,16 @@ function InstitutionModulesForm({
       status: "active",
     });
     toast.success(`${addedInstitution.name}'s modules saved`);
+    notifyPlatform(
+      "Modules updated",
+      `${addedInstitution.name} now has ${moduleKeys.size} module${moduleKeys.size === 1 ? "" : "s"} active.`,
+      "/super-admin/modules",
+    );
+    notifyInstitution(
+      addedInstitution.id,
+      "Your modules were updated",
+      `Your institution now has ${moduleKeys.size} module${moduleKeys.size === 1 ? "" : "s"} active.`,
+    );
     onDone();
   };
 

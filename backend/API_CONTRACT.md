@@ -797,12 +797,75 @@ sequenceDiagram
 
 ---
 
-## 10. What's mocked today, for reference
+## 10. Notifications
 
-Until the above exists, the frontend fakes all of it client-side with three
-hardcoded demo accounts (see `frontend/src/services/auth.service.ts`) and
-Zustand stores seeded with fixture data (`persist`-backed for anything a user
-edits — roles, users, institutions, user managers, sessions, designations;
-plain, unpersisted for read-only dashboard data — see `dashboard.store.ts`)
-— swap each store's actions for real calls to the routes above one domain
-at a time; nothing else in the UI needs to change.
+Real, automatically-generated in-app notifications — not a static bell
+icon. Every meaningful action elsewhere in this contract (institution
+created/updated/activated/deactivated/deleted/restored, modules linked,
+license created/regenerated/revoked, a User Manager account
+created/updated/activated/deactivated/deleted/restored, a password reset)
+creates one, at the same point that action's success response would be
+returned — see `frontend/src/lib/notify.ts` for the exact call sites,
+co-located with each action's existing success path today.
+
+```mermaid
+erDiagram
+    NOTIFICATION {
+        string id PK
+        string title
+        string message
+        string href "nullable — where clicking it navigates"
+        datetime createdAt
+        bool read
+        string scopeType "platform | institution | user"
+        string scopeInstitutionId "set only when scopeType = institution"
+        string scopeUserId "set only when scopeType = user"
+    }
+```
+
+### 10.1 Scoping — who sees which notification
+
+- `scopeType: "platform"` → every `super_admin`.
+- `scopeType: "institution"` → any admin account logged into that specific
+  institution (root admin or restricted-role staff alike) — e.g.
+  "Your institution was deactivated".
+- `scopeType: "user"` → only the one account it names — e.g.
+  "Your password was reset".
+
+A request for the notification feed is implicitly scoped server-side to
+the caller (their own `user` scope, plus their `institutionId`'s scope if
+they're an institution admin, plus every platform-scope row if they're a
+super admin) — the same multi-tenancy rule as everywhere else in this
+contract (§1): never let a client ask for another user's or another
+institution's notifications.
+
+### 10.2 List / read
+
+| Method | Path                          | Body | Notes |
+|--------|-------------------------------|------|-------|
+| GET    | `/notifications`             | —    | returns only what's in scope for the caller (10.1), newest first, capped/paginated |
+| GET    | `/notifications/unread-count` | —    | for the header bell's badge, so the frontend doesn't have to fetch and count the full list on every render |
+| PATCH  | `/notifications/:id/read`     | —    | marks one as read |
+| POST   | `/notifications/read-all`     | —    | marks every notification currently in scope for the caller as read |
+| DELETE | `/notifications/:id`          | —    | dismisses one — this is a personal housekeeping action (clearing your own feed), not a destructive admin action, so it's a real delete, not an archive; the confirm-before-destructive convention in §1 doesn't apply here |
+
+`frontend/src/store/notifications.store.ts`'s `notificationsForUser()` is
+the mocked equivalent of the server-side scoping above — move that
+filtering logic here once this endpoint exists rather than trusting the
+client to only ask for its own.
+
+---
+
+## 11. What's mocked today, for reference
+
+Until the above exists, the frontend fakes all of it client-side. Only
+`super_admin` is a hardcoded login (see 3 and
+`frontend/src/services/auth.service.ts`) — every `institution_admin` login
+authenticates against the real `UserManagerAccount` records instead, so
+there's no separate "demo account" list to keep in sync. Every domain is a
+Zustand store seeded with fixture data (`persist`-backed for anything a
+user edits — roles, users, institutions, user managers, sessions,
+designations, notifications; plain, unpersisted for read-only dashboard
+data — see `dashboard.store.ts`) — swap each store's actions for real
+calls to the routes above one domain at a time; nothing else in the UI
+needs to change.
