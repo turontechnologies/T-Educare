@@ -183,12 +183,17 @@ export function NotchedDateField({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           disabled={disabled}
-          className="flex h-11 w-full items-center justify-between rounded-md border border-secondary/40 bg-transparent px-3.5 text-base outline-none focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-11 w-full items-center justify-between gap-2 rounded-md border border-secondary/40 bg-transparent px-3.5 text-base outline-none focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span className={cn(!selectedDate && "text-muted-foreground")}>
-            {selectedDate ? format(selectedDate, "dd-MMMM-yyyy") : placeholder}
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              !selectedDate && "text-muted-foreground",
+            )}
+          >
+            {selectedDate ? format(selectedDate, "dd MMM yyyy") : placeholder}
           </span>
-          <CalendarIcon className="size-4 text-muted-foreground" />
+          <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar

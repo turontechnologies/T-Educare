@@ -680,19 +680,32 @@ flowchart LR
 
 ## 7. Academic Sessions & Semesters — institution admin
 
-| Method | Path                        | Body                                                        |
-|--------|-----------------------------|---------------------------------------------------------------|
-| GET    | `/academic-sessions`        | —                                                              |
-| POST   | `/academic-sessions`        | `{ session, from, to }`                                        |
-| DELETE | `/academic-sessions/:id`    | —                                                              |
-| GET    | `/academic-semesters`       | —                                                              |
-| POST   | `/academic-semesters`       | `{ sessionId, name, description, from, to }`                    |
-| DELETE | `/academic-semesters/:id`   | —                                                              |
+Results are implicitly scoped to the caller's own `institutionId` — same
+multi-tenancy rule as everywhere else in this contract (§1). Built on the
+same locked admin-table pattern as every other list in this contract (§1):
+a single kebab action menu (Edit → separator → destructive Delete), a
+confirm prompt before deleting, and "delete" always meaning archive
+(soft-delete, restorable) — never a hard delete.
 
-`from`/`to` are plain `dd-mm-yyyy` strings in the current frontend mock —
-either keep that (simplest, matches existing UI verbatim) or switch to ISO
-dates and update `frontend/src/store/academics.store.ts` + the two forms in
-`frontend/src/app/dashboard/academics/sessions/page.tsx` together.
+| Method | Path                              | Body                                    | Notes |
+|--------|-----------------------------------|------------------------------------------|-------|
+| GET    | `/academic-sessions`              | —                                        | supports `?includeArchived=true` (default `false`) |
+| POST   | `/academic-sessions`               | `{ session, from, to }`                  | `session` e.g. `"2024/2025"`; `from`/`to` are ISO dates |
+| PATCH  | `/academic-sessions/:id`          | any subset of the fields above           | for editing |
+| POST   | `/academic-sessions/:id/archive`  | —                                        | sets `archivedAt = now` |
+| POST   | `/academic-sessions/:id/restore`  | —                                        | sets `archivedAt = null` |
+| GET    | `/academic-semesters`              | —                                        | supports `?includeArchived=true` |
+| POST   | `/academic-semesters`             | `{ sessionId, name, description, from, to }` | `sessionId` FK to an `academic-sessions` record — reject if it belongs to a different institution or doesn't exist |
+| PATCH  | `/academic-semesters/:id`         | any subset of the fields above           | for editing |
+| POST   | `/academic-semesters/:id/archive` | —                                        | sets `archivedAt = now` |
+| POST   | `/academic-semesters/:id/restore` | —                                        | sets `archivedAt = null` |
+
+`id` and `createdAt` are standard server-generated fields on both
+resources. `frontend/src/store/academics.store.ts` is the mocked
+equivalent — note that a semester references its session by `sessionId`
+(a real FK), not a denormalized name string, unlike the looser
+`institutionName` convention used for `UserManagerAccount` (§4.5) — prefer
+this stricter pattern for any new relationship going forward.
 
 ## 8. Staff Designations — institution admin
 
