@@ -1,5 +1,5 @@
 export type InstitutionStatus = "active" | "inactive";
-export type LicenseType = "Freemium" | "Premium";
+export type LicenseType = "Basic" | "Standard" | "Premium";
 
 export interface Institution {
   id: string;
@@ -26,9 +26,14 @@ export interface Institution {
   studentCount: number;
   revenue: number;
   licenseType: LicenseType;
-  /** ISO date, or null for a Freemium institution with no expiry. */
+  /** ISO date, or null for a Basic (free-tier) institution with no expiry. */
   expiringAt: string | null;
+  /** General institution access token, shown read-only on `/super-admin/license-manager`'s Token column — distinct from `licenseKey` below. */
   tokenKey: string;
+  /** This institution's license record's own key, set via `/super-admin/license-manager` — distinct from `tokenKey`. Null until a license record is created. */
+  licenseKey: string | null;
+  /** ISO timestamp the license record was first created — immutable, doesn't change on later edits (the "Date Created" column on `/super-admin/license-manager`). Null until created. */
+  licenseIssuedAt: string | null;
   status: InstitutionStatus;
   createdAt: string;
   /** Soft-delete — archived institutions are hidden from the main list but never destroyed. ISO timestamp, or null if active. */

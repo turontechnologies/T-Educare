@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  NotchedComboboxField,
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
@@ -159,7 +160,7 @@ function InstitutionForm({
         modulesCount: 0,
         studentCount: 0,
         revenue: 0,
-        licenseType: "Freemium" as LicenseType,
+        licenseType: "Basic" as LicenseType,
         expiringAt: null,
         status: "active",
       });
@@ -256,7 +257,7 @@ function InstitutionForm({
           {...register("principalName", { required: true })}
         />
 
-        <NotchedSelectField
+        <NotchedComboboxField
           label="Country/State"
           labelClassName="bg-popover"
           value={countryState}
@@ -266,6 +267,8 @@ function InstitutionForm({
             value: state,
           }))}
           placeholder="Select country/state"
+          searchPlaceholder="Search states…"
+          emptyText="No state found."
         />
 
         <NotchedField

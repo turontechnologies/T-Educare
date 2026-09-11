@@ -1,21 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { PLATFORM_MODULES } from "@/config/modules";
+import { generateKey } from "@/lib/mock-generators";
 import type { Institution } from "@/types/institution";
 
 function makeId() {
   return `inst-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function makeTokenKey() {
-  return Array.from({ length: 4 }, () =>
-    Math.random().toString(36).slice(2, 6).toUpperCase(),
-  ).join("-");
-}
-
 const BASE_SEEDED_INSTITUTIONS: Omit<
   Institution,
-  "moduleKeys" | "modulesLastEditedAt"
+  "moduleKeys" | "modulesLastEditedAt" | "licenseKey" | "licenseIssuedAt"
 >[] = [
   {
     id: "inst-xyz-college",
@@ -33,7 +28,7 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     modulesCount: 10,
     studentCount: 90,
     revenue: 120000,
-    licenseType: "Freemium",
+    licenseType: "Basic",
     expiringAt: null,
     tokenKey: "TK4F-8H2K-9P1Q-XZ3M",
     status: "active",
@@ -101,9 +96,9 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     adminEmail: "james.akpo@universityofla.edu.ng",
     modulesCount: 4,
     studentCount: 30,
-    revenue: 0,
-    licenseType: "Freemium",
-    expiringAt: null,
+    revenue: 32000,
+    licenseType: "Standard",
+    expiringAt: "2027-03-04T00:00:00.000Z",
     tokenKey: "0V6U-E6JB-PL25-D1ZC",
     status: "active",
     createdAt: "2026-03-03T07:00:00.000Z",
@@ -171,7 +166,7 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     modulesCount: 7,
     studentCount: 81,
     revenue: 0,
-    licenseType: "Freemium",
+    licenseType: "Basic",
     expiringAt: null,
     tokenKey: "7KK5-FELA-DZJW-NKB3",
     status: "active",
@@ -240,7 +235,7 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     modulesCount: 10,
     studentCount: 132,
     revenue: 0,
-    licenseType: "Freemium",
+    licenseType: "Basic",
     expiringAt: null,
     tokenKey: "E9YH-GNP9-2C0L-X4NU",
     status: "active",
@@ -309,7 +304,7 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     modulesCount: 4,
     studentCount: 183,
     revenue: 0,
-    licenseType: "Freemium",
+    licenseType: "Basic",
     expiringAt: null,
     tokenKey: "MZBV-JXR7-SQFB-6PZK",
     status: "active",
@@ -378,7 +373,7 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     modulesCount: 7,
     studentCount: 234,
     revenue: 0,
-    licenseType: "Freemium",
+    licenseType: "Basic",
     expiringAt: null,
     tokenKey: "UPQ7-K5U6-G3X1-G7BB",
     status: "active",
@@ -447,7 +442,7 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     modulesCount: 10,
     studentCount: 285,
     revenue: 0,
-    licenseType: "Freemium",
+    licenseType: "Basic",
     expiringAt: null,
     tokenKey: "1D3J-MDW4-5GDS-RSN2",
     status: "active",
@@ -516,7 +511,7 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     modulesCount: 4,
     studentCount: 336,
     revenue: 0,
-    licenseType: "Freemium",
+    licenseType: "Basic",
     expiringAt: null,
     tokenKey: "83GW-NNY3-VVVH-0A0T",
     status: "active",
@@ -585,7 +580,7 @@ const BASE_SEEDED_INSTITUTIONS: Omit<
     modulesCount: 7,
     studentCount: 387,
     revenue: 0,
-    licenseType: "Freemium",
+    licenseType: "Basic",
     expiringAt: null,
     tokenKey: "FTV8-PW12-J8A7-9VBK",
     status: "active",
@@ -779,10 +774,39 @@ const MODULE_LINK_OVERRIDES: Record<
   },
 };
 
+/**
+ * Institutions "issued a license record" via `/super-admin/license-manager`
+ * — every other seeded institution starts with `licenseKey: null` and is
+ * absent from that table until a super admin creates one there, same
+ * pattern as `MODULE_LINK_OVERRIDES` above. This only sets `licenseKey`/
+ * `licenseIssuedAt`; the institution's existing `licenseType`/`tokenKey`/
+ * `expiringAt` (already seeded on every institution below, License Manager
+ * or not) pass through unchanged — License Manager edits those in place
+ * rather than duplicating them.
+ */
+const LICENSE_LINK_OVERRIDES: Record<
+  string,
+  { licenseKey: string; licenseIssuedAt: string }
+> = {
+  "inst-babcock": {
+    licenseKey: "BCO17-23671-23777-899C0",
+    licenseIssuedAt: "2026-03-05T10:00:00.000Z",
+  },
+  "inst-madonnauniversity-24": {
+    licenseKey: "MDN18-74261-24556-8777E7",
+    licenseIssuedAt: "2026-03-06T09:30:00.000Z",
+  },
+  "inst-xyz-college": {
+    licenseKey: "XYZ06-4500-56009-588T9",
+    licenseIssuedAt: "2026-03-07T09:00:00.000Z",
+  },
+};
+
 const SEEDED_INSTITUTIONS: Institution[] = BASE_SEEDED_INSTITUTIONS.map(
   (institution) => {
     const override = MODULE_LINK_OVERRIDES[institution.id];
     const moduleKeys = override?.moduleKeys ?? [];
+    const licenseOverride = LICENSE_LINK_OVERRIDES[institution.id];
     return {
       ...institution,
       moduleKeys,
@@ -792,6 +816,8 @@ const SEEDED_INSTITUTIONS: Institution[] = BASE_SEEDED_INSTITUTIONS.map(
       // no override is simply unlinked, so it's 0, not whatever arbitrary
       // count the pre-Modules-feature mock data happened to have.
       modulesCount: moduleKeys.length,
+      licenseKey: licenseOverride?.licenseKey ?? null,
+      licenseIssuedAt: licenseOverride?.licenseIssuedAt ?? null,
     };
   },
 );
@@ -808,6 +834,8 @@ interface InstitutionsState {
       | "archivedAt"
       | "moduleKeys"
       | "modulesLastEditedAt"
+      | "licenseKey"
+      | "licenseIssuedAt"
     >,
   ) => Institution;
   updateInstitution: (id: string, patch: Partial<Institution>) => void;
@@ -826,11 +854,13 @@ export const useInstitutionsStore = create<InstitutionsState>()(
           ...institution,
           id: makeId(),
           code: nextCode,
-          tokenKey: makeTokenKey(),
+          tokenKey: generateKey(),
           createdAt: new Date().toISOString(),
           archivedAt: null,
           moduleKeys: [],
           modulesLastEditedAt: null,
+          licenseKey: null,
+          licenseIssuedAt: null,
         };
         set((state) => ({
           institutions: [newInstitution, ...state.institutions],
@@ -868,7 +898,7 @@ export const useInstitutionsStore = create<InstitutionsState>()(
     }),
     {
       name: "t-educare-institutions",
-      version: 5,
+      version: 7,
       // No real migration path — this is mock data standing in for a real
       // API (see frontend/CLAUDE.md), so a version bump just means "discard
       // whatever shape was cached and reseed" rather than transform it field

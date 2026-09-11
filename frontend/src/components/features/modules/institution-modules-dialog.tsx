@@ -11,7 +11,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { NotchedSelectField } from "@/components/shared/notched-field";
+import { NotchedComboboxField } from "@/components/shared/notched-field";
 import { PLATFORM_MODULES } from "@/config/modules";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
@@ -157,7 +157,7 @@ function InstitutionModulesForm({
           <>
             <div className="flex items-end gap-3">
               <div className="flex-1">
-                <NotchedSelectField
+                <NotchedComboboxField
                   label="Select an Institution"
                   labelClassName="bg-popover"
                   value={selectedId}
@@ -171,6 +171,8 @@ function InstitutionModulesForm({
                       ? "No institutions left to link"
                       : "Select institution"
                   }
+                  searchPlaceholder="Search institutions…"
+                  emptyText="No institution found."
                 />
               </div>
               <Button

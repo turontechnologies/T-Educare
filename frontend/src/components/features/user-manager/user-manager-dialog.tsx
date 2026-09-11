@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
+  NotchedComboboxField,
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
@@ -309,7 +310,7 @@ function UserManagerForm({
             </button>
           </div>
 
-          <NotchedSelectField
+          <NotchedComboboxField
             label="Assign to University"
             labelClassName="bg-popover"
             value={institutionName}
@@ -319,6 +320,8 @@ function UserManagerForm({
               value: institution.name,
             }))}
             placeholder="Select institution"
+            searchPlaceholder="Search institutions…"
+            emptyText="No institution found."
           />
 
           <div className="flex items-center gap-2.5">

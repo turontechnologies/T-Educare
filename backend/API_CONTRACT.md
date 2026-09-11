@@ -87,13 +87,29 @@ need to work against this API once it exists:
   Never accept a client-supplied `institutionId` on these routes; a request
   from institution A must be structurally incapable of reading or writing
   institution B's data, regardless of what a client sends.
-- **Every admin table follows the same Edit / Activate-Deactivate / Delete
-  pattern**, deliberately kept identical across resources (institutions,
-  user managers, and any future admin list): a single actions menu per row,
-  a confirmation prompt before every activate/deactivate/delete, and delete
-  always meaning archive (soft-delete, restorable) — never a hard delete.
-  This is a frontend/UX convention, not a per-resource quirk, so treat any
-  new admin-facing list the same way rather than inventing a new pattern.
+- **Every admin table follows the same Edit / [resource-specific action] /
+  Delete pattern**, deliberately kept identical across resources —
+  institutions (Edit / Activate-Deactivate / Delete), user managers (Edit /
+  Reset password / Delete), license records (Edit / Regenerate key /
+  Revoke), and any future admin list: a single actions menu per row, a
+  confirmation prompt before every state-changing action, and "delete"
+  meaning either archive (institutions, user managers — soft-delete,
+  restorable, never a hard delete) or a reset-to-default (license records —
+  see 4.7.2, since nothing is actually being deleted there). This is a
+  frontend/UX convention, not a per-resource quirk, so treat any new
+  admin-facing list the same way rather than inventing a new pattern.
+- **Every select/dropdown in the frontend renders through one of two shared
+  components** (`frontend/src/components/shared/notched-field.tsx`) rather
+  than a bare `<select>`: `NotchedSelectField` for short, fixed option
+  lists (gender, license type), `NotchedComboboxField` — a searchable
+  combobox — for anything with "a lot of information" to scroll through
+  (institutions, states/countries). A date field goes through
+  `NotchedDateField` (a real calendar popup, not a native
+  `<input type="date">`). This doesn't change anything about this API
+  contract, but if you're the one eventually building the admin UI against
+  it, don't reintroduce native form controls for these — reuse the shared
+  components so every dropdown/date-picker in the app stays visually and
+  behaviorally consistent.
 
 ---
 
@@ -128,9 +144,11 @@ erDiagram
         int modulesCount "always derived: moduleKeys.length — 0 for an unlinked institution, never a separate stored number"
         int studentCount
         int revenue
-        string licenseType "Freemium | Premium"
-        datetime expiringAt "nullable — null for Freemium"
-        string tokenKey "institution's API/license token"
+        string licenseType "Basic | Standard | Premium"
+        datetime expiringAt "nullable — null only for Basic (the free tier); Standard/Premium always have one, see 4.7"
+        string tokenKey "institution's general API/access token — distinct from licenseKey, see 4.7"
+        string licenseKey "nullable — this institution's license record's own key, set via /super-admin/license-manager, see 4.7"
+        datetime licenseIssuedAt "nullable — immutable once set, the license record's original creation date, see 4.7"
         string status "active | inactive — toggled by activate/deactivate, never by archiving"
         datetime createdAt
         datetime archivedAt "nullable — soft-delete, see 4.4"
@@ -297,7 +315,7 @@ All routes below require `role: "super_admin"` → otherwise `403`.
 | Method | Path                    | Body                                          | Notes |
 |--------|-------------------------|------------------------------------------------|-------|
 | GET    | `/institutions`         | —                                              | list, supports pagination + `?search=` (matches name or adminUser) + `?includeArchived=true` (default `false` — see 4.4) |
-| POST   | `/institutions`         | see 4.2                                        | `modulesCount`/`studentCount`/`revenue` default `0`, `licenseType` defaults `"Freemium"`, `expiringAt` defaults `null`, `status` defaults `"active"` |
+| POST   | `/institutions`         | see 4.2                                        | `modulesCount`/`studentCount`/`revenue` default `0`, `licenseType` defaults `"Basic"`, `expiringAt`/`licenseKey`/`licenseIssuedAt` default `null`, `status` defaults `"active"` |
 | PATCH  | `/institutions/:id`     | any subset of `Institution` fields             | for editing; also accepts `{ status }` alone but prefer 4.3 for that so the intent (and audit trail) is explicit |
 
 `Institution` response shape — see the ER diagram above.
@@ -305,10 +323,10 @@ All routes below require `role: "super_admin"` → otherwise `403`.
 ### 4.2 Creating an institution — form fields
 
 The "Add New Institution" form collects everything **except** `modulesCount`
-and `licenseType` — those are configured afterwards via the Modules and
-License Manager screens (still placeholders on the frontend today), so a
-freshly created institution always starts at `modulesCount: 0`,
-`licenseType: "Freemium"`, `expiringAt: null`.
+and `licenseType` — those are configured afterwards via the Modules (4.6)
+and License Manager (4.7) screens, so a freshly created institution always
+starts unlinked/unlicensed: `modulesCount: 0`, `licenseType: "Basic"`,
+`expiringAt`/`licenseKey`/`licenseIssuedAt`: `null`.
 
 ```json
 // POST /institutions request body
@@ -561,6 +579,64 @@ server-side to the caller's own institution per the multi-tenancy rule in
 §1). Just make sure `moduleKeys` is included in whatever the institution
 admin's own session/profile calls return — it's load-bearing for their nav,
 not only for the super admin's Modules screen.
+
+### 4.7 License Manager — issuing an institution's license record
+
+Also extends `Institution` rather than introducing a new resource — see
+`licenseType`, `expiringAt` (both already used by 4.1-4.3), plus the two
+new fields in the ER diagram above: `licenseKey` and `licenseIssuedAt`.
+`tokenKey` is a different field entirely (the institution's general API
+token, set at creation in 4.2) — the License Manager screen shows it
+read-only for reference but never edits it.
+
+#### 4.7.1 List / create / edit
+
+The License Manager table only lists institutions with a license record
+already issued — i.e. `GET /institutions` filtered client-side (today) by
+`licenseKey != null`; no separate list endpoint needed for the table
+itself.
+
+```
+PATCH /institutions/:id/license
+{
+  "licenseType": "Premium",           // "Basic" | "Standard" | "Premium"
+  "expiringAt": "2027-06-30T00:00:00.000Z",  // required unless licenseType is "Basic"
+  "licenseKey": "BCO17-23671-23777-899C0"
+}
+→ 200, sets licenseType/expiringAt/licenseKey, and licenseIssuedAt = now
+  only if this institution never had one before (immutable afterwards)
+```
+
+`licenseType: "Basic"` forces `expiringAt` to `null` server-side regardless
+of what's sent — Basic is the free tier and never expires. Reject the
+request (`422`) if a non-Basic type is submitted with no `expiringAt`.
+
+Same "which institutions populate the create dropdown" concern as Modules
+(4.6.2):
+
+```
+GET /institutions?unlicensedOnly=true
+```
+
+Must return only institutions with `licenseKey == null` — the ones with a
+record already are edited by clicking their name in the table, which loads
+via `GET /institutions/:id` instead, not this endpoint.
+
+#### 4.7.2 Regenerate key / revoke license
+
+```
+POST /institutions/:id/regenerate-license-key   → 200, { "licenseKey": "<new key>" }
+POST /institutions/:id/revoke-license            → 200, sets licenseType = "Basic",
+                                                    licenseKey = null, expiringAt = null,
+                                                    licenseIssuedAt = null
+```
+
+Both are confirmed with the user first on the frontend ("Are you sure you
+want to regenerate/revoke..."), same convention as every other
+activate/deactivate/delete action in this contract (§1). Revoking does
+**not** archive or delete the institution — it only resets these license
+fields back to their unlicensed defaults; the institution stays fully
+intact and can get a new license record anytime via 4.7.1.
 
 ---
 
