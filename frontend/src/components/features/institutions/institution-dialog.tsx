@@ -16,6 +16,7 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import { readFileAsDataUrl } from "@/lib/files";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import type { Institution, LicenseType } from "@/types/institution";
 
@@ -132,9 +133,11 @@ function InstitutionForm({
     },
   });
 
-  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
-    if (file) setLogoPreview(URL.createObjectURL(file));
+    if (file) setLogoPreview(await readFileAsDataUrl(file));
   };
 
   const onSubmit = (values: InstitutionFormValues) => {

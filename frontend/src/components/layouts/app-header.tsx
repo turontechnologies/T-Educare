@@ -1,9 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Bell, GraduationCap, LogOut, Menu, Search, User } from "lucide-react";
+import {
+  Bell,
+  Building2,
+  GraduationCap,
+  LogOut,
+  Menu,
+  Search,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/auth.store";
+import { useInstitutionsStore } from "@/store/institutions.store";
 
 interface AppHeaderProps {
   onMenuClick: () => void;
@@ -23,6 +32,12 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const institutions = useInstitutionsStore((state) => state.institutions);
+
+  const institution =
+    user?.role === "institution_admin"
+      ? institutions.find((i) => i.id === user.institutionId)
+      : undefined;
 
   const initials = user
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
@@ -49,12 +64,31 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         </Button>
 
         <div className="hidden min-w-0 items-center gap-2 text-sm font-medium text-foreground sm:flex">
-          <GraduationCap className="size-5 shrink-0 text-primary" />
+          {institution ? (
+            <Avatar className="size-8 shrink-0 rounded-md" size="sm">
+              <AvatarImage
+                src={institution.logoUrl}
+                alt={institution.name}
+                className="rounded-md object-cover"
+              />
+              <AvatarFallback className="rounded-md bg-muted">
+                <Building2 className="size-4 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <GraduationCap className="size-5 shrink-0 text-primary" />
+          )}
           <span className="truncate">
             Welcome,{" "}
             <span className="font-semibold">
               {user ? `${user.firstName} ${user.lastName}` : "Guest"}
             </span>
+            {institution && (
+              <span className="text-muted-foreground">
+                {" "}
+                · {institution.name}
+              </span>
+            )}
           </span>
         </div>
       </div>
@@ -82,13 +116,25 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
             render={<button type="button" aria-label="Account menu" />}
           >
             <Avatar className="shrink-0 transition-transform duration-200 hover:scale-105">
+              <AvatarImage
+                src={user?.avatarUrl}
+                alt={user ? `${user.firstName} ${user.lastName}` : "Account"}
+              />
               <AvatarFallback className="bg-tertiary font-semibold text-tertiary-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
+            <DropdownMenuItem
+              onClick={() =>
+                router.push(
+                  user?.role === "super_admin"
+                    ? "/super-admin/profile"
+                    : "/dashboard/profile",
+                )
+              }
+            >
               <User className="size-4" />
               Profile
             </DropdownMenuItem>

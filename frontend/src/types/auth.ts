@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   lastName: string;
   email: string;
   role: UserRole;
+  phone?: string;
   avatarUrl?: string;
   institutionName?: string;
   /** institution_admin only — links to the real record in `useInstitutionsStore`, whose `moduleKeys` cap which menu items this user's institution can access at all (see `filterNavByModules`). */

@@ -18,6 +18,7 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { Switch } from "@/components/ui/switch";
+import { readFileAsDataUrl } from "@/lib/files";
 import { generatePassword, generateUsername } from "@/lib/mock-generators";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { useUserManagersStore } from "@/store/user-managers.store";
@@ -130,9 +131,11 @@ function UserManagerForm({
       },
     });
 
-  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
-    if (file) setAvatarPreview(URL.createObjectURL(file));
+    if (file) setAvatarPreview(await readFileAsDataUrl(file));
   };
 
   const handleGenerateUsername = () => {

@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/axios";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { ROOT_ADMIN_ROLE_ID, useRbacStore } from "@/store/rbac.store";
+import { useSuperAdminProfileStore } from "@/store/super-admin-profile.store";
 import { useUserManagersStore } from "@/store/user-managers.store";
 import type {
   AuthenticatedUser,
@@ -12,38 +13,41 @@ import type {
  * backend/ has no `/auth/login` yet (see backend/README.md) — this stands in
  * so the login → dashboard flow can be built and exercised end-to-end.
  *
- * - `super_admin` is the only hardcoded account — there's no "manage super
- *   admins" screen, it's the platform owner, singular.
+ * - `super_admin` is the only fixed *username* — there's no "manage super
+ *   admins" screen, it's the platform owner, singular — but everything else
+ *   about that account (name, email, phone, avatar, password) is resolved
+ *   *live* from `useSuperAdminProfileStore`, so editing it on
+ *   `/super-admin/profile` changes what works at `/login` immediately.
  * - Every `institution_admin` login authenticates against the real
  *   `useUserManagersStore` records — the exact accounts shown on
  *   `/super-admin/user-manager`, including "Turon_Admin"/"Amara_Bello". So
  *   creating, editing, resetting the password of, or deactivating an
- *   account there changes what works at `/login` immediately, the same way
- *   it would against a real backend. Its Role is then resolved *live* from
- *   `useRbacStore` by matching email — no match (an account nobody has
- *   assigned a restricted Role to) falls back to unrestricted, since a
- *   provisioned admin account defaults to full access until told otherwise.
+ *   account there (or the account editing itself via
+ *   `/dashboard/profile`) changes what works at `/login` immediately, the
+ *   same way it would against a real backend. Its Role is then resolved
+ *   *live* from `useRbacStore` by matching email — no match (an account
+ *   nobody has assigned a restricted Role to) falls back to unrestricted,
+ *   since a provisioned admin account defaults to full access until told
+ *   otherwise.
  */
-const SUPER_ADMIN_ACCOUNT: { password: string; user: AuthenticatedUser } = {
-  password: "Super@2024",
-  user: {
-    id: "demo-super-admin",
-    firstName: "Ada",
-    lastName: "Okoye",
-    email: "ada.okoye@turontech.com",
-    role: "super_admin",
-  },
-};
-
 export const authService = {
   async login(payload: LoginRequest): Promise<LoginResponse> {
     const usernameKey = payload.username.trim().toLowerCase();
 
-    if (
-      usernameKey === "super_admin" &&
-      payload.password === SUPER_ADMIN_ACCOUNT.password
-    ) {
-      const user = SUPER_ADMIN_ACCOUNT.user;
+    if (usernameKey === "super_admin") {
+      const { profile } = useSuperAdminProfileStore.getState();
+      if (payload.password !== profile.password) {
+        throw new Error("Invalid username or password.");
+      }
+      const user: AuthenticatedUser = {
+        id: "demo-super-admin",
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        phone: profile.phone,
+        avatarUrl: profile.avatarUrl,
+        role: "super_admin",
+      };
       return { user, token: `demo-session-token-${user.id}` };
     }
 
@@ -82,6 +86,8 @@ export const authService = {
         firstName: account.firstName,
         lastName: account.lastName,
         email: account.email,
+        phone: account.phone,
+        avatarUrl: account.avatarUrl,
         role: "institution_admin",
         institutionId: institution.id,
         institutionName: institution.name,

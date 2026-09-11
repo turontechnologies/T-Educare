@@ -110,6 +110,17 @@ justify-between gap-4` — not `flex-row`, which doesn't override
     `label`/`labelClassName`/`disabled`) so swapping between them at a call
     site is a one-line change. Add new instances of "select with lots of
     options" or "pick a date" through these, not a new one-off.
+- **Every uploaded image (logo, avatar) goes through
+  `readFileAsDataUrl()`** (`src/lib/files.ts`), never
+  `URL.createObjectURL()`. A blob URL only resolves in the browser tab that
+  created it — it silently breaks the moment a `persist`-backed store
+  writes it to `localStorage` and a _different_ tab or login session reads
+  it back (or even the same tab after a reload). A data: URL is a plain
+  string, so it survives that round trip. This matters concretely: a super
+  admin uploading a User Manager account's avatar (or an institution's
+  logo) must be visible both to the super admin later and to that
+  account/institution's own login session — `URL.createObjectURL` cannot
+  do that, `readFileAsDataUrl` can and does (verified in development).
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
