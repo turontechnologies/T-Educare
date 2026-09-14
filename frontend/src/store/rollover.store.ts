@@ -36,7 +36,12 @@ export const useRolloverStore = create<RolloverState>()(
       createDraft: (fromSessionId, toSessionId) => {
         const students = useStudentsStore
           .getState()
-          .students.filter((s) => s.currentSessionId === fromSessionId);
+          .students.filter(
+            (s) =>
+              s.currentSessionId === fromSessionId &&
+              !s.archivedAt &&
+              s.status === "active",
+          );
         const entries = students.map(computeRolloverEntry);
 
         const draft: RolloverRecord = {

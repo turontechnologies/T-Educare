@@ -35,6 +35,12 @@ const SEEDED_DESIGNATIONS: StaffDesignation[] = [
   },
   {
     id: makeId(),
+    name: "Vice Chancellor",
+    description: "Vice Chancellor",
+    category: "Academic Staff",
+  },
+  {
+    id: makeId(),
     name: "Bursar",
     description: "Bursar",
     category: "Non-Academic Staff",
@@ -71,7 +77,7 @@ export const useStaffStore = create<StaffState>()(
     }),
     {
       name: "t-educare-staff",
-      version: 1,
+      version: 2,
       // Discard-and-reseed on a shape change — see the identical note in
       // institutions.store.ts.
       migrate: () => ({ designations: SEEDED_DESIGNATIONS }),

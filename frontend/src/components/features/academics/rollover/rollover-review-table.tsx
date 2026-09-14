@@ -16,6 +16,7 @@ import {
   ROLLOVER_DECISION_BADGE_CLASS,
   ROLLOVER_DECISION_LABELS,
 } from "@/lib/rollover";
+import { fullName } from "@/lib/students";
 import { RolloverOverrideDialog } from "./rollover-override-dialog";
 import type { RolloverDecision, RolloverStudentEntry } from "@/types/rollover";
 import type { Student } from "@/types/student";
@@ -118,9 +119,11 @@ export function RolloverReviewTable({
                   className="animate-in fade-in duration-300"
                 >
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {student.studentId}
+                    {student.matricNo}
                   </TableCell>
-                  <TableCell className="font-medium">{student.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {fullName(student)}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {student.programme}
                   </TableCell>
@@ -173,7 +176,7 @@ export function RolloverReviewTable({
                     <TableCell className="text-right">
                       <button
                         type="button"
-                        aria-label={`Override decision for ${student.name}`}
+                        aria-label={`Override decision for ${fullName(student)}`}
                         onClick={() => setOverrideTarget(entry)}
                         className="inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -204,7 +207,10 @@ export function RolloverReviewTable({
           onOpenChange={(open) => !open && setOverrideTarget(null)}
           studentName={
             overrideTarget
-              ? (studentById.get(overrideTarget.studentId)?.name ?? "")
+              ? (() => {
+                  const target = studentById.get(overrideTarget.studentId);
+                  return target ? fullName(target) : "";
+                })()
               : ""
           }
           currentDecision={overrideTarget?.decision ?? "promote"}

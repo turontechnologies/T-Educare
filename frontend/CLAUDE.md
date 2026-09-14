@@ -172,6 +172,62 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   the underlying `SessionTable`'s own pagination "Next" button is a second,
   usually-disabled match for a bare `button:has-text("Next")` and Playwright
   will silently grab it instead of the wizard's.
+- **Student Management (`/dashboard/students`) shares its data model with
+  Session Rollover, on purpose.** `src/store/students.store.ts` is the one
+  store behind both the admin-table CRUD page and the rollover engine — a
+  student created/edited there is the exact same `Student` record
+  `computeRolloverEntry` later evaluates, so there is no separate "roster"
+  to keep in sync. A student's display name is **always** assembled via
+  `fullName()` (`src/lib/students.ts`) from `firstName`/`middleName`/
+  `lastName` — never string-concatenated ad hoc — and their display code is
+  `matricNo` (e.g. `"UL-10044"`), not a field literally named `studentId`
+  (that name is used elsewhere for a _different_ thing —
+  `RolloverStudentEntry.studentId` is the student's internal `id`, not this
+  display code; don't conflate the two). `Student` also carries a full set
+  of enrollment/bio-data fields (title, gender, marital status, religion,
+  blood group, genotype, weight/height, nationality, state of origin, LGA,
+  resident address, emergency contact) and a real `schoolId` FK to
+  `School.id` (`src/store/schools.store.ts`) — the stricter FK pattern
+  noted elsewhere in this file, not a denormalized school-name string. The
+  table follows the standard admin-table pattern (§ above), extended with
+  a checkbox column driving a "N selected → Delete Selected" bulk-archive
+  bar, and real (not fake) Import Users/Export Users buttons — Export
+  streams every non-archived student to a downloaded CSV via a transient
+  `URL.createObjectURL` (fine for a one-shot download trigger; this is not
+  the persisted-image case `readFileAsDataUrl` exists for), Import parses
+  a CSV back into `createStudent` calls, skipping duplicate `matricNo`s and
+  rows missing a required column. One addition worth noting on
+  `createStudent` itself: it seeds a brand-new student's `academicHistory`
+  with a single `status: "current"` record for their
+  `currentSessionId`/`currentLevel` — a fresh enrollment is in-progress,
+  not a completed one, so it must not be seeded as `"completed"` the way
+  the rollover-testing seed data is. `archiveStudent`/`restoreStudent`
+  follow the usual soft-delete convention, and `rollover.store.ts`'s
+  `createDraft` filters out both archived AND `status: "inactive"`
+  students — an inactive/withdrawn student is excluded from a rollover
+  draft the same way an archived one is.
+- **School Management (`/dashboard/academics/schools`) is a small,
+  standalone admin table** — `School` (`src/types/school.ts`,
+  `src/store/schools.store.ts`) is just `name`/`headName`/`designation`,
+  following the standard admin-table pattern. Two fields that look like
+  free text in an early draft are actually real selects, once the
+  literal reference screenshot made it clear (the chevron-pair icon on
+  each — `ChevronsUpDown`, the combobox affordance, not a plain
+  single-chevron select): **Designation** is a `NotchedSelectField`
+  sourced from the real `useStaffStore().designations` (the same list
+  `/dashboard/staff/designations` manages) rather than free text — this
+  is the second module to reuse that store, so treat it as the source of
+  truth for designation names, not a place to fork a duplicate list.
+  **School Head** is a `NotchedComboboxField` over a small curated
+  candidate list defined locally in `school-dialog.tsx`
+  (`SCHOOL_HEAD_CANDIDATES`) — there is no general "staff/person
+  directory" resource yet to select a real record from, so don't treat
+  this list as authoritative data; replace it with a real lookup once
+  such a resource exists. `SEED_SCHOOL_IDS` exports stable, hand-picked
+  ids for the two seeded rows (not the usual `makeId()`) specifically so
+  `students.store.ts` can hardcode a `schoolId` FK against them at
+  module-seed time — mirrors the same stable-seed-id convention
+  `academics.store.ts` already uses for its sessions.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -265,7 +321,7 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `backend/API_CONTRACT.md` for the spec every mock store below stands in
   for): every store in `src/store/` — `rbac.store.ts`,
   `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
-  `students.store.ts`, `rollover.store.ts` — is a
+  `students.store.ts`, `schools.store.ts`, `rollover.store.ts` — is a
   `persist`-backed Zustand store standing in for a real API, seeded with
   demo data. `dashboard.store.ts` is the one exception: it's read-only mock
   data for the two dashboards' stat cards/chart/recent-list, so it's
@@ -285,24 +341,21 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   Component, which would silently always show the seed data and never a
   user's changes.
 - **Bump `version` whenever you change a persisted store's shape.** Every
-  `persist(...)` config above has an explicit version number. When you add,
-  rename, or remove a field on `rbac.store.ts`, `institutions.store.ts`,
-  `academics.store.ts`, `staff.store.ts`, `students.store.ts`, or
-  `rollover.store.ts` — or edit their seed data — bump that store's
-  `version` by one in the same change. Without it, a browser that already
-  ran an older build keeps its stale `localStorage` payload forever
-  (zustand's `persist` only discards mismatched-version state; a
-  matching version is trusted as-is and never reconciled against new seed
-  data or fields) — the symptom is old/incomplete rows sitting next to
-  blank columns for fields that didn't exist yet when that browser first
-  loaded the app. Most of these stores have no `migrate` function on
-  purpose — the intent is "discard and reseed," not "carry old shapes
-  forward," since this is all mock data standing in for a real API anyway.
-  `academics.store.ts` and `rollover.store.ts` are the two exceptions: both
-  configure `migrate: () => (<fresh seed/empty state>)` so a version bump
-  always lands on a clean reseed rather than a partially-reconciled shape —
-  follow that same "migrate always resets" pattern for any store this
-  rigid, rather than writing a real field-by-field migration for mock data.
+  `persist(...)` config in `src/store/` has an explicit version number and
+  a `migrate: () => (<fresh seed/empty state>)` — every persisted store in
+  this codebase follows the same "migrate always resets" pattern, not a
+  real field-by-field migration, since this is all mock data standing in
+  for a real API and the intent is "discard and reseed," not "carry old
+  shapes forward." When you add, rename, or remove a field on any of these
+  stores — or edit their seed data — bump that store's `version` by one in
+  the same change; the `migrate` function needs no corresponding edit
+  (it already just returns a fresh seed). Without the version bump, a
+  browser that already ran an older build keeps its stale `localStorage`
+  payload forever (zustand's `persist` only discards mismatched-version
+  state; a matching version is trusted as-is and never reconciled against
+  new seed data or fields) — the symptom is old/incomplete rows sitting
+  next to blank columns for fields that didn't exist yet when that browser
+  first loaded the app.
 - **New nav pages**: most `INSTITUTION_NAV`/`SUPER_ADMIN_NAV` entries beyond
   the ones with real pages currently render `<ModulePlaceholder>`
   (`src/components/shared/module-placeholder.tsx`) — a styled "not built yet"

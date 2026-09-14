@@ -126,6 +126,8 @@ erDiagram
     ROLE ||--o{ USER : "assigned to"
     INSTITUTION ||--o{ STUDENT : "enrolls"
     ACADEMIC_SESSION ||--o{ STUDENT : "currently enrolled under"
+    INSTITUTION ||--o{ SCHOOL : "defines"
+    SCHOOL ||--o{ STUDENT : "enrolled under"
     INSTITUTION ||--o{ ROLLOVER_RECORD : "runs"
     ACADEMIC_SESSION ||--o{ ROLLOVER_RECORD : "rolled over from/to"
 
@@ -201,15 +203,50 @@ erDiagram
     STUDENT {
         string id PK
         string institutionId FK
-        string studentId "display code, e.g. STU/2022/1000"
-        string name
-        string programme
+        string matricNo "display code, e.g. UL-10044 — unique among non-archived students"
+        string title "Mr | Mrs | Miss | Dr | Chief | Engr | Prof"
+        string firstName
+        string middleName "nullable"
+        string lastName
+        string otherName "nullable — a distinct alternate/preferred name, not the same as middleName"
+        string gender "Male | Female | Other"
+        string maritalStatus "Single | Married | Divorced | Widowed"
+        string email
+        string phone
+        string emergencyContact
+        datetime dateOfBirth
+        string religion "Christian | Islam | Traditional | Other"
+        string maidenName "nullable"
+        string bloodGroup "A+ | A- | B+ | B- | AB+ | AB- | O+ | O-"
+        string genotype "AA | AS | SS | AC"
+        int weightKg
+        int heightCm
+        string nationality
+        string stateOfOrigin
+        string lga
+        string residentAddress
+        string avatarUrl "nullable"
+        string schoolId FK "SCHOOL.id"
+        string faculty
         string department
+        string programme
         string currentLevel "e.g. 100 Level"
         string currentSessionId FK "ACADEMIC_SESSION.id — the session this student is currently enrolled under"
+        string status "active | inactive — admin-facing enrollment status, distinct from the flags below"
         bool isGraduating
         bool isDeferred
         bool holdForReview
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    SCHOOL {
+        string id PK
+        string institutionId FK
+        string name "e.g. School of Engineering"
+        string headName
+        string designation "validated against STAFF_DESIGNATION.name — see 7.4/8"
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
     }
     ROLLOVER_RECORD {
         string id PK
@@ -760,18 +797,51 @@ client just calls `POST /academic-sessions` followed by
 `POST /academic-semesters` calls (`"First Semester"`/`"Second Semester"`,
 split at the date midpoint) — no separate combined endpoint is needed.
 
-### 7.2 Students & academic history — institution admin
+### 7.2 Students & Student Management — institution admin
 
-A student's level/session placement is never edited directly once a
-rollover exists — see 7.3. `POST`/`PATCH` here cover initial enrollment
-only (a brand-new student with no history yet).
+The `/dashboard/students` "Student Management" admin table and the Session
+Rollover engine (7.3) share this exact same resource — a student edited
+here is the same record a rollover later evaluates, so there's no separate
+roster to keep in sync. Built on the same locked admin-table pattern as
+every other list in this contract (§1): a kebab action menu
+(View → Edit → separator → destructive Delete), a confirm prompt before
+deleting, and "delete" always meaning archive — never a hard delete. A
+student's `currentLevel`/`currentSessionId` **are** directly editable here
+(unlike `academicHistory`, which stays append-only, see 7.3) — Edit is a
+correction tool for enrollment mistakes, not a substitute for a rollover.
 
-| Method | Path             | Body                                                              | Notes |
-|--------|------------------|--------------------------------------------------------------------|-------|
-| GET    | `/students`      | —                                                                    | supports `?sessionId=` (filter by `currentSessionId`) and pagination |
-| POST   | `/students`      | `{ studentId, name, programme, department, currentLevel, currentSessionId }` | creates the student's first `StudentAcademicRecord` (`status: "current"`, empty `courseResults`/`carryoverCourses`) |
-| PATCH  | `/students/:id`  | `{ isDeferred?, holdForReview? }`                                     | the only fields an admin edits directly outside a rollover — flagging a student as deferred or held for review ahead of the next rollover |
-| GET    | `/students/:id/academic-history` | — | full `StudentAcademicRecord[]`, oldest first — **append-only, see 7.3** |
+| Method | Path                              | Body | Notes |
+|--------|-----------------------------------|------|-------|
+| GET    | `/students`                      | —    | supports `?sessionId=` (filter by `currentSessionId`), `?schoolId=`, `?search=` (matches full name, `matricNo`, or programme), `?includeArchived=true` (default `false`), and pagination |
+| POST   | `/students`                      | `{ matricNo, title, firstName, middleName?, lastName, otherName?, gender, maritalStatus, email, phone, emergencyContact, dateOfBirth, religion, maidenName?, bloodGroup, genotype, weightKg, heightCm, nationality, stateOfOrigin, lga, residentAddress, avatarUrl?, schoolId, faculty, department, programme, currentLevel, currentSessionId, status }` | `422` on a `matricNo` that collides case-insensitively with another non-archived student; `schoolId` FK to `/schools` (7.4), rejected if it belongs to a different institution or doesn't exist; creates the student's first `StudentAcademicRecord` (`status: "current"`, empty `courseResults`/`carryoverCourses`, at `currentLevel`/`currentSessionId`) |
+| PATCH  | `/students/:id`                  | any subset of the fields above, plus `isGraduating?`, `isDeferred?`, `holdForReview?` | for editing — including flagging a student deferred/held for review ahead of the next rollover |
+| POST   | `/students/:id/archive`          | —    | sets `archivedAt = now` |
+| POST   | `/students/:id/restore`          | —    | sets `archivedAt = null` |
+| GET    | `/students/:id/academic-history` | —    | full `StudentAcademicRecord[]`, oldest first — **append-only, see 7.3** |
+
+A student's display name is always the composition of `firstName`/
+`middleName`/`lastName` (never a single denormalized `name` field) — the
+frontend's one canonical assembly point is `fullName()`
+(`frontend/src/lib/students.ts`); mirror that same ordering server-side
+wherever a full name is rendered (exports, notifications, etc.) rather
+than letting each call site concatenate it differently. `matricNo` is
+this resource's unique display code (e.g. `"UL-10044"`) — unrelated to
+`RolloverStudentEntry.studentId` in 7.3, which is the student's internal
+`id`, not this code.
+
+Two admin-only bulk operations the Student Management table exposes,
+both against this same resource:
+
+```
+POST /students/bulk-archive   { "ids": ["stu_1", "stu_2"] }   → 200, archives every id in one call
+POST /students/import          multipart CSV upload            → 200, { "imported": 12, "skipped": 2 }
+GET  /students/export?includeArchived=false                    → 200, CSV download of the matching students
+```
+
+`skipped` on import covers both a missing required column and a
+`matricNo` that already exists — the response should say which for each
+skipped row rather than a single opaque count, once this is real (today's
+mock just totals both into `skipped`).
 
 ```
 StudentAcademicRecord {
@@ -782,6 +852,11 @@ StudentAcademicRecord {
   carryoverCourses: string[]  // course codes still outstanding as of this record
 }
 ```
+
+An `inactive` student (withdrawn, suspended, etc. — the admin-facing
+`status` field, distinct from the academic `isDeferred`/`holdForReview`
+flags above) is excluded from a rollover draft the same way an archived
+one is — see `POST /rollovers` in 7.3.
 
 ### 7.3 Session Rollover — moving a cohort from one session/level to the next
 
@@ -897,6 +972,29 @@ flowchart TD
 equivalent of this section — move the decision logic in `rollover.ts`
 server-side essentially unchanged, since it's already pure and
 side-effect-free.
+
+### 7.4 Schools — institution admin
+
+The academic unit sitting above faculties/departments (`School.name`,
+e.g. "School of Engineering") — a small, standalone admin table on the
+same locked pattern as everywhere else in this contract (§1), and the
+FK target for `Student.schoolId` (7.2).
+
+| Method | Path                | Body                                       | Notes |
+|--------|---------------------|----------------------------------------------|-------|
+| GET    | `/schools`          | —                                             | supports `?includeArchived=true` (default `false`) |
+| POST   | `/schools`          | `{ name, headName, designation }`              | `422` on a `name` that collides case-insensitively with another non-archived school |
+| PATCH  | `/schools/:id`      | any subset of the fields above                 | for editing |
+| POST   | `/schools/:id/archive` | —                                            | sets `archivedAt = now` |
+| POST   | `/schools/:id/restore` | —                                            | sets `archivedAt = null` |
+
+`designation` should be validated against `/staff-designations` (§8) —
+the frontend's dialog already sources its options from that same list
+rather than free text, so a school's head designation is drawn from the
+same controlled vocabulary as everyone else's staff designation, not a
+separate one. `headName` has no backing "staff/person directory" resource
+yet on either side — until one exists, treat it as a plain string, not a
+FK.
 
 ## 8. Staff Designations — institution admin
 
@@ -1069,13 +1167,20 @@ authenticates against the real `UserManagerAccount` records instead, so
 there's no separate "demo account" list to keep in sync. Every domain is a
 Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
-designations, notifications, students, rollovers; plain, unpersisted for
-read-only dashboard data — see `dashboard.store.ts`) — swap each store's
-actions for real calls to the routes above one domain at a time; nothing
-else in the UI needs to change.
+designations, notifications, students, schools, rollovers; plain,
+unpersisted for read-only dashboard data — see `dashboard.store.ts`) —
+swap each store's actions for real calls to the routes above one domain
+at a time; nothing else in the UI needs to change.
 
-`students.store.ts` seeds 44 students across a single programme's four
-levels (100-400), with deterministic (non-`Math.random()`) name/fail-count
-generation so the roster is stable across reloads. `rollover.store.ts`
-keeps both drafts and completed `RolloverRecord`s in the same `records`
-array, filtering by `status` for history — see §7.3.
+`students.store.ts` seeds 46 students (44 across a single programme's
+four levels 100-400, used by the rollover-verification counts in §7.3,
+plus 2 extra demo records — one `inactive`, one archived — that
+deliberately sit outside the rollover-eligible set), with deterministic
+(non-`Math.random()`) name/fail-count/demographic generation so the
+roster is stable across reloads and every student's `schoolId` resolves
+against `schools.store.ts`'s stable seed ids
+(`SEED_SCHOOL_IDS.engineering`/`.computing`, not the usual random
+`makeId()`, specifically so this cross-store FK can be hardcoded at
+seed time — mirrors `academics.store.ts`'s own fixed session ids).
+`rollover.store.ts` keeps both drafts and completed `RolloverRecord`s in
+the same `records` array, filtering by `status` for history — see §7.3.
