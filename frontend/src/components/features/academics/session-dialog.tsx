@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { ArrowRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -73,44 +74,95 @@ function SessionForm({
   onDone: () => void;
 }) {
   const authUser = useAuthStore((state) => state.user);
+  const sessions = useAcademicsStore((state) => state.sessions);
   const createSession = useAcademicsStore((state) => state.createSession);
   const updateSession = useAcademicsStore((state) => state.updateSession);
+  const setCurrentSession = useAcademicsStore(
+    (state) => state.setCurrentSession,
+  );
+  const createSemester = useAcademicsStore((state) => state.createSemester);
 
   const [from, setFrom] = useState(
     session?.from ? session.from.slice(0, 10) : "",
   );
   const [to, setTo] = useState(session?.to ? session.to.slice(0, 10) : "");
+  const [makeCurrent, setMakeCurrent] = useState(false);
+  const [autoCreateSemesters, setAutoCreateSemesters] = useState(!session);
 
   const { register, handleSubmit, formState } = useForm<SessionFormValues>({
     defaultValues: { session: session?.session ?? "" },
   });
 
   const onSubmit = (values: SessionFormValues) => {
+    const name = values.session.trim();
+    const duplicate = sessions.some(
+      (s) =>
+        s.id !== session?.id &&
+        !s.archivedAt &&
+        s.session.toLowerCase() === name.toLowerCase(),
+    );
+    if (duplicate) {
+      toast.error(`A session named "${name}" already exists`);
+      return;
+    }
     if (!from || !to) {
       toast.error("Set both a start and end date");
       return;
     }
+    if (new Date(to).getTime() <= new Date(from).getTime()) {
+      toast.error("End date must be after the start date");
+      return;
+    }
 
     const payload = {
-      session: values.session,
+      session: name,
       from: new Date(from).toISOString(),
       to: new Date(to).toISOString(),
     };
 
     if (session) {
       updateSession(session.id, payload);
-      toast.success(`${values.session} updated`);
-    } else {
-      createSession(payload);
-      toast.success(`${values.session} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New academic session added",
-          `${values.session} was added to your institution's calendar.`,
-          "/dashboard/academics/sessions",
-        );
-      }
+      toast.success(`${name} updated`);
+      onDone();
+      return;
+    }
+
+    const created = createSession(payload);
+    toast.success(`${name} added`);
+
+    if (makeCurrent) {
+      setCurrentSession(created.id);
+      toast.success(`${name} set as the current session`);
+    }
+
+    if (autoCreateSemesters) {
+      const start = new Date(from).getTime();
+      const end = new Date(to).getTime();
+      const midpoint = new Date(start + (end - start) / 2);
+      createSemester({
+        sessionId: created.id,
+        name: "First Semester",
+        description: `First semester of the ${name} academic session.`,
+        from: created.from,
+        to: midpoint.toISOString(),
+      });
+      createSemester({
+        sessionId: created.id,
+        name: "Second Semester",
+        description: `Second semester of the ${name} academic session.`,
+        from: midpoint.toISOString(),
+        to: created.to,
+      });
+      toast.success("First and Second Semester created automatically");
+    }
+
+    if (authUser?.institutionId) {
+      notifyInstitution(
+        authUser.institutionId,
+        "New academic session added",
+        `${name} was added to your institution's calendar.`,
+        "/dashboard/academics/sessions",
+      );
     }
     onDone();
   };
@@ -142,6 +194,28 @@ function SessionForm({
             onValueChange={setTo}
           />
         </div>
+
+        {!session && (
+          <div className="space-y-2.5 rounded-md border border-border bg-muted/40 p-3.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Optional configuration
+            </p>
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+              <Checkbox
+                checked={makeCurrent}
+                onCheckedChange={(checked) => setMakeCurrent(checked)}
+              />
+              Activate as current session
+            </label>
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+              <Checkbox
+                checked={autoCreateSemesters}
+                onCheckedChange={(checked) => setAutoCreateSemesters(checked)}
+              />
+              Automatically create First &amp; Second Semester
+            </label>
+          </div>
+        )}
       </form>
 
       <div className="flex items-center justify-end gap-4 border-t border-border bg-muted/50 px-6 py-4">

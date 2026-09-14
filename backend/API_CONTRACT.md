@@ -124,6 +124,10 @@ erDiagram
     INSTITUTION ||--o{ USER_MANAGER_ACCOUNT : "assigned"
     ACADEMIC_SESSION ||--o{ ACADEMIC_SEMESTER : "contains"
     ROLE ||--o{ USER : "assigned to"
+    INSTITUTION ||--o{ STUDENT : "enrolls"
+    ACADEMIC_SESSION ||--o{ STUDENT : "currently enrolled under"
+    INSTITUTION ||--o{ ROLLOVER_RECORD : "runs"
+    ACADEMIC_SESSION ||--o{ ROLLOVER_RECORD : "rolled over from/to"
 
     INSTITUTION {
         string id PK
@@ -179,6 +183,9 @@ erDiagram
         string session "e.g. 2024/2025"
         date from
         date to
+        string status "upcoming | active | completed"
+        bool isCurrent "at most one session per institution — see 7.1"
+        datetime archivedAt "nullable — soft-delete"
     }
     ACADEMIC_SEMESTER {
         string id PK
@@ -187,6 +194,31 @@ erDiagram
         string description
         date from
         date to
+        string status "upcoming | active | completed"
+        bool isCurrent "at most one semester per session — see 7.1"
+        datetime archivedAt "nullable — soft-delete"
+    }
+    STUDENT {
+        string id PK
+        string institutionId FK
+        string studentId "display code, e.g. STU/2022/1000"
+        string name
+        string programme
+        string department
+        string currentLevel "e.g. 100 Level"
+        string currentSessionId FK "ACADEMIC_SESSION.id — the session this student is currently enrolled under"
+        bool isGraduating
+        bool isDeferred
+        bool holdForReview
+    }
+    ROLLOVER_RECORD {
+        string id PK
+        string institutionId FK
+        string fromSessionId FK
+        string toSessionId FK
+        datetime createdAt
+        datetime completedAt "nullable — null while status is draft"
+        string status "draft | completed"
     }
     STAFF_DESIGNATION {
         string id PK
@@ -690,12 +722,12 @@ confirm prompt before deleting, and "delete" always meaning archive
 | Method | Path                              | Body                                    | Notes |
 |--------|-----------------------------------|------------------------------------------|-------|
 | GET    | `/academic-sessions`              | —                                        | supports `?includeArchived=true` (default `false`) |
-| POST   | `/academic-sessions`               | `{ session, from, to }`                  | `session` e.g. `"2024/2025"`; `from`/`to` are ISO dates |
-| PATCH  | `/academic-sessions/:id`          | any subset of the fields above           | for editing |
+| POST   | `/academic-sessions`               | `{ session, from, to, status? }`         | `session` e.g. `"2024/2025"`; `from`/`to` are ISO dates; `status` defaults `"upcoming"` — see 7.1 for `Activate as current session` |
+| PATCH  | `/academic-sessions/:id`          | any subset of the fields above           | for editing; reject a `session` name that collides case-insensitively with another non-archived session, and reject `to <= from` |
 | POST   | `/academic-sessions/:id/archive`  | —                                        | sets `archivedAt = now` |
 | POST   | `/academic-sessions/:id/restore`  | —                                        | sets `archivedAt = null` |
 | GET    | `/academic-semesters`              | —                                        | supports `?includeArchived=true` |
-| POST   | `/academic-semesters`             | `{ sessionId, name, description, from, to }` | `sessionId` FK to an `academic-sessions` record — reject if it belongs to a different institution or doesn't exist |
+| POST   | `/academic-semesters`             | `{ sessionId, name, description, from, to, status? }` | `sessionId` FK to an `academic-sessions` record — reject if it belongs to a different institution or doesn't exist; `status` defaults `"upcoming"` |
 | PATCH  | `/academic-semesters/:id`         | any subset of the fields above           | for editing |
 | POST   | `/academic-semesters/:id/archive` | —                                        | sets `archivedAt = now` |
 | POST   | `/academic-semesters/:id/restore` | —                                        | sets `archivedAt = null` |
@@ -706,6 +738,165 @@ equivalent — note that a semester references its session by `sessionId`
 (a real FK), not a denormalized name string, unlike the looser
 `institutionName` convention used for `UserManagerAccount` (§4.5) — prefer
 this stricter pattern for any new relationship going forward.
+
+### 7.1 Current session & current semester
+
+An institution tracks exactly **one** current session and, within it,
+exactly one current semester — surfaced in the frontend as a persistent
+"Current Session / Current Semester" summary strip above the table, not
+just a badge buried in a row.
+
+| Method | Path                                | Body | Notes |
+|--------|-------------------------------------|------|-------|
+| POST   | `/academic-sessions/:id/set-current`  | —    | sets this session's `isCurrent = true` and `status = "active"` (promoting it out of `"upcoming"` if needed), and unsets `isCurrent` on every other session for the institution — never more than one current session at a time |
+| POST   | `/academic-sessions/:id/close`        | —    | sets `status = "completed"` and `isCurrent = false` — a session must be closed before it can be the *source* of a rollover (7.3) |
+| POST   | `/academic-semesters/:id/set-current` | —    | same as above, scoped to semesters **within the same session** — setting one current never touches a semester belonging to a different session |
+| POST   | `/academic-semesters/:id/close`       | —    | sets `status = "completed"`, `isCurrent = false` |
+
+The "Add New Session" form's optional `Activate as current session` and
+`Automatically create semesters` checkboxes are pure convenience — the
+client just calls `POST /academic-sessions` followed by
+`POST /academic-sessions/:id/set-current` and/or two
+`POST /academic-semesters` calls (`"First Semester"`/`"Second Semester"`,
+split at the date midpoint) — no separate combined endpoint is needed.
+
+### 7.2 Students & academic history — institution admin
+
+A student's level/session placement is never edited directly once a
+rollover exists — see 7.3. `POST`/`PATCH` here cover initial enrollment
+only (a brand-new student with no history yet).
+
+| Method | Path             | Body                                                              | Notes |
+|--------|------------------|--------------------------------------------------------------------|-------|
+| GET    | `/students`      | —                                                                    | supports `?sessionId=` (filter by `currentSessionId`) and pagination |
+| POST   | `/students`      | `{ studentId, name, programme, department, currentLevel, currentSessionId }` | creates the student's first `StudentAcademicRecord` (`status: "current"`, empty `courseResults`/`carryoverCourses`) |
+| PATCH  | `/students/:id`  | `{ isDeferred?, holdForReview? }`                                     | the only fields an admin edits directly outside a rollover — flagging a student as deferred or held for review ahead of the next rollover |
+| GET    | `/students/:id/academic-history` | — | full `StudentAcademicRecord[]`, oldest first — **append-only, see 7.3** |
+
+```
+StudentAcademicRecord {
+  sessionId: string          // ACADEMIC_SESSION.id this record belongs to
+  level: string               // e.g. "100 Level"
+  status: "completed" | "current" | "repeat"
+  courseResults: { courseCode, courseTitle, score, grade, passed, sessionId, attempt }[]
+  carryoverCourses: string[]  // course codes still outstanding as of this record
+}
+```
+
+### 7.3 Session Rollover — moving a cohort from one session/level to the next
+
+**A rollover means moving students from one completed session/level into
+the next session/level while preserving their complete academic
+history — it never edits a student's level in place.** Confirming a
+rollover always *appends* a new `StudentAcademicRecord` to
+`academicHistory`; every previous record — its session, level, grades, and
+carryover list — is immutable from that point on. Never: delete a previous
+session, overwrite a previous result, remove a previous registration,
+change a historical level, destroy a carryover record, replace a previous
+grade, or duplicate a student record. If a rule here can't be satisfied
+without doing one of those, the rule is wrong, not the invariant.
+
+| Method | Path                                        | Body | Notes |
+|--------|---------------------------------------------|------|-------|
+| POST   | `/rollovers`                                | `{ fromSessionId, toSessionId }` | creates a `status: "draft"` `RolloverRecord` and computes one `RolloverStudentEntry` per student currently on `fromSessionId` (7.3.1) — `422` if `fromSessionId` isn't `"completed"` or zero students are found there |
+| GET    | `/rollovers/:id`                            | —    | draft or completed record, with its full `entries[]` |
+| PATCH  | `/rollovers/:id/entries/:studentId`         | `{ decision, overrideReason? }` | manual override of one student's proposed decision (7.3.2); `overrideReason` is **required** whenever `decision` differs from that entry's `suggestedDecision` |
+| POST   | `/rollovers/:id/confirm`                    | —    | applies every entry to its student (7.3.3), marks the record `status: "completed"` + `completedAt = now`. `409` if already completed — a rollover can only be confirmed once |
+| GET    | `/rollovers?status=completed`               | —    | rollover history list, newest `completedAt` first |
+
+#### 7.3.1 `RolloverStudentEntry` — the engine's per-student proposal
+
+```
+RolloverStudentEntry {
+  studentId: string
+  fromLevel: string
+  toLevel: string | null      // null when the student doesn't progress this cycle
+  passedCourses: string[]
+  outstandingCourses: string[] // this student's carryoverCourses as of fromSessionId
+  suggestedDecision: RolloverDecision   // the engine's recommendation — kept forever, even after an override, for audit purposes
+  decision: RolloverDecision            // what actually gets applied on confirm — starts equal to suggestedDecision
+  overridden: bool
+  overrideReason: string | null
+}
+
+RolloverDecision = "promote" | "promote-carryover" | "repeat"
+                  | "deferred" | "graduating" | "hold"
+```
+
+The suggestion (`suggestedDecision`) is computed deterministically from
+the student's latest academic record — re-running it on the same input
+always yields the same answer:
+
+1. `isDeferred` → `"deferred"` (system must not auto-progress a deferred student).
+2. else `holdForReview` → `"hold"`.
+3. else `outstandingCourses.length >= 3` → `"repeat"` (too many failures to have earned the level at all — a genuinely different case from a student who owes one or two courses).
+4. else this is the programme's exit level → `"graduating"` if no outstanding courses, else `"hold"` (can't graduate with unresolved courses, but also shouldn't be silently repeated).
+5. else `outstandingCourses.length > 0` → `"promote-carryover"` — **a student with failing carryover courses is promoted to the next level while those courses remain outstanding; they are only repeated if rule 3 applies.** This is the load-bearing distinction of the whole feature: promotion-with-carryover is not a repeat.
+6. else → `"promote"`.
+
+`toLevel` is derived from the *current* `decision` (not the original
+suggestion) via: `promote`/`promote-carryover` → next level in the
+programme's level order; `repeat` → same level; `deferred`/`graduating`/
+`hold` → `null` (no destination this cycle). **This must be recomputed
+whenever `decision` changes** — a manual override from `repeat` to
+`promote` (7.3.2) has to move `toLevel` forward too, or the student's
+decision badge changes without their level actually advancing.
+
+#### 7.3.2 Manual override
+
+An admin can override any entry's `decision` before confirming (e.g. the
+engine suggests `repeat`, but the academic board approves promotion
+anyway). `overridden` is derived server-side as
+`decision !== suggestedDecision` — never trust a client-supplied
+`overridden` flag. `overrideReason` is required whenever that's true, and
+should be recorded in an audit log (who changed it, from what, to what,
+and why) separately from the entry itself.
+
+#### 7.3.3 Confirming — applying entries to students
+
+For each entry, in order of `entry.decision`:
+
+- `"deferred"` / `"hold"` → student is left completely untouched — they
+  stay on `fromSessionId` at their current level until a future rollover
+  resolves them.
+- `"graduating"` → student's `isGraduating` is set `true`; no new
+  `StudentAcademicRecord` is appended (they don't roll into another level).
+- everything else (`"promote"`, `"promote-carryover"`, `"repeat"`) → a new
+  `StudentAcademicRecord` is **appended** to `academicHistory`:
+  `sessionId = toSessionId`, `level = entry.toLevel`,
+  `status = "repeat"` if the decision is `"repeat"` else `"current"`,
+  `carryoverCourses = entry.outstandingCourses` only if the decision is
+  `"promote-carryover"` (otherwise `[]` — a plain `"promote"` override
+  means the admin is explicitly closing those courses out, not silently
+  losing them). The student's own `currentLevel`/`currentSessionId` are
+  updated to match, but their *previous* record is never touched — a
+  student who fails CSC101 at 100 Level and is promoted with carryover
+  still shows the original `100 Level — CSC101 — Score 38 — Grade F —
+  Carryover` record forever, alongside the new one; if they later pass the
+  retake, that becomes a **third**, separate record
+  (`status: "current"`, an `attempt: 2` course result) — never an edit to
+  the first two.
+
+```mermaid
+flowchart TD
+    A[Source session: completed] --> B[POST /rollovers → draft + entries]
+    B --> C{Admin reviews entries}
+    C -->|override one| D[PATCH .../entries/:studentId]
+    D --> C
+    C -->|satisfied| E[POST /rollovers/:id/confirm]
+    E --> F[Each entry applied to its student]
+    F --> G["deferred/hold: student untouched"]
+    F --> H["graduating: isGraduating = true"]
+    F --> I["promote/promote-carryover/repeat: new StudentAcademicRecord appended"]
+    E --> J[RolloverRecord.status = completed]
+```
+
+`frontend/src/lib/rollover.ts` (pure decision functions —
+`computeRolloverEntry`, `resolveToLevel`, `applyRolloverToStudent`) and
+`frontend/src/store/rollover.store.ts` (orchestration) are the mocked
+equivalent of this section — move the decision logic in `rollover.ts`
+server-side essentially unchanged, since it's already pure and
+side-effect-free.
 
 ## 8. Staff Designations — institution admin
 
@@ -878,7 +1069,13 @@ authenticates against the real `UserManagerAccount` records instead, so
 there's no separate "demo account" list to keep in sync. Every domain is a
 Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
-designations, notifications; plain, unpersisted for read-only dashboard
-data — see `dashboard.store.ts`) — swap each store's actions for real
-calls to the routes above one domain at a time; nothing else in the UI
-needs to change.
+designations, notifications, students, rollovers; plain, unpersisted for
+read-only dashboard data — see `dashboard.store.ts`) — swap each store's
+actions for real calls to the routes above one domain at a time; nothing
+else in the UI needs to change.
+
+`students.store.ts` seeds 44 students across a single programme's four
+levels (100-400), with deterministic (non-`Math.random()`) name/fail-count
+generation so the roster is stable across reloads. `rollover.store.ts`
+keeps both drafts and completed `RolloverRecord`s in the same `records`
+array, filtering by `status` for history — see §7.3.

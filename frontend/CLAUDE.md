@@ -138,6 +138,40 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   (`src/components/features/notifications/`) and the full
   `/super-admin/notifications` / `/dashboard/notifications` list pages —
   never duplicate that filtering logic elsewhere.
+- **Session Rollover is append-only and must never be confused with editing
+  a student's level in place.** `src/types/student.ts`
+  (`Student.academicHistory: StudentAcademicRecord[]`) and
+  `src/types/rollover.ts` (`RolloverRecord`/`RolloverStudentEntry`) model a
+  student's academic progression as a history log, not a mutable "current
+  level" field — every rollover _appends_ a new record via
+  `applyRolloverToStudent` (`src/lib/rollover.ts`), never rewrites or
+  deletes a previous one. The decision engine
+  (`computeRolloverEntry`, same file) is a pure function of a student's
+  latest record: `isDeferred`/`holdForReview` short-circuit to
+  `"deferred"`/`"hold"`; 3+ outstanding courses means `"repeat"` (the level
+  itself wasn't earned); otherwise a student with 1-2 outstanding courses
+  is `"promote-carryover"` — **promoted to the next level while those
+  courses stay outstanding, never demoted back to repeat just for having a
+  carryover.** `resolveToLevel(fromLevel, decision)` derives the
+  destination level from whichever `decision` is current, and both
+  `computeRolloverEntry` and the store's `updateEntryDecision`
+  (`src/store/rollover.store.ts`) call it — **a manual override that
+  changes `decision` must always recompute `toLevel` through this same
+  function**; hardcoding the level from the original suggestion instead of
+  re-deriving it from the new decision was a real bug caught during
+  Playwright verification (an admin overriding `repeat` → `promote` re-tagged
+  the badge but left the student's level unchanged until fixed). The
+  wizard (`src/components/features/academics/rollover/rollover-wizard-dialog.tsx`)
+  is a 5-step flow (source/destination → progression counts → student
+  review + override → confirmation summary → success) with its own local
+  `step` state and a draft `RolloverRecord` held in the store until
+  `confirmRollover` is called — cancelling at any step calls `discardDraft`
+  rather than leaving a half-applied record around. Building a Playwright
+  check against this dialog: scope every button locator to
+  `[role="dialog"]` (or a more specific `.filter({ hasText: ... })`) —
+  the underlying `SessionTable`'s own pagination "Next" button is a second,
+  usually-disabled match for a bare `button:has-text("Next")` and Playwright
+  will silently grab it instead of the wizard's.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -230,7 +264,8 @@ justify-between gap-4` — not `flex-row`, which doesn't override
 - **No backend yet** (`backend/` is unscaffolded — see
   `backend/API_CONTRACT.md` for the spec every mock store below stands in
   for): every store in `src/store/` — `rbac.store.ts`,
-  `institutions.store.ts`, `academics.store.ts`, `staff.store.ts` — is a
+  `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
+  `students.store.ts`, `rollover.store.ts` — is a
   `persist`-backed Zustand store standing in for a real API, seeded with
   demo data. `dashboard.store.ts` is the one exception: it's read-only mock
   data for the two dashboards' stat cards/chart/recent-list, so it's
@@ -250,19 +285,24 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   Component, which would silently always show the seed data and never a
   user's changes.
 - **Bump `version` whenever you change a persisted store's shape.** Every
-  `persist(...)` config above has an explicit `version: 1`. When you add,
+  `persist(...)` config above has an explicit version number. When you add,
   rename, or remove a field on `rbac.store.ts`, `institutions.store.ts`,
-  `academics.store.ts`, or `staff.store.ts` — or edit their seed data — bump
-  that store's `version` by one in the same change. Without it, a browser
-  that already ran an older build keeps its stale `localStorage` payload
-  forever (zustand's `persist` only discards mismatched-version state; a
+  `academics.store.ts`, `staff.store.ts`, `students.store.ts`, or
+  `rollover.store.ts` — or edit their seed data — bump that store's
+  `version` by one in the same change. Without it, a browser that already
+  ran an older build keeps its stale `localStorage` payload forever
+  (zustand's `persist` only discards mismatched-version state; a
   matching version is trusted as-is and never reconciled against new seed
   data or fields) — the symptom is old/incomplete rows sitting next to
   blank columns for fields that didn't exist yet when that browser first
-  loaded the app. There's no `migrate` function configured on any of these
-  stores on purpose — the intent is "discard and reseed," not "carry old
-  shapes forward," since this is all mock data standing in for a real API
-  anyway.
+  loaded the app. Most of these stores have no `migrate` function on
+  purpose — the intent is "discard and reseed," not "carry old shapes
+  forward," since this is all mock data standing in for a real API anyway.
+  `academics.store.ts` and `rollover.store.ts` are the two exceptions: both
+  configure `migrate: () => (<fresh seed/empty state>)` so a version bump
+  always lands on a clean reseed rather than a partially-reconciled shape —
+  follow that same "migrate always resets" pattern for any store this
+  rigid, rather than writing a real field-by-field migration for mock data.
 - **New nav pages**: most `INSTITUTION_NAV`/`SUPER_ADMIN_NAV` entries beyond
   the ones with real pages currently render `<ModulePlaceholder>`
   (`src/components/shared/module-placeholder.tsx`) — a styled "not built yet"
