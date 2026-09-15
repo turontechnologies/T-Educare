@@ -128,6 +128,7 @@ erDiagram
     ACADEMIC_SESSION ||--o{ STUDENT : "currently enrolled under"
     INSTITUTION ||--o{ SCHOOL : "defines"
     SCHOOL ||--o{ STUDENT : "enrolled under"
+    SCHOOL ||--o{ FACULTY : "contains"
     INSTITUTION ||--o{ ROLLOVER_RECORD : "runs"
     ACADEMIC_SESSION ||--o{ ROLLOVER_RECORD : "rolled over from/to"
 
@@ -245,6 +246,15 @@ erDiagram
         string name "e.g. School of Engineering"
         string headName
         string designation "validated against STAFF_DESIGNATION.name — see 7.4/8"
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    FACULTY {
+        string id PK
+        string institutionId FK
+        string schoolId FK "SCHOOL.id"
+        string name "e.g. Faculty of Law"
+        string deanName
         datetime createdAt
         datetime archivedAt "nullable — soft-delete"
     }
@@ -996,6 +1006,26 @@ separate one. `headName` has no backing "staff/person directory" resource
 yet on either side — until one exists, treat it as a plain string, not a
 FK.
 
+### 7.5 Faculties — institution admin
+
+One level down the academic hierarchy from Schools (7.4) — a faculty
+belongs to exactly one school. Same locked admin-table pattern as 7.4.
+
+| Method | Path                  | Body                              | Notes |
+|--------|-----------------------|-------------------------------------|-------|
+| GET    | `/faculties`          | —                                    | supports `?schoolId=` and `?includeArchived=true` (default `false`) |
+| POST   | `/faculties`          | `{ name, deanName, schoolId }`        | `422` on a `name` that collides case-insensitively with another non-archived faculty; `schoolId` FK to `/schools` (7.4) — reject if it belongs to a different institution or doesn't exist |
+| PATCH  | `/faculties/:id`      | any subset of the fields above        | for editing |
+| POST   | `/faculties/:id/archive` | —                                  | sets `archivedAt = now` |
+| POST   | `/faculties/:id/restore` | —                                  | sets `archivedAt = null` |
+
+`deanName` is a plain string, same reasoning as School's `headName`
+(7.4) — no "staff/person directory" resource exists yet to FK against.
+When Department Management (one level further down —
+school → faculty → department) gets built, it should follow this exact
+same shape: a real FK to its parent (here, `facultyId`), not a
+denormalized name string.
+
 ## 8. Staff Designations — institution admin
 
 | Method | Path                        | Body                                             |
@@ -1167,7 +1197,7 @@ authenticates against the real `UserManagerAccount` records instead, so
 there's no separate "demo account" list to keep in sync. Every domain is a
 Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
-designations, notifications, students, schools, rollovers; plain,
+designations, notifications, students, schools, faculties, rollovers; plain,
 unpersisted for read-only dashboard data — see `dashboard.store.ts`) —
 swap each store's actions for real calls to the routes above one domain
 at a time; nothing else in the UI needs to change.

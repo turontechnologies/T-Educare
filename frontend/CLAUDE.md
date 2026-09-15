@@ -228,6 +228,22 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `students.store.ts` can hardcode a `schoolId` FK against them at
   module-seed time — mirrors the same stable-seed-id convention
   `academics.store.ts` already uses for its sessions.
+- **Faculty Management (`/dashboard/academics/faculties`) follows School
+  Management's exact pattern one level down the hierarchy** — `Faculty`
+  (`src/types/faculty.ts`, `src/store/faculties.store.ts`) is
+  `name`/`deanName`/`schoolId`, with a real `schoolId` FK into
+  `schools.store.ts` (`NotchedSelectField`, sourced from
+  `useSchoolsStore().schools`) rather than a denormalized school-name
+  string. **Dean of Faculty** is a `NotchedComboboxField` over its own
+  small curated candidate list (`DEAN_CANDIDATES` in
+  `faculty-dialog.tsx`) — same reasoning as School Head: no general
+  staff/person directory exists yet, so don't treat this list as
+  authoritative data. When building the next level down (Department,
+  which is `school → faculty → department`), keep following this same
+  shape: a real FK to the parent resource's store, a curated local
+  candidate list for any "pick a person" field, and the standard
+  admin-table CRUD (Card/Show-entries+Filter, kebab Edit/Delete,
+  `ConfirmDialog`, archive+"View archived").
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -321,7 +337,8 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `backend/API_CONTRACT.md` for the spec every mock store below stands in
   for): every store in `src/store/` — `rbac.store.ts`,
   `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
-  `students.store.ts`, `schools.store.ts`, `rollover.store.ts` — is a
+  `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
+  `rollover.store.ts` — is a
   `persist`-backed Zustand store standing in for a real API, seeded with
   demo data. `dashboard.store.ts` is the one exception: it's read-only mock
   data for the two dashboards' stat cards/chart/recent-list, so it's
