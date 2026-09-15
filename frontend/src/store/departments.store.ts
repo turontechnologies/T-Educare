@@ -14,6 +14,8 @@ export const SEED_DEPARTMENT_IDS = {
   law: "department-law",
   computing: "department-computing",
   administration: "department-administration",
+  computerStudies: "department-computer-studies",
+  statistics: "department-statistics",
 } as const;
 
 const SEEDED_DEPARTMENTS: Department[] = [
@@ -50,6 +52,24 @@ const SEEDED_DEPARTMENTS: Department[] = [
     hodName: "Dr. Solomon Olusegun",
     facultyId: SEED_FACULTY_IDS.law,
     schoolId: SEED_SCHOOL_IDS.engineering,
+    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
+    archivedAt: null,
+  },
+  {
+    id: SEED_DEPARTMENT_IDS.computerStudies,
+    name: "Computer Studies",
+    hodName: "Alh. Gbenga Olusegun",
+    facultyId: SEED_FACULTY_IDS.computing,
+    schoolId: SEED_SCHOOL_IDS.technology,
+    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
+    archivedAt: null,
+  },
+  {
+    id: SEED_DEPARTMENT_IDS.statistics,
+    name: "Statistics",
+    hodName: "Prof. Ngozi Eze",
+    facultyId: SEED_FACULTY_IDS.mathematics,
+    schoolId: SEED_SCHOOL_IDS.statistics,
     createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
     archivedAt: null,
   },
@@ -113,7 +133,7 @@ export const useDepartmentsStore = create<DepartmentsState>()(
     }),
     {
       name: "t-educare-departments",
-      version: 2,
+      version: 3,
       migrate: () => ({ departments: SEEDED_DEPARTMENTS }),
     },
   ),

@@ -10,6 +10,8 @@ function makeId() {
 export const SEED_SCHOOL_IDS = {
   engineering: "school-engineering",
   computing: "school-computing",
+  technology: "school-technology",
+  statistics: "school-statistics",
 } as const;
 
 const SEEDED_SCHOOLS: School[] = [
@@ -26,6 +28,22 @@ const SEEDED_SCHOOLS: School[] = [
     name: "School of Computing",
     headName: "Alh. Gbenga Olusegun",
     designation: "Vice Chancellor",
+    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
+    archivedAt: null,
+  },
+  {
+    id: SEED_SCHOOL_IDS.technology,
+    name: "School of Technology",
+    headName: "Prof. Ngozi Eze",
+    designation: "Provost",
+    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
+    archivedAt: null,
+  },
+  {
+    id: SEED_SCHOOL_IDS.statistics,
+    name: "School of Statistics",
+    headName: "Dr. Amina Bello",
+    designation: "HOD",
     createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
     archivedAt: null,
   },
@@ -85,7 +103,7 @@ export const useSchoolsStore = create<SchoolsState>()(
     }),
     {
       name: "t-educare-schools",
-      version: 1,
+      version: 2,
       migrate: () => ({ schools: SEEDED_SCHOOLS }),
     },
   ),

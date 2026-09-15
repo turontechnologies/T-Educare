@@ -134,6 +134,10 @@ erDiagram
     DEPARTMENT ||--o{ PROGRAM : "offers"
     FACULTY ||--o{ PROGRAM : "independently linked to, see 7.7"
     INSTITUTION ||--o{ PROGRAM_LEVEL : "defines"
+    INSTITUTION ||--o{ COURSE_GRADE : "defines"
+    INSTITUTION ||--|| GRADING_SCALE : "configures"
+    DEPARTMENT ||--o{ COURSE : "offers"
+    SCHOOL ||--o{ COURSE : "independently linked to, see 7.10"
     INSTITUTION ||--o{ ROLLOVER_RECORD : "runs"
     ACADEMIC_SESSION ||--o{ ROLLOVER_RECORD : "rolled over from/to"
 
@@ -288,6 +292,31 @@ erDiagram
         string institutionId FK
         string levelCode "e.g. 100 — independent lookup, not related to STUDENT.currentLevel, see 7.8"
         string description "e.g. 100 levels"
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    COURSE_GRADE {
+        string id PK
+        string institutionId FK
+        string code "e.g. A, AB"
+        string remark "e.g. Distinction"
+        float gradeScore
+        float minimumScore
+        float maximumScore
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    GRADING_SCALE {
+        string institutionId PK "one row per institution, not a normal CRUD resource — see 7.9"
+        float maxGradePoint
+    }
+    COURSE {
+        string id PK
+        string institutionId FK
+        string departmentId FK "DEPARTMENT.id"
+        string schoolId FK "SCHOOL.id — independent of departmentId, see 7.10"
+        string name "e.g. Pure Mathematics"
+        string code "e.g. MAT101 — unique among non-archived courses"
         datetime createdAt
         datetime archivedAt "nullable — soft-delete"
     }
@@ -1115,6 +1144,38 @@ larger follow-up if ever requested, not a default expectation.
 | POST   | `/program-levels/:id/archive` | —                                 | sets `archivedAt = now` |
 | POST   | `/program-levels/:id/restore` | —                                 | sets `archivedAt = null` |
 
+### 7.9 Course Grades — institution admin
+
+The grading scale: a CRUD list of grade bands, plus one grading-scale-wide
+setting that is **not** a row in that list.
+
+| Method | Path                        | Body                                                        | Notes |
+|--------|-----------------------------|------------------------------------------------------------------|-------|
+| GET    | `/course-grades`          | —                                                                   | supports `?includeArchived=true` (default `false`) |
+| POST   | `/course-grades`          | `{ code, remark, gradeScore, minimumScore, maximumScore }`           | `422` on a `code` that collides case-insensitively with another non-archived grade, or on `maximumScore <= minimumScore` |
+| PATCH  | `/course-grades/:id`      | any subset of the fields above                                      | for editing |
+| POST   | `/course-grades/:id/archive` | —                                                                 | sets `archivedAt = now` |
+| POST   | `/course-grades/:id/restore` | —                                                                 | sets `archivedAt = null` |
+| GET    | `/grading-scale`          | —                                                                   | `{ "maxGradePoint": 5 }` — a single institution-wide setting, not a `course-grades` row |
+| PUT    | `/grading-scale`          | `{ maxGradePoint }`                                                  | replaces the setting wholesale (there's only ever one) |
+
+### 7.10 Courses — institution admin
+
+Like Departments (7.6) and Programs (7.7), stores its parent references
+independently — `departmentId` and `schoolId` are both real FKs, picked
+separately, not one derived through the other. Uniqueness is enforced on
+`code`, not `name` — course codes are the real-world unique key.
+
+| Method | Path              | Body                                             | Notes |
+|--------|-------------------|-----------------------------------------------------|-------|
+| GET    | `/courses`       | —                                                     | supports `?departmentId=`, `?schoolId=`, `?search=`, and `?includeArchived=true` (default `false`) |
+| POST   | `/courses`       | `{ name, code, departmentId, schoolId }`                | `422` on a `code` that collides case-insensitively with another non-archived course; `departmentId`/`schoolId` FK to `/departments` (7.6) / `/schools` (7.4) respectively, each independently |
+| PATCH  | `/courses/:id`   | any subset of the fields above                          | for editing |
+| POST   | `/courses/:id/archive` | —                                                   | sets `archivedAt = now` |
+| POST   | `/courses/:id/restore` | —                                                   | sets `archivedAt = null` |
+| POST   | `/courses/import` | multipart CSV upload                                   | `200, { "imported": 12, "skipped": 2 }` — same shape as `/students/import` (7.2), skipping rows missing a required column or reusing an existing `code` |
+| GET    | `/courses/export?includeArchived=false` | —                                  | CSV download of the matching courses |
+
 ## 8. Staff Designations — institution admin
 
 | Method | Path                        | Body                                             |
@@ -1287,7 +1348,7 @@ there's no separate "demo account" list to keep in sync. Every domain is a
 Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
 designations, notifications, students, schools, faculties, departments,
-programs, program levels, rollovers; plain,
+programs, program levels, course grades, courses, rollovers; plain,
 unpersisted for read-only dashboard data — see `dashboard.store.ts`) —
 swap each store's actions for real calls to the routes above one domain
 at a time; nothing else in the UI needs to change.

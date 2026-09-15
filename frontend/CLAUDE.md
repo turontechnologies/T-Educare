@@ -298,6 +298,36 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   already-verified engine, which nothing has asked for. If a future
   request explicitly asks to unify them, that's a deliberate, larger
   follow-up — not something to do incidentally while building this page.
+- **Courses Grades (`/dashboard/academics/course-grades`) pairs a normal
+  admin-table CRUD with one standalone, non-tabular setting rendered
+  below it.** `CourseGrade` (`src/types/course-grade.ts`,
+  `src/store/course-grades.store.ts`) is the usual per-row resource
+  (`code`/`remark`/`gradeScore`/`minimumScore`/`maximumScore`, with a
+  `maximumScore > minimumScore` validation on save) — but the same store
+  also holds a single `maxGradePoint` number with its own
+  `setMaxGradePoint` action, rendered as a small standalone
+  `NotchedField` + Save button beneath the table (`MaxGradePointForm` in
+  the page file), not as another table row. If a future page shows this
+  same "table plus one global setting" shape, put the setting in the same
+  store as a plain field/setter rather than modeling it as a fake
+  single-row resource.
+- **Courses Management (`/dashboard/academics/courses`) follows the same
+  independent-FK pattern as Departments/Programs, and reuses the
+  Import/Export CSV pattern from Student Management.** `Course`
+  (`src/types/course.ts`, `src/store/courses.store.ts`) has `departmentId`
+  and `schoolId` as two separately-picked FKs (not one derived through the
+  other), with course `code` — not `name` — as the field validated for
+  uniqueness, matching how course codes actually work in academia. Its
+  reference data named a department ("Computer Studies") and two schools
+  ("School of Technology", "School of Statistics") that didn't exist yet
+  — extended `departments.store.ts` and `schools.store.ts` with them
+  (each store's now-established `SEED_*_IDS` stable-id export + a version
+  bump), the same "backfill the shared seed" move used repeatedly through
+  this whole Academics hierarchy. Import/Export buttons mirror
+  `src/app/dashboard/students/page.tsx`'s implementation exactly (a
+  transient `URL.createObjectURL` CSV download for Export, `FileReader` +
+  `createCourse` calls for Import, skipping duplicate course codes) — copy
+  that pattern rather than re-deriving it for any future CSV-driven list.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -393,7 +423,7 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
   `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
   `departments.store.ts`, `programs.store.ts`, `program-levels.store.ts`,
-  `rollover.store.ts` — is a
+  `course-grades.store.ts`, `courses.store.ts`, `rollover.store.ts` — is a
   `persist`-backed Zustand store standing in for a real API, seeded with
   demo data. `dashboard.store.ts` is the one exception: it's read-only mock
   data for the two dashboards' stat cards/chart/recent-list, so it's
