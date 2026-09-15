@@ -7,9 +7,16 @@ function makeId() {
   return `faculty-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Fixed, stable ids for the seeded rows (not `makeId()`) so other mock stores — Department Management's `facultyId` FK — can reference them reliably. */
+export const SEED_FACULTY_IDS = {
+  law: "faculty-law",
+  computing: "faculty-computing",
+  mathematics: "faculty-mathematics",
+} as const;
+
 const SEEDED_FACULTIES: Faculty[] = [
   {
-    id: makeId(),
+    id: SEED_FACULTY_IDS.law,
     name: "Faculty of Law",
     deanName: "Dr. Solomon Olusegun",
     schoolId: SEED_SCHOOL_IDS.engineering,
@@ -17,10 +24,18 @@ const SEEDED_FACULTIES: Faculty[] = [
     archivedAt: null,
   },
   {
-    id: makeId(),
+    id: SEED_FACULTY_IDS.computing,
     name: "Faculty of Computing",
     deanName: "Alh. Gbenga Olusegun",
     schoolId: SEED_SCHOOL_IDS.computing,
+    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
+    archivedAt: null,
+  },
+  {
+    id: SEED_FACULTY_IDS.mathematics,
+    name: "Faculty of Mathematics",
+    deanName: "Dr. Solomon Olusegun",
+    schoolId: SEED_SCHOOL_IDS.engineering,
     createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
     archivedAt: null,
   },
@@ -80,7 +95,7 @@ export const useFacultiesStore = create<FacultiesState>()(
     }),
     {
       name: "t-educare-faculties",
-      version: 1,
+      version: 2,
       migrate: () => ({ faculties: SEEDED_FACULTIES }),
     },
   ),

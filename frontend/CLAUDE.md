@@ -238,12 +238,32 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   small curated candidate list (`DEAN_CANDIDATES` in
   `faculty-dialog.tsx`) — same reasoning as School Head: no general
   staff/person directory exists yet, so don't treat this list as
-  authoritative data. When building the next level down (Department,
-  which is `school → faculty → department`), keep following this same
-  shape: a real FK to the parent resource's store, a curated local
-  candidate list for any "pick a person" field, and the standard
-  admin-table CRUD (Card/Show-entries+Filter, kebab Edit/Delete,
-  `ConfirmDialog`, archive+"View archived").
+  authoritative data.
+- **Department Management (`/dashboard/academics/departments`) breaks the
+  "derive School through Faculty" assumption the Faculty Management bullet
+  above might suggest — don't extend that assumption without checking.**
+  `Department` (`src/types/department.ts`,
+  `src/store/departments.store.ts`) stores **both** `facultyId` and
+  `schoolId` as independent FKs, rather than deriving the school through
+  the faculty. This was a deliberate call based on the literal reference
+  data, not an oversight: it pairs "Law Department" with Faculty of Law
+  but a _different_ school than Faculty of Law's own `schoolId` in
+  `faculties.store.ts` — so this resource genuinely doesn't enforce
+  school → faculty → department as strict containment, and modeling it
+  that way would have silently contradicted the reference. The Add/Edit
+  dialog accordingly shows Faculty and School as two separate
+  `NotchedSelectField`s the admin picks independently, matching that same
+  literal reference (its dialog screenshot, mislabeled "Add New
+  Semester/Session" — another copy-paste artifact corrected to "Add New
+  Department" per this app's consistent dialog-title convention). H.O.D
+  is the usual `NotchedComboboxField` over a curated candidate list
+  (`HOD_CANDIDATES` in `department-dialog.tsx`). `faculties.store.ts`
+  gained a third seeded row, "Faculty of Mathematics" (and a
+  `SEED_FACULTY_IDS` export with stable ids, mirroring
+  `SEED_SCHOOL_IDS`), specifically so this module's seed data could
+  reference a faculty the reference screenshot named that didn't exist
+  yet — the same "add what's missing to a shared list" move already used
+  for Staff Designations' "Vice Chancellor".
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -338,7 +358,7 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   for): every store in `src/store/` — `rbac.store.ts`,
   `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
   `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
-  `rollover.store.ts` — is a
+  `departments.store.ts`, `rollover.store.ts` — is a
   `persist`-backed Zustand store standing in for a real API, seeded with
   demo data. `dashboard.store.ts` is the one exception: it's read-only mock
   data for the two dashboards' stat cards/chart/recent-list, so it's

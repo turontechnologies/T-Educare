@@ -129,6 +129,8 @@ erDiagram
     INSTITUTION ||--o{ SCHOOL : "defines"
     SCHOOL ||--o{ STUDENT : "enrolled under"
     SCHOOL ||--o{ FACULTY : "contains"
+    FACULTY ||--o{ DEPARTMENT : "contains"
+    SCHOOL ||--o{ DEPARTMENT : "independently linked to, see 7.6"
     INSTITUTION ||--o{ ROLLOVER_RECORD : "runs"
     ACADEMIC_SESSION ||--o{ ROLLOVER_RECORD : "rolled over from/to"
 
@@ -255,6 +257,16 @@ erDiagram
         string schoolId FK "SCHOOL.id"
         string name "e.g. Faculty of Law"
         string deanName
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    DEPARTMENT {
+        string id PK
+        string institutionId FK
+        string facultyId FK "FACULTY.id"
+        string schoolId FK "SCHOOL.id — independent of facultyId, see 7.6"
+        string name "e.g. Mathematics Department"
+        string hodName
         datetime createdAt
         datetime archivedAt "nullable — soft-delete"
     }
@@ -1021,10 +1033,30 @@ belongs to exactly one school. Same locked admin-table pattern as 7.4.
 
 `deanName` is a plain string, same reasoning as School's `headName`
 (7.4) — no "staff/person directory" resource exists yet to FK against.
-When Department Management (one level further down —
-school → faculty → department) gets built, it should follow this exact
-same shape: a real FK to its parent (here, `facultyId`), not a
-denormalized name string.
+
+### 7.6 Departments — institution admin
+
+**Stores both `facultyId` and `schoolId` as independent FKs — this
+resource does not derive its school through its faculty.** That's a
+deliberate modeling choice, not an inconsistency to "fix" later: the
+reference this was built against pairs a department's faculty and
+school independently (e.g. a "Law Department" under "Faculty of Law"
+paired with a *different* school than Faculty of Law's own `schoolId`
+in 7.5), so school → faculty → department is not strict containment for
+this resource the way it might be assumed to be from 7.4/7.5 alone.
+
+| Method | Path                     | Body                                     | Notes |
+|--------|--------------------------|---------------------------------------------|-------|
+| GET    | `/departments`          | —                                             | supports `?facultyId=`, `?schoolId=`, and `?includeArchived=true` (default `false`) |
+| POST   | `/departments`          | `{ name, hodName, facultyId, schoolId }`       | `422` on a `name` that collides case-insensitively with another non-archived department; `facultyId`/`schoolId` FK to `/faculties` (7.5) / `/schools` (7.4) respectively, each independently — reject either if it belongs to a different institution or doesn't exist |
+| PATCH  | `/departments/:id`      | any subset of the fields above                 | for editing |
+| POST   | `/departments/:id/archive` | —                                           | sets `archivedAt = now` |
+| POST   | `/departments/:id/restore` | —                                           | sets `archivedAt = null` |
+
+`hodName` is a plain string, same reasoning as `deanName`/`headName`
+above. If a future Program Management resource extends this hierarchy
+further, check the actual reference data before assuming it derives its
+parent chain strictly — this module is the concrete counter-example.
 
 ## 8. Staff Designations — institution admin
 
@@ -1197,7 +1229,8 @@ authenticates against the real `UserManagerAccount` records instead, so
 there's no separate "demo account" list to keep in sync. Every domain is a
 Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
-designations, notifications, students, schools, faculties, rollovers; plain,
+designations, notifications, students, schools, faculties, departments,
+rollovers; plain,
 unpersisted for read-only dashboard data — see `dashboard.store.ts`) —
 swap each store's actions for real calls to the routes above one domain
 at a time; nothing else in the UI needs to change.
