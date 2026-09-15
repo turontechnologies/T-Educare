@@ -328,6 +328,40 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   transient `URL.createObjectURL` CSV download for Export, `FileReader` +
   `createCourse` calls for Import, skipping duplicate course codes) — copy
   that pattern rather than re-deriving it for any future CSV-driven list.
+- **Staff Designation (`/dashboard/staff/designation`) was a genuinely old
+  page from before the locked admin-table pattern existed — it needed a
+  full rebuild, not just a new feature alongside it.** The original page
+  (raw edit/delete icon buttons, an Edit button with no `onClick` at all,
+  a real hard-delete via `deleteDesignation`, a native `<select>` for
+  Category) predates essentially every convention documented in this file.
+  `StaffDesignation` moved out of `staff.store.ts` into its own
+  `src/types/staff-designation.ts` (matching every other domain's
+  file-per-type convention) and gained `createdAt`/`archivedAt`;
+  `staff.store.ts` gained `updateDesignation`/`archiveDesignation`/
+  `restoreDesignation` and dropped the old hard-delete action entirely
+  (nothing else referenced it). If you ever find another leftover
+  pre-convention page like this, the fix is the same: don't patch around
+  its old shape, rebuild it to the current pattern like every other admin
+  list. `useStaffStore` is unusually widely reused as a cross-domain
+  source of truth by this point — School Management's Designation field,
+  Staff's own Role **and** Designation fields (see below) all read from
+  it — so changing its shape means checking every consumer, not just the
+  page that happens to own it.
+- **All Staff (`/dashboard/staff/all`) is Student Management's shape
+  applied to a different domain — same rich dialog, same bulk-select +
+  CSV import/export, same cross-store FK reuse.** `StaffMember`
+  (`src/types/staff-member.ts`, `src/store/staff-members.store.ts`,
+  `src/lib/staff-members.ts`'s `fullName()`) has a `departmentId` FK into
+  `departments.store.ts`, plus **both** a `role` and a `designation` field
+  — two separately-labeled selects in the source dialog that both read
+  from the exact same `useStaffStore().designations` list; don't collapse
+  them into one field or invent a separate "roles" resource, since no
+  such resource exists elsewhere in the reference. `staffId` is the
+  unique display code (`"UL-10010"` format, same auto-generation scheme
+  as Student Management's `matricNo`). The reference's second seed row
+  needed an "Accounting Department" that didn't exist yet — added it to
+  `departments.store.ts`'s seed, the same backfill move used everywhere
+  else in this session.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -423,7 +457,8 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
   `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
   `departments.store.ts`, `programs.store.ts`, `program-levels.store.ts`,
-  `course-grades.store.ts`, `courses.store.ts`, `rollover.store.ts` — is a
+  `course-grades.store.ts`, `courses.store.ts`, `staff-members.store.ts`,
+  `rollover.store.ts` — is a
   `persist`-backed Zustand store standing in for a real API, seeded with
   demo data. `dashboard.store.ts` is the one exception: it's read-only mock
   data for the two dashboards' stat cards/chart/recent-list, so it's

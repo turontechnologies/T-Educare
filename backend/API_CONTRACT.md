@@ -121,6 +121,8 @@ erDiagram
     INSTITUTION ||--o{ USER : "employs"
     INSTITUTION ||--o{ ACADEMIC_SESSION : "runs"
     INSTITUTION ||--o{ STAFF_DESIGNATION : "defines"
+    INSTITUTION ||--o{ STAFF_MEMBER : "employs"
+    DEPARTMENT ||--o{ STAFF_MEMBER : "assigned to"
     INSTITUTION ||--o{ USER_MANAGER_ACCOUNT : "assigned"
     ACADEMIC_SESSION ||--o{ ACADEMIC_SEMESTER : "contains"
     ROLE ||--o{ USER : "assigned to"
@@ -335,6 +337,31 @@ erDiagram
         string name
         string description
         string category "Academic Staff | Non-Academic Staff"
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    STAFF_MEMBER {
+        string id PK
+        string institutionId FK
+        string staffId "display code, e.g. UL-10010 — unique among non-archived staff"
+        string role "validated against STAFF_DESIGNATION.name, see 8.1"
+        string designation "validated against STAFF_DESIGNATION.name — a separate field from role, see 8.1"
+        string departmentId FK "DEPARTMENT.id"
+        string gender "Male | Female | Other"
+        string firstName
+        string middleName "nullable"
+        string lastName
+        string otherName "nullable"
+        string maritalStatus "Single | Married | Divorced | Widowed"
+        string email
+        string phone
+        string emergencyContact
+        datetime dateOfBirth
+        datetime employmentStartDate
+        string contactAddress
+        string avatarUrl "nullable"
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
     }
     USER_MANAGER_ACCOUNT {
         string id PK
@@ -1178,14 +1205,47 @@ separately, not one derived through the other. Uniqueness is enforced on
 
 ## 8. Staff Designations — institution admin
 
-| Method | Path                        | Body                                             |
-|--------|-----------------------------|-----------------------------------------------------|
-| GET    | `/staff-designations`       | —                                                    |
-| POST   | `/staff-designations`       | `{ name, description, category }`                     |
-| PATCH  | `/staff-designations/:id`   | `{ name?, description?, category? }`                   |
-| DELETE | `/staff-designations/:id`   | —                                                    |
+Built on the same locked admin-table pattern as everywhere else in this
+contract (§1) — a kebab action menu (Edit → separator → destructive
+Delete), a confirm prompt before deleting, and "delete" always meaning
+archive, never a hard delete. This resource is unusually widely reused as
+a shared source of truth: School Management's `designation` field (7.4),
+and both `role` and `designation` on Staff Members (8.1) all validate
+against `/staff-designations` rather than each defining their own list.
+
+| Method | Path                              | Body                                | Notes |
+|--------|-----------------------------------|-----------------------------------------|-------|
+| GET    | `/staff-designations`            | —                                         | supports `?includeArchived=true` (default `false`) |
+| POST   | `/staff-designations`            | `{ name, description, category }`          | `422` on a `name` that collides case-insensitively with another non-archived designation |
+| PATCH  | `/staff-designations/:id`        | `{ name?, description?, category? }`       | for editing |
+| POST   | `/staff-designations/:id/archive` | —                                        | sets `archivedAt = now` |
+| POST   | `/staff-designations/:id/restore` | —                                        | sets `archivedAt = null` |
 
 `category` is `"Academic Staff" | "Non-Academic Staff"`.
+
+### 8.1 Staff Members ("All Staff") — institution admin
+
+The full staff directory — same rich-dialog/CSV-import-export shape as
+Students (7.2), applied to a different domain. `departmentId` is a real
+FK to `/departments` (7.6). `role` and `designation` are two separate
+fields (not one) — both validated against `/staff-designations` (§8)
+rather than a dedicated "roles" resource, since none exists.
+
+| Method | Path                       | Body | Notes |
+|--------|----------------------------|------|-------|
+| GET    | `/staff`                  | —      | supports `?departmentId=`, `?search=` (full name, `staffId`, or designation), `?includeArchived=true` (default `false`), and pagination |
+| POST   | `/staff`                  | `{ staffId, role, designation, departmentId, gender, firstName, middleName?, lastName, otherName?, maritalStatus, email, phone, emergencyContact, dateOfBirth, employmentStartDate, contactAddress, avatarUrl? }` | `422` on a `staffId` that collides case-insensitively with another non-archived staff member |
+| PATCH  | `/staff/:id`              | any subset of the fields above | for editing |
+| POST   | `/staff/:id/archive`      | —      | sets `archivedAt = now` |
+| POST   | `/staff/:id/restore`      | —      | sets `archivedAt = null` |
+| POST   | `/staff/bulk-archive`     | `{ "ids": ["stf_1", "stf_2"] }` | archives every id in one call — backs the "All Staff" table's bulk-select "Delete Selected" action |
+| POST   | `/staff/import`           | multipart CSV upload | `200, { "imported": 12, "skipped": 2 }` — same shape as `/students/import` (7.2) |
+| GET    | `/staff/export?includeArchived=false` | — | CSV download of the matching staff |
+
+A staff member's display name is always the composition of `firstName`/
+`middleName`/`lastName` — the frontend's canonical assembly point is
+`fullName()` in `frontend/src/lib/staff-members.ts`, the same pattern as
+Students' own `fullName()` (7.2); mirror that ordering server-side.
 
 ---
 
@@ -1348,7 +1408,7 @@ there's no separate "demo account" list to keep in sync. Every domain is a
 Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
 designations, notifications, students, schools, faculties, departments,
-programs, program levels, course grades, courses, rollovers; plain,
+programs, program levels, course grades, courses, staff members, rollovers; plain,
 unpersisted for read-only dashboard data — see `dashboard.store.ts`) —
 swap each store's actions for real calls to the routes above one domain
 at a time; nothing else in the UI needs to change.
