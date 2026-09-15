@@ -131,6 +131,9 @@ erDiagram
     SCHOOL ||--o{ FACULTY : "contains"
     FACULTY ||--o{ DEPARTMENT : "contains"
     SCHOOL ||--o{ DEPARTMENT : "independently linked to, see 7.6"
+    DEPARTMENT ||--o{ PROGRAM : "offers"
+    FACULTY ||--o{ PROGRAM : "independently linked to, see 7.7"
+    INSTITUTION ||--o{ PROGRAM_LEVEL : "defines"
     INSTITUTION ||--o{ ROLLOVER_RECORD : "runs"
     ACADEMIC_SESSION ||--o{ ROLLOVER_RECORD : "rolled over from/to"
 
@@ -267,6 +270,24 @@ erDiagram
         string schoolId FK "SCHOOL.id — independent of facultyId, see 7.6"
         string name "e.g. Mathematics Department"
         string hodName
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    PROGRAM {
+        string id PK
+        string institutionId FK
+        string departmentId FK "DEPARTMENT.id"
+        string facultyId FK "FACULTY.id — independent of departmentId, see 7.7"
+        string name "e.g. Computing and IT"
+        string programType "Undergraduate | Postgraduate"
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    PROGRAM_LEVEL {
+        string id PK
+        string institutionId FK
+        string levelCode "e.g. 100 — independent lookup, not related to STUDENT.currentLevel, see 7.8"
+        string description "e.g. 100 levels"
         datetime createdAt
         datetime archivedAt "nullable — soft-delete"
     }
@@ -1054,9 +1075,45 @@ this resource the way it might be assumed to be from 7.4/7.5 alone.
 | POST   | `/departments/:id/restore` | —                                           | sets `archivedAt = null` |
 
 `hodName` is a plain string, same reasoning as `deanName`/`headName`
-above. If a future Program Management resource extends this hierarchy
-further, check the actual reference data before assuming it derives its
-parent chain strictly — this module is the concrete counter-example.
+above.
+
+### 7.7 Programs — institution admin
+
+Like Departments (7.6), stores its parent references independently
+rather than deriving one through another: `departmentId` and
+`facultyId` are both real FKs, picked separately.
+
+| Method | Path                  | Body                                                | Notes |
+|--------|-----------------------|--------------------------------------------------------|-------|
+| GET    | `/programs`          | —                                                        | supports `?departmentId=`, `?facultyId=`, and `?includeArchived=true` (default `false`) |
+| POST   | `/programs`          | `{ name, departmentId, facultyId, programType }`          | `422` on a `name` that collides case-insensitively with another non-archived program; `departmentId`/`facultyId` FK to `/departments` (7.6) / `/faculties` (7.5) respectively, each independently — reject either if it belongs to a different institution or doesn't exist |
+| PATCH  | `/programs/:id`      | any subset of the fields above                            | for editing |
+| POST   | `/programs/:id/archive` | —                                                       | sets `archivedAt = now` |
+| POST   | `/programs/:id/restore` | —                                                       | sets `archivedAt = null` |
+
+`programType` is `"Undergraduate" | "Postgraduate"`. This resource has
+no `schoolId` — the reference data's own "School" column for programs
+actually carried program-type values ("Undergraduate"/"Postgraduate"),
+not real school names, so it was modeled as `programType` here rather
+than a fabricated school reference.
+
+### 7.8 Program Levels — institution admin
+
+A small, flat, independent lookup table — deliberately **not** related
+to the `currentLevel` field on `STUDENT` (7.2) or anything in the
+rollover engine (7.3), even though both use similar-looking values
+(`"100"` here vs. `"100 Level"` there). The rollover engine's level
+handling is a fixed, exhaustively-checked set server-side too once
+built — unifying it with this admin-editable list is a deliberate,
+larger follow-up if ever requested, not a default expectation.
+
+| Method | Path                        | Body                          | Notes |
+|--------|-----------------------------|----------------------------------|-------|
+| GET    | `/program-levels`          | —                                 | supports `?includeArchived=true` (default `false`) |
+| POST   | `/program-levels`          | `{ levelCode, description }`        | `422` on a `levelCode` that collides case-insensitively with another non-archived program level |
+| PATCH  | `/program-levels/:id`      | any subset of the fields above      | for editing |
+| POST   | `/program-levels/:id/archive` | —                                 | sets `archivedAt = now` |
+| POST   | `/program-levels/:id/restore` | —                                 | sets `archivedAt = null` |
 
 ## 8. Staff Designations — institution admin
 
@@ -1230,7 +1287,7 @@ there's no separate "demo account" list to keep in sync. Every domain is a
 Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
 designations, notifications, students, schools, faculties, departments,
-rollovers; plain,
+programs, program levels, rollovers; plain,
 unpersisted for read-only dashboard data — see `dashboard.store.ts`) —
 swap each store's actions for real calls to the routes above one domain
 at a time; nothing else in the UI needs to change.

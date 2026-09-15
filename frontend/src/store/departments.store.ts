@@ -8,9 +8,17 @@ function makeId() {
   return `department-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Fixed, stable ids for the seeded rows (not `makeId()`) so other mock stores — Program Management's `departmentId` FK — can reference them reliably. */
+export const SEED_DEPARTMENT_IDS = {
+  mathematics: "department-mathematics",
+  law: "department-law",
+  computing: "department-computing",
+  administration: "department-administration",
+} as const;
+
 const SEEDED_DEPARTMENTS: Department[] = [
   {
-    id: makeId(),
+    id: SEED_DEPARTMENT_IDS.mathematics,
     name: "Mathematics Department",
     hodName: "Dr. Solomon Olusegun",
     facultyId: SEED_FACULTY_IDS.mathematics,
@@ -19,11 +27,29 @@ const SEEDED_DEPARTMENTS: Department[] = [
     archivedAt: null,
   },
   {
-    id: makeId(),
+    id: SEED_DEPARTMENT_IDS.law,
     name: "Law Department",
     hodName: "Alh. Gbenga Olusegun",
     facultyId: SEED_FACULTY_IDS.law,
     schoolId: SEED_SCHOOL_IDS.computing,
+    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
+    archivedAt: null,
+  },
+  {
+    id: SEED_DEPARTMENT_IDS.computing,
+    name: "Computing Department",
+    hodName: "Alh. Gbenga Olusegun",
+    facultyId: SEED_FACULTY_IDS.mathematics,
+    schoolId: SEED_SCHOOL_IDS.engineering,
+    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
+    archivedAt: null,
+  },
+  {
+    id: SEED_DEPARTMENT_IDS.administration,
+    name: "Administration Department",
+    hodName: "Dr. Solomon Olusegun",
+    facultyId: SEED_FACULTY_IDS.law,
+    schoolId: SEED_SCHOOL_IDS.engineering,
     createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
     archivedAt: null,
   },
@@ -87,7 +113,7 @@ export const useDepartmentsStore = create<DepartmentsState>()(
     }),
     {
       name: "t-educare-departments",
-      version: 1,
+      version: 2,
       migrate: () => ({ departments: SEEDED_DEPARTMENTS }),
     },
   ),

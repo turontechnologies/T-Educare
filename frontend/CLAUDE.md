@@ -263,7 +263,41 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `SEED_SCHOOL_IDS`), specifically so this module's seed data could
   reference a faculty the reference screenshot named that didn't exist
   yet — the same "add what's missing to a shared list" move already used
-  for Staff Designations' "Vice Chancellor".
+  for Staff Designations' "Vice Chancellor". `departments.store.ts`
+  itself later gained a `SEED_DEPARTMENT_IDS` export (and two more seeded
+  rows, "Computing Department"/"Administration Department") for the exact
+  same reason when Program Management needed departments that didn't
+  exist yet — this "add a stable-id export + whatever rows the next
+  module needs" move is now the established way to extend an
+  already-shipped seed store for a new FK, not just a one-off.
+- **Program Management (`/dashboard/academics/programs`) reads the
+  reference screenshot's "School" column as mislabeled, not literal —
+  check header/value mismatches like this before modeling a field.** The
+  table's 4th column was headed "School" but its actual values were
+  "Undergraduate"/"Postgraduate" — a program-type distinction, not a
+  school name (no real school called "Undergraduate" exists or should
+  exist). `Program` (`src/types/program.ts`,
+  `src/store/programs.store.ts`) therefore has a real
+  `programType: "Undergraduate" | "Postgraduate"` field and no `schoolId`
+  at all, alongside independent `departmentId`/`facultyId` FKs (following
+  Department's precedent above — two parent-ish FKs, not one derived
+  through the other). Same reasoning as correcting "Median Name" → Maiden
+  Name and the mismatched dialog titles elsewhere in this hierarchy: a
+  visibly wrong label/value in the source is corrected, not reproduced.
+- **Program Levels (`/dashboard/academics/program-levels`) is a flat,
+  independent lookup table — deliberately NOT wired into the existing
+  `StudentLevel` type or the rollover engine.** `ProgramLevel`
+  (`src/types/program-level.ts`, `src/store/program-levels.store.ts`) is
+  just `levelCode`/`description` (e.g. `"100"` / `"100 levels"`), with no
+  relationship to `STUDENT_LEVELS` in `src/types/student.ts` or anything
+  in `src/lib/rollover.ts`. Those two systems look related (both use
+  "100"/"200"/etc.) but keeping them separate was deliberate: `rollover.ts`
+  depends on `StudentLevel` being a fixed TypeScript union for
+  exhaustiveness (`PROGRAMME_LEVEL_ORDER`, `COURSES_BY_LEVEL`) — making
+  levels admin-editable here would require a real refactor of that
+  already-verified engine, which nothing has asked for. If a future
+  request explicitly asks to unify them, that's a deliberate, larger
+  follow-up — not something to do incidentally while building this page.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -358,7 +392,8 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   for): every store in `src/store/` — `rbac.store.ts`,
   `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
   `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
-  `departments.store.ts`, `rollover.store.ts` — is a
+  `departments.store.ts`, `programs.store.ts`, `program-levels.store.ts`,
+  `rollover.store.ts` — is a
   `persist`-backed Zustand store standing in for a real API, seeded with
   demo data. `dashboard.store.ts` is the one exception: it's read-only mock
   data for the two dashboards' stat cards/chart/recent-list, so it's
