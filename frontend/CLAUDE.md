@@ -362,6 +362,34 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   needed an "Accounting Department" that didn't exist yet — added it to
   `departments.store.ts`'s seed, the same backfill move used everywhere
   else in this session.
+- **Lecture Management (`/dashboard/lectures`) introduces a genuinely
+  polymorphic FK — an assignment that points to _either_ a School or a
+  Faculty depending on the lecturer's seniority.** `Lecturer`
+  (`src/types/lecturer.ts`, `src/store/lecturers.store.ts`,
+  `src/lib/lecturers.ts`'s `fullName()`) has `assignmentType: "school" |
+"faculty"` plus a single `assignmentId` FK that resolves against
+  `schools.store.ts` or `faculties.store.ts` depending on that type — a
+  Dean is posted directly to a School, a HOD to a Faculty, and the
+  reference table's own "School/Faculty" column literally mixes both
+  kinds of value in one place. The Add/Edit dialog
+  (`lecturer-dialog.tsx`) reflects this directly: picking "Assignment
+  Type" resets `assignmentId` and swaps the second select's option list
+  between the two stores — don't try to collapse this into a single
+  `schoolId`/`facultyId` pair, the reference genuinely needs one lecturer
+  to be assignable to either. `position` is its own small curated
+  `LECTURER_POSITIONS` list ("Dean of a Faculty", "Senior Lecturer",
+  etc.) — deliberately **not** the same list as `useStaffStore()`'s
+  designations (School Head/Staff role/Staff designation all share that
+  one), since the reference's academic-rank phrasing reads as a
+  genuinely different vocabulary from the shorter HR-style designation
+  names ("HOD", "Bursar"). The table's `username` column renders as a
+  real clickable link (matching the reference's blue-link styling)
+  opening a read-only `LecturerDetailsDialog` — the first "click an ID to
+  view details" affordance in this session's admin tables that wasn't
+  already backed by a richer View feature elsewhere, so if a future
+  table's reference shows an ID styled as a link, that's the signal to
+  add a View dialog, not just style text to look clickable without it
+  doing anything.
 - **Brand tokens**: the iEducare brand colors (navy `primary`, blue
   `secondary`, gold `tertiary`) and body text color live as CSS custom
   properties in `src/app/globals.css` (`:root` / `.dark`), wired into Tailwind
@@ -458,7 +486,7 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
   `departments.store.ts`, `programs.store.ts`, `program-levels.store.ts`,
   `course-grades.store.ts`, `courses.store.ts`, `staff-members.store.ts`,
-  `rollover.store.ts` — is a
+  `lecturers.store.ts`, `rollover.store.ts` — is a
   `persist`-backed Zustand store standing in for a real API, seeded with
   demo data. `dashboard.store.ts` is the one exception: it's read-only mock
   data for the two dashboards' stat cards/chart/recent-list, so it's

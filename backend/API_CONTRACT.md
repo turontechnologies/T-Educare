@@ -123,6 +123,9 @@ erDiagram
     INSTITUTION ||--o{ STAFF_DESIGNATION : "defines"
     INSTITUTION ||--o{ STAFF_MEMBER : "employs"
     DEPARTMENT ||--o{ STAFF_MEMBER : "assigned to"
+    INSTITUTION ||--o{ LECTURER : "employs"
+    SCHOOL ||--o{ LECTURER : "assigned to when assignmentType=school, see 8.2"
+    FACULTY ||--o{ LECTURER : "assigned to when assignmentType=faculty, see 8.2"
     INSTITUTION ||--o{ USER_MANAGER_ACCOUNT : "assigned"
     ACADEMIC_SESSION ||--o{ ACADEMIC_SEMESTER : "contains"
     ROLE ||--o{ USER : "assigned to"
@@ -360,6 +363,23 @@ erDiagram
         datetime employmentStartDate
         string contactAddress
         string avatarUrl "nullable"
+        datetime createdAt
+        datetime archivedAt "nullable — soft-delete"
+    }
+    LECTURER {
+        string id PK
+        string institutionId FK
+        string username "display code, e.g. UL-10010 — unique among non-archived lecturers"
+        string position "Dean of a Faculty | Head of Department | Provost | Professor | Associate Professor | Senior Lecturer | Lecturer I | Lecturer II | Assistant Lecturer — see 8.2"
+        string assignmentType "school | faculty"
+        string assignmentId "polymorphic FK — SCHOOL.id when assignmentType=school, FACULTY.id when assignmentType=faculty, see 8.2"
+        string gender "Male | Female | Other"
+        string firstName
+        string middleName "nullable"
+        string lastName
+        string otherName "nullable"
+        string email
+        string phone
         datetime createdAt
         datetime archivedAt "nullable — soft-delete"
     }
@@ -1247,6 +1267,32 @@ A staff member's display name is always the composition of `firstName`/
 `fullName()` in `frontend/src/lib/staff-members.ts`, the same pattern as
 Students' own `fullName()` (7.2); mirror that ordering server-side.
 
+### 8.2 Lecturers — institution admin
+
+A lecturer's organizational assignment is **polymorphic** — it points to
+either a School (7.4) or a Faculty (7.5), never both, depending on
+`assignmentType`. A Dean is posted directly to a School; a HOD to a
+Faculty; the reference data's own "School/Faculty" column literally
+mixes both kinds of value in one place, so this isn't a design choice to
+simplify away into two separate nullable FKs.
+
+| Method | Path                  | Body | Notes |
+|--------|-----------------------|------|-------|
+| GET    | `/lecturers`         | —      | supports `?assignmentType=`, `?assignmentId=`, `?search=` (full name, `username`, or position), `?includeArchived=true` (default `false`) |
+| POST   | `/lecturers`         | `{ username, position, assignmentType, assignmentId, gender, firstName, middleName?, lastName, otherName?, email, phone }` | `422` on a `username` that collides case-insensitively with another non-archived lecturer; `422` if `assignmentType === "school"` and `assignmentId` doesn't resolve against `/schools` (7.4), or `"faculty"` and it doesn't resolve against `/faculties` (7.5) |
+| PATCH  | `/lecturers/:id`     | any subset of the fields above | for editing |
+| POST   | `/lecturers/:id/archive` | —   | sets `archivedAt = now` |
+| POST   | `/lecturers/:id/restore` | —   | sets `archivedAt = null` |
+| POST   | `/lecturers/import`  | multipart CSV upload | `200, { "imported": 12, "skipped": 2 }` — same shape as `/students/import` (7.2) |
+| GET    | `/lecturers/export?includeArchived=false` | — | CSV download of the matching lecturers |
+
+`position` is a fixed set distinct from `/staff-designations` (§8) —
+"Dean of a Faculty", "Head of Department", "Provost", "Professor",
+"Associate Professor", "Senior Lecturer", "Lecturer I", "Lecturer II",
+"Assistant Lecturer" — an academic-rank vocabulary, not the shorter HR
+designation names (`HOD`, `Bursar`) `/staff-designations` uses elsewhere.
+Don't merge the two lists; they're deliberately separate.
+
 ---
 
 ## 9. Dashboards
@@ -1408,7 +1454,8 @@ there's no separate "demo account" list to keep in sync. Every domain is a
 Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
 designations, notifications, students, schools, faculties, departments,
-programs, program levels, course grades, courses, staff members, rollovers; plain,
+programs, program levels, course grades, courses, staff members,
+lecturers, rollovers; plain,
 unpersisted for read-only dashboard data — see `dashboard.store.ts`) —
 swap each store's actions for real calls to the routes above one domain
 at a time; nothing else in the UI needs to change.
