@@ -40,7 +40,7 @@ docker compose up -d --build
 ### 3) Health check
 
 ```bash
-curl http://localhost:8080/api/health
+curl http://localhost:8081/api/health
 ```
 
 Expected response:
