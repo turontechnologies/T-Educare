@@ -12,6 +12,13 @@ export const apiClient = axios.create({
 // Attaches the signed-in user's bearer token to every request.
 apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
+  const isAuthRequest = config.url?.includes("/auth/login");
+
+  if (isAuthRequest) {
+    delete config.headers.Authorization;
+    return config;
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

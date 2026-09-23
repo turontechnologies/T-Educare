@@ -11,7 +11,12 @@ export function useLogin() {
   const setToken = useAuthStore((state) => state.setToken);
 
   return useMutation({
-    mutationFn: (payload: LoginRequest) => authService.login(payload),
+    mutationFn: async (payload: LoginRequest) => {
+      // Clear any stale session before trying a fresh login so the app does not
+      // accidentally send an expired bearer token on the login request itself.
+      useAuthStore.getState().logout();
+      return authService.login(payload);
+    },
     onSuccess: ({ user, token }) => {
       setUser(user);
       setToken(token);
