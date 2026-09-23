@@ -5,10 +5,16 @@ import { EnrollmentChart } from "@/components/features/dashboard/enrollment-char
 import { RecentStudentsCard } from "@/components/features/dashboard/recent-students-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
-import { useDashboardStore } from "@/store/dashboard.store";
+import { useInstitutionDashboardStats } from "@/hooks/use-dashboard";
 
 export default function DashboardPage() {
-  const stats = useDashboardStore((state) => state.stats);
+  const { data: stats } = useInstitutionDashboardStats();
+  const safeStats = stats ?? {
+    registeredStudents: 0,
+    applicants: 0,
+    lecturers: 0,
+    accumulatedProfit: 0,
+  };
 
   return (
     <div className="space-y-6">
@@ -17,27 +23,27 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total number of registered students"
-          value={String(stats.registeredStudents)}
+          value={String(safeStats.registeredStudents)}
           icon={GraduationCap}
           iconClassName="bg-secondary/10 text-secondary"
         />
         <StatCard
           label="Total number of applicants"
-          value={String(stats.applicants)}
+          value={String(safeStats.applicants)}
           icon={UsersRound}
           iconClassName="bg-tertiary/15 text-tertiary-foreground"
           className="delay-75"
         />
         <StatCard
           label="Total number of Lecturers"
-          value={String(stats.lecturers)}
+          value={String(safeStats.lecturers)}
           icon={Users}
           iconClassName="bg-muted text-muted-foreground"
           className="delay-150"
         />
         <StatCard
           label="Total Accumulative Profits"
-          value={stats.accumulatedProfit.toLocaleString(undefined, {
+          value={safeStats.accumulatedProfit.toLocaleString(undefined, {
             minimumFractionDigits: 2,
           })}
           icon={Banknote}

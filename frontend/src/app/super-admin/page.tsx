@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { useSuperAdminDashboardStats } from "@/hooks/use-dashboard";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { cn } from "@/lib/utils";
 
@@ -24,11 +25,16 @@ const dateLabel = new Intl.DateTimeFormat("en-GB", {
 
 export default function SuperAdminDashboardPage() {
   const institutions = useInstitutionsStore((state) => state.institutions);
-  const totalStudents = institutions.reduce(
-    (sum, i) => sum + i.studentCount,
-    0,
-  );
-  const totalRevenue = institutions.reduce((sum, i) => sum + i.revenue, 0);
+  const { data: superAdminStats } = useSuperAdminDashboardStats();
+
+  const totalStudents =
+    superAdminStats?.totalStudents ??
+    institutions.reduce((sum, i) => sum + i.studentCount, 0);
+  const totalRevenue =
+    superAdminStats?.totalRevenue ??
+    institutions.reduce((sum, i) => sum + i.revenue, 0);
+  const institutionsCount =
+    superAdminStats?.institutionsCount ?? institutions.length;
   const recent = [...institutions]
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
     .slice(0, 5);
@@ -40,7 +46,7 @@ export default function SuperAdminDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           label="Total Number of Institutions"
-          value={String(institutions.length)}
+          value={String(institutionsCount)}
           icon={Landmark}
           iconClassName="bg-secondary/10 text-secondary"
         />

@@ -17,11 +17,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useDashboardEnrollment } from "@/hooks/use-dashboard";
 import { cn } from "@/lib/utils";
-import {
-  useDashboardStore,
-  type EnrollmentRange,
-} from "@/store/dashboard.store";
+import type { EnrollmentRange } from "@/store/dashboard.store";
 
 const RANGE_OPTIONS: { label: string; value: EnrollmentRange }[] = [
   { label: "Day", value: "day" },
@@ -31,7 +29,7 @@ const RANGE_OPTIONS: { label: string; value: EnrollmentRange }[] = [
 
 export function EnrollmentChart() {
   const [range, setRange] = useState<EnrollmentRange>("day");
-  const data = useDashboardStore((state) => state.enrollment[range]);
+  const { data = [] } = useDashboardEnrollment(range);
 
   return (
     <Card className="lg:col-span-2">

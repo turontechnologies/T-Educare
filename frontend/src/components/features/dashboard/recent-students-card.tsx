@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useDashboardStore } from "@/store/dashboard.store";
+import { useRecentStudents } from "@/hooks/use-dashboard";
 
 const registeredAtFormatter = new Intl.RelativeTimeFormat("en", {
   numeric: "auto",
@@ -23,7 +23,7 @@ function formatRegisteredAt(iso: string) {
 }
 
 export function RecentStudentsCard() {
-  const recentStudents = useDashboardStore((state) => state.recentStudents);
+  const { data: recentStudents = [] } = useRecentStudents(4);
 
   return (
     <Card>
