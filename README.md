@@ -6,7 +6,7 @@ independently deployable apps:
 | App | Path | Status | Stack |
 |---|---|---|---|
 | Frontend | [`frontend/`](frontend) | Scaffolded | Next.js, TypeScript, Tailwind CSS v4, shadcn/ui, Zustand, Zod, TanStack Query |
-| Backend | [`backend/`](backend) | Not started | TBD |
+| Backend | [`backend/`](backend) | Scaffolded | Java 21, Spring Boot 3.3, Spring Security, MSSQL, Flyway |
 
 See [`CLAUDE.md`](CLAUDE.md) for AI-agent-facing conventions, and
 [`frontend/README.md`](frontend/README.md) for frontend-specific docs.
@@ -25,9 +25,9 @@ flowchart LR
         AX["Axios client\n(src/lib/axios.ts)"]
     end
 
-    subgraph Backend["backend/ — TBD"]
+    subgraph Backend["backend/ — Java + Spring Boot"]
         API["REST API"]
-        DB[("Database")]
+        DB[("SQL Server")]
     end
 
     UI --> RQ
@@ -43,11 +43,12 @@ flowchart LR
 ```mermaid
 flowchart TD
     Root["T-Educare/"] --> FE["frontend/\nNext.js app"]
-    Root --> BE["backend/\n(reserved, not yet scaffolded)"]
+    Root --> BE["backend/\nJava Spring Boot app"]
     Root --> Hooks[".husky/\ngit hooks"]
     Root --> RootPkg["package.json\nroot lint-staged + husky"]
 
     FE --> FEsrc["src/app · src/components\nsrc/hooks · src/services\nsrc/store · src/lib · src/types"]
+    BE --> BESrc["src/main/java · src/main/resources\nconfig · health · migrations"]
 ```
 
 Each app owns its own `package.json`, lockfile, and `node_modules` — there is
@@ -65,8 +66,15 @@ pnpm --dir frontend install
 pnpm dev:frontend           # or: cd frontend && pnpm dev
 ```
 
-The backend has no scaffold yet — see [`backend/README.md`](backend/README.md)
-for the contract the frontend already expects from it.
+For the backend:
+
+```bash
+cd backend
+cp .env.example .env
+docker compose up -d --build
+```
+
+Then open the API at `http://localhost:8080/api/health`.
 
 ## Contributing
 
