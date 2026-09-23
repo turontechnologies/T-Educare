@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -21,18 +22,40 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { NotificationsBell } from "@/components/features/notifications/notifications-bell";
+import type { NavItem } from "@/config/nav";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
 interface AppHeaderProps {
+  menu: NavItem[];
   onMenuClick: () => void;
 }
 
-export function AppHeader({ onMenuClick }: AppHeaderProps) {
+function flattenNavItems(items: NavItem[], collection: NavItem[] = []) {
+  items.forEach((item) => {
+    collection.push(item);
+    if (item.children?.length) {
+      flattenNavItems(item.children, collection);
+    }
+  });
+  return collection;
+}
+
+export function AppHeader({ menu, onMenuClick }: AppHeaderProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const institutions = useInstitutionsStore((state) => state.institutions);
+  const [query, setQuery] = useState("");
+
+  const searchResults = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return [];
+
+    return flattenNavItems(menu)
+      .filter((item) => item.label.toLowerCase().includes(normalized))
+      .slice(0, 8);
+  }, [menu, query]);
 
   const institution =
     user?.role === "institution_admin"
@@ -42,6 +65,14 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   const initials = user
     ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
     : "?";
+
+  const handleProfile = () => {
+    router.push(
+      user?.role === "super_admin"
+        ? "/super-admin/profile"
+        : "/dashboard/profile",
+    );
+  };
 
   const handleLogout = () => {
     logout();
@@ -96,10 +127,40 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
       <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
         <div className="relative hidden max-w-xs flex-1 md:block">
           <Input
-            placeholder="Search here..."
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search pages..."
             className="h-9 rounded-full pr-9"
           />
           <Search className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+
+          {query.trim() && (
+            <div className="absolute top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+              {searchResults.length > 0 ? (
+                searchResults.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      router.push(item.href);
+                    }}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                  >
+                    <span className="flex items-center gap-2">
+                      <item.icon className="size-4 text-muted-foreground" />
+                      {item.label}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Open</span>
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  No pages match your search.
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <NotificationsBell />
@@ -119,15 +180,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() =>
-                router.push(
-                  user?.role === "super_admin"
-                    ? "/super-admin/profile"
-                    : "/dashboard/profile",
-                )
-              }
-            >
+            <DropdownMenuItem onClick={handleProfile}>
               <User className="size-4" />
               Profile
             </DropdownMenuItem>

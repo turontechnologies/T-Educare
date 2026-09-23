@@ -68,6 +68,21 @@ public class DashboardService {
         return new DashboardRecentStudentsResponse(students.stream().limit(safeLimit).toList());
     }
 
+    public DashboardRecentInstitutionsResponse recentInstitutions(int limit) {
+        int safeLimit = Math.max(1, limit);
+        List<RecentInstitution> institutions = List.of(
+                new RecentInstitution("inst-landmark", "Landmark University", 7, "2026-03-03T14:32:00.000Z", "active"),
+                new RecentInstitution("inst-rivers", "Rivers State University", 0, "2026-03-03T11:13:00.000Z",
+                        "active"),
+                new RecentInstitution("inst-benin", "University of Benin", 0, "2026-03-03T09:15:00.000Z", "active"),
+                new RecentInstitution("inst-afebabalola", "Afe Babalola University", 7, "2026-03-03T08:07:00.000Z",
+                        "active"),
+                new RecentInstitution("inst-redeemer", "Redeemer's University", 6, "2026-03-03T10:21:00.000Z",
+                        "inactive"));
+
+        return new DashboardRecentInstitutionsResponse(institutions.stream().limit(safeLimit).toList());
+    }
+
     public record DashboardStatsResponse(
             long registeredStudents,
             long applicants,
@@ -90,6 +105,12 @@ public class DashboardService {
     public record DashboardRecentStudentsResponse(List<RecentStudent> data) {
     }
 
+    public record DashboardRecentInstitutionsResponse(List<RecentInstitution> data) {
+    }
+
     public record RecentStudent(String id, String name, String registeredAt) {
+    }
+
+    public record RecentInstitution(String id, String name, long modulesCount, String createdAt, String status) {
     }
 }

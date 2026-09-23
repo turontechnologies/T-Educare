@@ -31,6 +31,18 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.totalRevenue").value(1528600));
     }
 
+    @Test
+    void recentInstitutionsEndpointReturnsLatestInstitutions() throws Exception {
+        String token = loginAs("super_admin", "Super@2024");
+
+        mockMvc.perform(get("/api/super-admin/recent-institutions")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").exists())
+                .andExpect(jsonPath("$.data[0].modulesCount").isNumber())
+                .andExpect(jsonPath("$.data[0].status").isNotEmpty());
+    }
+
     private String loginAs(String username, String password) throws Exception {
         String body = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
 

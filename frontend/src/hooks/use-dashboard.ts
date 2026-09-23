@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   dashboardService,
+  type DashboardStats,
   type EnrollmentPoint,
+  type RecentInstitution,
   type RecentStudent,
   type SuperAdminStats,
-  type DashboardStats,
 } from "@/services/dashboard.service";
 
 export function useSuperAdminDashboardStats() {
@@ -37,4 +38,17 @@ export function useRecentStudents(limit = 4) {
   });
 }
 
-export type { SuperAdminStats, DashboardStats, EnrollmentPoint, RecentStudent };
+export function useRecentInstitutions(limit = 5) {
+  return useQuery<RecentInstitution[]>({
+    queryKey: ["super-admin-recent-institutions", limit],
+    queryFn: () => dashboardService.getRecentInstitutions(limit),
+  });
+}
+
+export type {
+  SuperAdminStats,
+  DashboardStats,
+  EnrollmentPoint,
+  RecentInstitution,
+  RecentStudent,
+};

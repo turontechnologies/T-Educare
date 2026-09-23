@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
-import { useSuperAdminDashboardStats } from "@/hooks/use-dashboard";
-import { useInstitutionsStore } from "@/store/institutions.store";
+import {
+  useRecentInstitutions,
+  useSuperAdminDashboardStats,
+} from "@/hooks/use-dashboard";
 import { cn } from "@/lib/utils";
 
 const dateLabel = new Intl.DateTimeFormat("en-GB", {
@@ -24,20 +26,12 @@ const dateLabel = new Intl.DateTimeFormat("en-GB", {
 }).format;
 
 export default function SuperAdminDashboardPage() {
-  const institutions = useInstitutionsStore((state) => state.institutions);
   const { data: superAdminStats } = useSuperAdminDashboardStats();
+  const { data: recent = [] } = useRecentInstitutions(5);
 
-  const totalStudents =
-    superAdminStats?.totalStudents ??
-    institutions.reduce((sum, i) => sum + i.studentCount, 0);
-  const totalRevenue =
-    superAdminStats?.totalRevenue ??
-    institutions.reduce((sum, i) => sum + i.revenue, 0);
-  const institutionsCount =
-    superAdminStats?.institutionsCount ?? institutions.length;
-  const recent = [...institutions]
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-    .slice(0, 5);
+  const totalStudents = superAdminStats?.totalStudents ?? 0;
+  const totalRevenue = superAdminStats?.totalRevenue ?? 0;
+  const institutionsCount = superAdminStats?.institutionsCount ?? 0;
 
   return (
     <div className="space-y-6">

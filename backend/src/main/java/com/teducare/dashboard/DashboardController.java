@@ -51,4 +51,9 @@ public class DashboardController {
     public ResponseEntity<Map<String, Object>> recentStudents(@RequestParam(defaultValue = "4") int limit) {
         return ResponseEntity.ok(Map.of("data", dashboardService.recentStudents(limit).data()));
     }
+
+    @GetMapping("/super-admin/recent-institutions")
+    public ResponseEntity<Map<String, Object>> recentInstitutions(@RequestParam(defaultValue = "5") int limit) {
+        return ResponseEntity.ok(Map.of("data", dashboardService.recentInstitutions(limit).data()));
+    }
 }

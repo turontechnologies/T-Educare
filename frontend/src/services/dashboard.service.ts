@@ -24,6 +24,14 @@ export type RecentStudent = {
   registeredAt: string;
 };
 
+export type RecentInstitution = {
+  id: string;
+  name: string;
+  modulesCount: number;
+  createdAt: string;
+  status: "active" | "inactive";
+};
+
 export const dashboardService = {
   async getSuperAdminStats(): Promise<SuperAdminStats> {
     const { data } = await apiClient.get<SuperAdminStats>("/super-admin/stats");
@@ -46,6 +54,14 @@ export const dashboardService = {
   async getRecentStudents(limit = 4): Promise<RecentStudent[]> {
     const { data } = await apiClient.get<{ data: RecentStudent[] }>(
       "/dashboard/recent-students",
+      { params: { limit } },
+    );
+    return data.data;
+  },
+
+  async getRecentInstitutions(limit = 5): Promise<RecentInstitution[]> {
+    const { data } = await apiClient.get<{ data: RecentInstitution[] }>(
+      "/super-admin/recent-institutions",
       { params: { limit } },
     );
     return data.data;
