@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { NotificationsBell } from "@/components/features/notifications/notifications-bell";
 import type { NavItem } from "@/config/nav";
+import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
@@ -74,10 +75,16 @@ export function AppHeader({ menu, onMenuClick }: AppHeaderProps) {
     );
   };
 
-  const handleLogout = () => {
-    logout();
-    toast.success("You've been signed out");
-    router.replace("/login");
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Keep the UX resilient even if the API is temporarily unavailable.
+    } finally {
+      logout();
+      toast.success("You've been signed out");
+      router.replace("/login");
+    }
   };
 
   return (

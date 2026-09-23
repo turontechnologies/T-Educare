@@ -20,6 +20,11 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    await apiClient.post("/auth/logout");
+    try {
+      await apiClient.post("/auth/logout");
+    } catch {
+      // Session is still being cleared client-side even if the backend endpoint
+      // is unavailable; we do not block the user from leaving the app.
+    }
   },
 };

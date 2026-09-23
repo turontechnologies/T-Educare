@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
+import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
 
@@ -70,9 +71,15 @@ export function DashboardSidebar() {
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
 
-  const handleLogout = () => {
-    logout();
-    router.replace("/login");
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Keep the UX resilient even if the API is temporarily unavailable.
+    } finally {
+      logout();
+      router.replace("/login");
+    }
   };
 
   return (

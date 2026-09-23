@@ -7,6 +7,7 @@ import { ChevronRight, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import type { NavItem } from "@/config/nav";
 import { Logo } from "@/components/shared/logo";
+import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
 
@@ -155,10 +156,16 @@ export function SidebarContent({
   const logout = useAuthStore((state) => state.logout);
   const activeKey = findActiveKey(menu, pathname);
 
-  const handleLogout = () => {
-    logout();
-    toast.success("You've been signed out");
-    router.replace("/login");
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Keep the UX resilient even if the API is temporarily unavailable.
+    } finally {
+      logout();
+      toast.success("You've been signed out");
+      router.replace("/login");
+    }
   };
 
   return (
