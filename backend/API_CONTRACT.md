@@ -28,9 +28,15 @@ conventions below and get added here as each one is built.
 Institutions §4.1/4.3/4.4 (§4) are implemented and live** — see
 `backend/README.md`'s "What's implemented" section for exactly what that
 covers (real MSSQL-backed tables via Flyway, not in-memory; real Cloudinary
-uploads, not local-only previews). Institutions and uploads are
-backend-only for now — not yet wired to the frontend (see each section's
-own note). Everything else below (§4.5-4.7, Roles, Users, Academic Sessions,
+uploads, not local-only previews). **Institutions 4.1/4.3/4.4 is now wired
+to the frontend too** (2026-09-24) — `institutions.store.ts` no longer
+seeds mock data, it's hydrated from these real endpoints (see
+`frontend/CLAUDE.md`). §4.6 (Modules) and §4.7 (License Manager) still have
+no backend, so their frontend actions stay local-only (in-memory, reset on
+reload) layered on top of the real institution rows — clearly flagged in
+their own dialogs now rather than pretending to save. File uploads (§3.2)
+are wired for the institution logo picker only so far; profile avatars
+still use a local data URL. Everything else below (§4.5-4.7, Roles, Users, Academic Sessions,
 Students, Schools/Faculties/Departments/Programs, Staff, Notifications) is
 **not implemented yet** — this file remains what to build those *against*.
 
@@ -576,15 +582,17 @@ JPEG/WEBP only, 5MB max, stored under the `t-educare/uploads` folder.
 Verified live: a real upload returns a genuine
 `https://res.cloudinary.com/...` URL.
 
-**Not wired to the frontend yet** — `ProfileHeroCard` still reads a picked
-file into a `data:` URL client-side (`readFileAsDataUrl()`) and sends that
-directly as `avatarUrl` on `PATCH /profile` (§3.1) rather than calling this
-endpoint first. Same for institution `logoUrl` (§4.2) — still
-`URL.createObjectURL`, local-only. Switching either over is: call
-`POST /uploads` first, take the returned `url`, send *that* as
-`avatarUrl`/`logoUrl` instead of a data URL/object URL — no backend change
-needed, and no reason the two avatar/logo call sites can't share one
-`useUpload()` mutation hook when this happens.
+**Wired to the frontend for institution logos (2026-09-24)** —
+`institution-dialog.tsx` calls `POST /uploads` on file select and sends the
+returned Cloudinary `url` as `logoUrl`, not a data URL (the `logo_url`
+column is `NVARCHAR(500)`; a data URL would blow past that). **Profile
+avatars are not wired yet** — `ProfileHeroCard` still reads a picked file
+into a `data:` URL client-side (`readFileAsDataUrl()`) and sends that
+directly as `avatarUrl` on `PATCH /profile` (§3.1). Same fix when that
+happens: call `POST /uploads` first, send the returned `url` instead of the
+data URL — both call sites can share the same `useUploadFile()` hook
+(`frontend/src/hooks/use-upload.ts`), already used by the institution
+dialog.
 
 ---
 
@@ -608,10 +616,12 @@ endpoint, this subsection just documents its request shape) — implemented
 alongside it. **4.5 (User Manager), 4.6 (Modules), and 4.7 (License
 Manager) are not implemented yet** — those are separate super-admin pages
 (`/super-admin/user-manager`, `/super-admin/modules`,
-`/super-admin/license-manager`), not part of this pass. Not yet wired to
-the frontend — `frontend/src/store/institutions.store.ts` still mocks this
-resource for now; the frontend will be pointed at these real endpoints in a
-later step.
+`/super-admin/license-manager`), not part of this pass. **Wired to the
+frontend (2026-09-24)** — `institutions.store.ts` no longer seeds mock
+data; it's hydrated from these real endpoints (see `frontend/CLAUDE.md`
+for the full architecture, including how Modules/License Manager's own
+still-unbuilt actions stay local-only on top of this real data without
+pretending to persist).
 
 ### 4.1 List / create / edit
 

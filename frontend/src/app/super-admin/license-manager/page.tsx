@@ -336,7 +336,7 @@ export default function LicenseManagerPage() {
         open={!!pendingRegenerate}
         onOpenChange={(open) => !open && setPendingRegenerate(null)}
         title="Regenerate this license key?"
-        description={`Are you sure you want to regenerate the license key for ${pendingRegenerate?.name}? The old key will stop working immediately.`}
+        description={`Are you sure you want to regenerate the license key for ${pendingRegenerate?.name}? The old key will stop working immediately. (License records aren't backed by the server yet — this only updates what you see in this browser tab and resets on your next page reload.)`}
         confirmLabel="Regenerate key"
         onConfirm={() => {
           if (!pendingRegenerate) return;
@@ -363,7 +363,7 @@ export default function LicenseManagerPage() {
         open={!!pendingRevoke}
         onOpenChange={(open) => !open && setPendingRevoke(null)}
         title="Revoke this license?"
-        description={`Are you sure you want to revoke the license for ${pendingRevoke?.name}? It will be reset to Basic with no license key — you can create a new one anytime from "Add New".`}
+        description={`Are you sure you want to revoke the license for ${pendingRevoke?.name}? It will be reset to Basic with no license key — you can create a new one anytime from "Add New". (License records aren't backed by the server yet — this only updates what you see in this browser tab and resets on your next page reload.)`}
         confirmLabel="Revoke"
         variant="destructive"
         onConfirm={() => {

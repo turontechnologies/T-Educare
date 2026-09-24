@@ -158,6 +158,12 @@ function InstitutionModulesForm({
   return (
     <>
       <div className="max-h-[65vh] space-y-5 overflow-y-auto p-6">
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Module links aren&apos;t backed by the server yet — this only updates
+          what you see in this browser tab right now and resets on your next
+          page reload.
+        </div>
+
         {isEditing ? (
           <div className="rounded-md bg-secondary/5 px-3 py-2.5">
             <p className="text-sm font-medium text-secondary">

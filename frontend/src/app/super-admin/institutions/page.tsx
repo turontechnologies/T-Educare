@@ -44,7 +44,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { InstitutionDialog } from "@/components/features/institutions/institution-dialog";
 import { cn } from "@/lib/utils";
 import { notifyInstitution, notifyPlatform } from "@/lib/notify";
-import { useInstitutionsStore } from "@/store/institutions.store";
+import {
+  useArchiveInstitution,
+  useInstitutions,
+  useRestoreInstitution,
+  useUpdateInstitutionStatus,
+} from "@/hooks/use-institutions";
 import type { Institution } from "@/types/institution";
 
 const PAGE_SIZE_OPTIONS = ["5", "10", "25", "50"];
@@ -74,16 +79,14 @@ const dateOnlyLabel = (iso: string) =>
     .replace(/ /g, "-");
 
 export default function InstitutionsPage() {
-  const institutions = useInstitutionsStore((state) => state.institutions);
-  const updateInstitution = useInstitutionsStore(
-    (state) => state.updateInstitution,
-  );
-  const archiveInstitution = useInstitutionsStore(
-    (state) => state.archiveInstitution,
-  );
-  const restoreInstitution = useInstitutionsStore(
-    (state) => state.restoreInstitution,
-  );
+  const { data, isLoading, isError } = useInstitutions({
+    includeArchived: true,
+    perPage: 1000,
+  });
+  const institutions = useMemo(() => data?.data ?? [], [data]);
+  const updateStatus = useUpdateInstitutionStatus();
+  const archiveInstitutionMutation = useArchiveInstitution();
+  const restoreInstitutionMutation = useRestoreInstitution();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInstitution, setEditingInstitution] = useState<
@@ -139,6 +142,28 @@ export default function InstitutionsPage() {
       return next;
     });
   };
+
+  if (isLoading && !data) {
+    return (
+      <div className="space-y-6">
+        <PageHeader breadcrumb={["Administrator", "Institutions"]} />
+        <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+          Loading institutions...
+        </div>
+      </div>
+    );
+  }
+
+  if (isError && !data) {
+    return (
+      <div className="space-y-6">
+        <PageHeader breadcrumb={["Administrator", "Institutions"]} />
+        <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-6 text-sm text-destructive">
+          Unable to load institutions from the backend.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -342,19 +367,29 @@ export default function InstitutionsPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => {
-                            restoreInstitution(institution.id);
-                            toast.success(`${institution.name} restored`);
-                            notifyPlatform(
-                              "Institution restored",
-                              `${institution.name} was restored from the archive.`,
-                              "/super-admin/institutions",
-                            );
-                            notifyInstitution(
-                              institution.id,
-                              "Institution restored",
-                              "Your institution has been restored and is visible on the platform again.",
-                            );
+                          onClick={async () => {
+                            try {
+                              await restoreInstitutionMutation.mutateAsync(
+                                institution.id,
+                              );
+                              toast.success(`${institution.name} restored`);
+                              notifyPlatform(
+                                "Institution restored",
+                                `${institution.name} was restored from the archive.`,
+                                "/super-admin/institutions",
+                              );
+                              notifyInstitution(
+                                institution.id,
+                                "Institution restored",
+                                "Your institution has been restored and is visible on the platform again.",
+                              );
+                            } catch (error) {
+                              toast.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Failed to restore institution",
+                              );
+                            }
                           }}
                           className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                         >
@@ -435,25 +470,34 @@ export default function InstitutionsPage() {
         description={`Are you sure you want to ${pendingStatus?.nextActive ? "activate" : "deactivate"} ${pendingStatus?.institution.name}? ${pendingStatus?.nextActive ? "It will regain full access immediately." : "It will lose access until reactivated."}`}
         confirmLabel={pendingStatus?.nextActive ? "Activate" : "Deactivate"}
         variant={pendingStatus?.nextActive ? "default" : "destructive"}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingStatus) return;
-          updateInstitution(pendingStatus.institution.id, {
-            status: pendingStatus.nextActive ? "active" : "inactive",
-          });
           const verb = pendingStatus.nextActive ? "activated" : "deactivated";
-          toast.success(`${pendingStatus.institution.name} ${verb}`);
-          notifyPlatform(
-            `Institution ${verb}`,
-            `${pendingStatus.institution.name} was ${verb}.`,
-            "/super-admin/institutions",
-          );
-          notifyInstitution(
-            pendingStatus.institution.id,
-            `Your institution was ${verb}`,
-            pendingStatus.nextActive
-              ? "Your institution has regained full access to the platform."
-              : "Your institution has lost access to the platform until reactivated.",
-          );
+          try {
+            await updateStatus.mutateAsync({
+              id: pendingStatus.institution.id,
+              status: pendingStatus.nextActive ? "active" : "inactive",
+            });
+            toast.success(`${pendingStatus.institution.name} ${verb}`);
+            notifyPlatform(
+              `Institution ${verb}`,
+              `${pendingStatus.institution.name} was ${verb}.`,
+              "/super-admin/institutions",
+            );
+            notifyInstitution(
+              pendingStatus.institution.id,
+              `Your institution was ${verb}`,
+              pendingStatus.nextActive
+                ? "Your institution has regained full access to the platform."
+                : "Your institution has lost access to the platform until reactivated.",
+            );
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : `Failed to ${pendingStatus.nextActive ? "activate" : "deactivate"} institution`,
+            );
+          }
         }}
       />
 
@@ -464,20 +508,28 @@ export default function InstitutionsPage() {
         description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveInstitution(pendingArchive.id);
-          toast.success(`${pendingArchive.name} deleted`);
-          notifyPlatform(
-            "Institution deleted",
-            `${pendingArchive.name} was moved to the archive.`,
-            "/super-admin/institutions",
-          );
-          notifyInstitution(
-            pendingArchive.id,
-            "Your institution was deleted",
-            "Your institution was archived by the platform administrator.",
-          );
+          try {
+            await archiveInstitutionMutation.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.name} deleted`);
+            notifyPlatform(
+              "Institution deleted",
+              `${pendingArchive.name} was moved to the archive.`,
+              "/super-admin/institutions",
+            );
+            notifyInstitution(
+              pendingArchive.id,
+              "Your institution was deleted",
+              "Your institution was archived by the platform administrator.",
+            );
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete institution",
+            );
+          }
         }}
       />
     </div>

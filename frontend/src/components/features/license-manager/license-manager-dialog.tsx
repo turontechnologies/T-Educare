@@ -171,6 +171,12 @@ function LicenseForm({
         onSubmit={handleSubmit(onSubmit)}
         className="grid max-h-[65vh] gap-5 overflow-y-auto p-6 sm:grid-cols-2"
       >
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:col-span-2">
+          License records aren&apos;t backed by the server yet — this only
+          updates what you see in this browser tab right now and resets on your
+          next page reload.
+        </div>
+
         <NotchedComboboxField
           label="Select Institution"
           labelClassName="bg-popover"

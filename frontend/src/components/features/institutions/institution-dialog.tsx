@@ -18,8 +18,12 @@ import {
 } from "@/components/shared/notched-field";
 import { readFileAsDataUrl } from "@/lib/files";
 import { notifyInstitution, notifyPlatform } from "@/lib/notify";
-import { useInstitutionsStore } from "@/store/institutions.store";
-import type { Institution, LicenseType } from "@/types/institution";
+import {
+  useCreateInstitution,
+  useUpdateInstitution,
+} from "@/hooks/use-institutions";
+import { useUploadFile } from "@/hooks/use-upload";
+import type { Institution } from "@/types/institution";
 
 const INSTITUTION_TYPES = [
   "University",
@@ -103,12 +107,9 @@ function InstitutionForm({
   institution?: Institution;
   onDone: () => void;
 }) {
-  const createInstitution = useInstitutionsStore(
-    (state) => state.createInstitution,
-  );
-  const updateInstitution = useInstitutionsStore(
-    (state) => state.updateInstitution,
-  );
+  const createInstitution = useCreateInstitution();
+  const updateInstitution = useUpdateInstitution();
+  const uploadFile = useUploadFile();
 
   const [institutionType, setInstitutionType] = useState(
     institution?.institutionType ?? "",
@@ -116,7 +117,7 @@ function InstitutionForm({
   const [countryState, setCountryState] = useState(
     institution?.countryState ?? "",
   );
-  const [logoPreview, setLogoPreview] = useState<string | undefined>(
+  const [logoUrl, setLogoUrl] = useState<string | undefined>(
     institution?.logoUrl,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -138,54 +139,68 @@ function InstitutionForm({
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
-    if (file) setLogoPreview(await readFileAsDataUrl(file));
+    if (!file) return;
+
+    // Instant local preview while the real upload is in flight.
+    setLogoUrl(await readFileAsDataUrl(file));
+    try {
+      const { url } = await uploadFile.mutateAsync(file);
+      setLogoUrl(url);
+    } catch {
+      toast.error("Failed to upload logo. Please try again.");
+      setLogoUrl(institution?.logoUrl);
+    }
   };
 
-  const onSubmit = (values: InstitutionFormValues) => {
+  const onSubmit = async (values: InstitutionFormValues) => {
     if (!institutionType || !countryState) {
       toast.error("Select an institution type and country/state");
       return;
     }
+    if (uploadFile.isPending) {
+      toast.error("Please wait for the logo to finish uploading.");
+      return;
+    }
 
-    if (institution) {
-      updateInstitution(institution.id, {
-        ...values,
-        institutionType,
-        countryState,
-        logoUrl: logoPreview,
-      });
-      toast.success(`${values.name} updated`);
-      notifyPlatform(
-        "Institution updated",
-        `${values.name}'s details were updated.`,
-        "/super-admin/institutions",
-      );
-      notifyInstitution(
-        institution.id,
-        "Your institution's details were updated",
-        "The platform administrator updated your institution's profile.",
-      );
-    } else {
-      const created = createInstitution({
-        ...values,
-        institutionType,
-        countryState,
-        logoUrl: logoPreview,
-        modulesCount: 0,
-        studentCount: 0,
-        revenue: 0,
-        licenseType: "Basic" as LicenseType,
-        expiringAt: null,
-        status: "active",
-      });
-      toast.success(`${values.name} added`);
-      notifyPlatform(
-        "New institution added",
-        `${created.name} was added to the platform.`,
-        "/super-admin/institutions",
+    try {
+      if (institution) {
+        await updateInstitution.mutateAsync({
+          id: institution.id,
+          payload: { ...values, institutionType, countryState, logoUrl },
+        });
+        toast.success(`${values.name} updated`);
+        notifyPlatform(
+          "Institution updated",
+          `${values.name}'s details were updated.`,
+          "/super-admin/institutions",
+        );
+        notifyInstitution(
+          institution.id,
+          "Your institution's details were updated",
+          "The platform administrator updated your institution's profile.",
+        );
+      } else {
+        const created = await createInstitution.mutateAsync({
+          ...values,
+          institutionType,
+          countryState,
+          logoUrl,
+        });
+        toast.success(`${values.name} added`);
+        notifyPlatform(
+          "New institution added",
+          `${created.name} was added to the platform.`,
+          "/super-admin/institutions",
+        );
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
       );
     }
-    onDone();
   };
 
   return (
@@ -208,10 +223,10 @@ function InstitutionForm({
             onClick={() => fileInputRef.current?.click()}
             className="flex size-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-secondary/40 bg-muted"
           >
-            {logoPreview ? (
+            {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={logoPreview}
+                src={logoUrl}
                 alt="Institution logo preview"
                 className="size-full object-cover"
               />
@@ -328,7 +343,7 @@ function InstitutionForm({
         <Button
           type="submit"
           form="institution-form"
-          disabled={formState.isSubmitting}
+          disabled={formState.isSubmitting || uploadFile.isPending}
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Submit

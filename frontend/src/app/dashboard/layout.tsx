@@ -8,6 +8,7 @@ import {
   filterNavByModules,
   INSTITUTION_NAV,
 } from "@/config/nav";
+import { useInstitutions } from "@/hooks/use-institutions";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { useRbacStore } from "@/store/rbac.store";
@@ -19,6 +20,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const user = useAuthStore((state) => state.user);
   const roles = useRbacStore((state) => state.roles);
   const institutions = useInstitutionsStore((state) => state.institutions);
+  const setInstitutions = useInstitutionsStore(
+    (state) => state.setInstitutions,
+  );
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -28,6 +32,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       router.replace("/super-admin");
     }
   }, [hasHydrated, token, user, router]);
+
+  // The institution_admin's own nav is capped by their institution's real
+  // moduleKeys (filterNavByModules below) — hydrate the shared store from
+  // the real backend the same way super-admin/layout.tsx does.
+  const { data: institutionsData } = useInstitutions(
+    { includeArchived: true, perPage: 1000 },
+    { enabled: hasHydrated && !!token && user?.role === "institution_admin" },
+  );
+  useEffect(() => {
+    if (institutionsData) setInstitutions(institutionsData.data);
+  }, [institutionsData, setInstitutions]);
 
   const menu = useMemo(() => {
     const institution = institutions.find((i) => i.id === user?.institutionId);
