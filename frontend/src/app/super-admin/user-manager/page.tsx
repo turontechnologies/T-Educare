@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { UserManagerDetailsDialog } from "@/components/features/user-manager/user-manager-details-dialog";
 import { UserManagerDialog } from "@/components/features/user-manager/user-manager-dialog";
 import { cn } from "@/lib/utils";
 import { notifyPlatform, notifyUser } from "@/lib/notify";
@@ -82,6 +83,9 @@ export default function UserManagerPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<
+    UserManagerAccount | undefined
+  >();
+  const [viewingAccount, setViewingAccount] = useState<
     UserManagerAccount | undefined
   >();
   const [view, setView] = useState<"active" | "archived">("active");
@@ -251,8 +255,14 @@ export default function UserManagerPage() {
                   <TableCell className="text-muted-foreground">
                     {account.code}
                   </TableCell>
-                  <TableCell className="font-medium text-secondary hover:underline">
-                    {account.username}
+                  <TableCell>
+                    <button
+                      type="button"
+                      onClick={() => setViewingAccount(account)}
+                      className="cursor-pointer text-left font-medium text-secondary hover:underline"
+                    >
+                      {account.username}
+                    </button>
                   </TableCell>
                   <TableCell>{account.institutionName}</TableCell>
                   <TableCell className="text-muted-foreground">
@@ -424,6 +434,12 @@ export default function UserManagerPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         account={editingAccount}
+      />
+
+      <UserManagerDetailsDialog
+        open={!!viewingAccount}
+        onOpenChange={(open) => !open && setViewingAccount(undefined)}
+        account={viewingAccount}
       />
 
       <ConfirmDialog
