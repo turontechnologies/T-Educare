@@ -2,10 +2,12 @@
 
 import { useRef, useState } from "react";
 import { Camera } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { readFileAsDataUrl } from "@/lib/files";
+import { useUploadFile } from "@/hooks/use-upload";
 
 interface ProfileHeroCardProps {
   firstName: string;
@@ -39,6 +41,7 @@ export function ProfileHeroCard({
 }: ProfileHeroCardProps) {
   const [preview, setPreview] = useState(avatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadFile = useUploadFile();
 
   const initials = `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
 
@@ -47,9 +50,19 @@ export function ProfileHeroCard({
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const url = await readFileAsDataUrl(file);
-    setPreview(url);
-    onAvatarChange(url);
+
+    // Instant local preview while the real upload is in flight — never sent
+    // to the backend as-is: `avatar_url` is NVARCHAR(500), and a data URL
+    // would blow past that, so only the real Cloudinary URL below is saved.
+    setPreview(await readFileAsDataUrl(file));
+    try {
+      const { url } = await uploadFile.mutateAsync(file);
+      setPreview(url);
+      onAvatarChange(url);
+    } catch {
+      toast.error("Failed to upload photo. Please try again.");
+      setPreview(avatarUrl);
+    }
   };
 
   return (
@@ -59,8 +72,9 @@ export function ProfileHeroCard({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
+          disabled={uploadFile.isPending}
           aria-label="Change profile photo"
-          className="group relative size-24 shrink-0 cursor-pointer rounded-full ring-4 ring-card sm:size-28"
+          className="group relative size-24 shrink-0 cursor-pointer rounded-full ring-4 ring-card disabled:cursor-not-allowed disabled:opacity-70 sm:size-28"
         >
           <Avatar className="size-full">
             <AvatarImage src={preview} alt={`${firstName} ${lastName}`} />
@@ -76,6 +90,7 @@ export function ProfileHeroCard({
             type="file"
             accept="image/*"
             onChange={handleFileChange}
+            disabled={uploadFile.isPending}
             className="sr-only"
           />
         </button>

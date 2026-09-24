@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layouts/app-shell";
 import { SUPER_ADMIN_NAV } from "@/config/nav";
 import { useInstitutions } from "@/hooks/use-institutions";
+import { useMe } from "@/hooks/use-login";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
@@ -17,6 +18,7 @@ export default function SuperAdminLayout({
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const setInstitutions = useInstitutionsStore(
     (state) => state.setInstitutions,
   );
@@ -29,6 +31,14 @@ export default function SuperAdminLayout({
       router.replace("/dashboard");
     }
   }, [hasHydrated, token, user, router]);
+
+  // Refresh this user's own session data from the live backend — see
+  // use-login.ts's useMe for why (also keeps a super admin's own profile
+  // edits reflected without a full re-login).
+  const { data: me } = useMe(hasHydrated && !!token);
+  useEffect(() => {
+    if (me) setUser(me);
+  }, [me, setUser]);
 
   // Every super-admin page (Institutions, Modules, License Manager, User
   // Manager, Role dialog) reads the shared institutions store — hydrate it

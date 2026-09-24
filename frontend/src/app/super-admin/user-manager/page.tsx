@@ -43,7 +43,13 @@ import { PageHeader } from "@/components/shared/page-header";
 import { UserManagerDialog } from "@/components/features/user-manager/user-manager-dialog";
 import { cn } from "@/lib/utils";
 import { notifyPlatform, notifyUser } from "@/lib/notify";
-import { useUserManagersStore } from "@/store/user-managers.store";
+import {
+  useArchiveUserManager,
+  useResetUserManagerPassword,
+  useRestoreUserManager,
+  useUpdateUserManagerStatus,
+  useUserManagers,
+} from "@/hooks/use-user-managers";
 import type { UserManagerAccount } from "@/types/user-manager";
 
 const PAGE_SIZE_OPTIONS = ["5", "10", "25", "50"];
@@ -64,17 +70,15 @@ const dateTimeLabel = (iso: string) =>
   }).format(new Date(iso));
 
 export default function UserManagerPage() {
-  const userManagers = useUserManagersStore((state) => state.userManagers);
-  const updateUserManager = useUserManagersStore(
-    (state) => state.updateUserManager,
-  );
-  const archiveUserManager = useUserManagersStore(
-    (state) => state.archiveUserManager,
-  );
-  const restoreUserManager = useUserManagersStore(
-    (state) => state.restoreUserManager,
-  );
-  const resetPassword = useUserManagersStore((state) => state.resetPassword);
+  const { data, isLoading, isError } = useUserManagers({
+    includeArchived: true,
+    perPage: 1000,
+  });
+  const userManagers = useMemo(() => data?.data ?? [], [data]);
+  const updateStatus = useUpdateUserManagerStatus();
+  const archiveUserManagerMutation = useArchiveUserManager();
+  const restoreUserManagerMutation = useRestoreUserManager();
+  const resetPasswordMutation = useResetUserManagerPassword();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<
@@ -123,6 +127,28 @@ export default function UserManagerPage() {
   const rangeStart = filtered.length === 0 ? 0 : (currentPage - 1) * size + 1;
   const rangeEnd = Math.min(currentPage * size, filtered.length);
   const archivedCount = userManagers.filter((a) => a.archivedAt).length;
+
+  if (isLoading && !data) {
+    return (
+      <div className="space-y-6">
+        <PageHeader breadcrumb={["Administrator", "User manager"]} />
+        <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+          Loading user managers...
+        </div>
+      </div>
+    );
+  }
+
+  if (isError && !data) {
+    return (
+      <div className="space-y-6">
+        <PageHeader breadcrumb={["Administrator", "User manager"]} />
+        <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-6 text-sm text-destructive">
+          Unable to load user managers from the backend.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -314,14 +340,24 @@ export default function UserManagerPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreUserManager(account.id);
-                          toast.success(`${account.username} restored`);
-                          notifyPlatform(
-                            "Account restored",
-                            `${account.username} was restored from the archive.`,
-                            "/super-admin/user-manager",
-                          );
+                        onClick={async () => {
+                          try {
+                            await restoreUserManagerMutation.mutateAsync(
+                              account.id,
+                            );
+                            toast.success(`${account.username} restored`);
+                            notifyPlatform(
+                              "Account restored",
+                              `${account.username} was restored from the archive.`,
+                              "/super-admin/user-manager",
+                            );
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore account",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -397,15 +433,23 @@ export default function UserManagerPage() {
         description={`Are you sure you want to delete ${pendingArchive?.username}? They will be hidden from the active list, but nothing is deleted — you can restore them anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveUserManager(pendingArchive.id);
-          toast.success(`${pendingArchive.username} deleted`);
-          notifyPlatform(
-            "Account deleted",
-            `${pendingArchive.username} was archived.`,
-            "/super-admin/user-manager",
-          );
+          try {
+            await archiveUserManagerMutation.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.username} deleted`);
+            notifyPlatform(
+              "Account deleted",
+              `${pendingArchive.username} was archived.`,
+              "/super-admin/user-manager",
+            );
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete account",
+            );
+          }
         }}
       />
 
@@ -420,25 +464,34 @@ export default function UserManagerPage() {
         description={`Are you sure you want to ${pendingStatus?.nextActive ? "activate" : "deactivate"} ${pendingStatus?.account.username}? ${pendingStatus?.nextActive ? "They will regain access immediately." : "They will lose access until reactivated."}`}
         confirmLabel={pendingStatus?.nextActive ? "Activate" : "Deactivate"}
         variant={pendingStatus?.nextActive ? "default" : "destructive"}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingStatus) return;
           const verb = pendingStatus.nextActive ? "activated" : "deactivated";
-          updateUserManager(pendingStatus.account.id, {
-            status: pendingStatus.nextActive ? "active" : "inactive",
-          });
-          toast.success(`${pendingStatus.account.username} ${verb}`);
-          notifyPlatform(
-            `Account ${verb}`,
-            `${pendingStatus.account.username} was ${verb}.`,
-            "/super-admin/user-manager",
-          );
-          notifyUser(
-            pendingStatus.account.id,
-            `Your account was ${verb}`,
-            pendingStatus.nextActive
-              ? "Your account has regained access."
-              : "Your account has lost access until reactivated.",
-          );
+          try {
+            await updateStatus.mutateAsync({
+              id: pendingStatus.account.id,
+              status: pendingStatus.nextActive ? "active" : "inactive",
+            });
+            toast.success(`${pendingStatus.account.username} ${verb}`);
+            notifyPlatform(
+              `Account ${verb}`,
+              `${pendingStatus.account.username} was ${verb}.`,
+              "/super-admin/user-manager",
+            );
+            notifyUser(
+              pendingStatus.account.id,
+              `Your account was ${verb}`,
+              pendingStatus.nextActive
+                ? "Your account has regained access."
+                : "Your account has lost access until reactivated.",
+            );
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : `Failed to ${pendingStatus.nextActive ? "activate" : "deactivate"} account`,
+            );
+          }
         }}
       />
 
@@ -448,22 +501,31 @@ export default function UserManagerPage() {
         title="Reset this account's password?"
         description={`Are you sure you want to reset the password for ${pendingReset?.username}? A new password will be generated immediately.`}
         confirmLabel="Reset password"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingReset) return;
-          const newPassword = resetPassword(pendingReset.id);
-          toast.success(
-            `New password for ${pendingReset.username}: ${newPassword}`,
-          );
-          notifyPlatform(
-            "Password reset",
-            `${pendingReset.username}'s password was reset.`,
-            "/super-admin/user-manager",
-          );
-          notifyUser(
-            pendingReset.id,
-            "Your password was reset",
-            "An administrator reset your password. Use the new password they shared with you to log in.",
-          );
+          try {
+            const { password: newPassword } =
+              await resetPasswordMutation.mutateAsync(pendingReset.id);
+            toast.success(
+              `New password for ${pendingReset.username}: ${newPassword}`,
+            );
+            notifyPlatform(
+              "Password reset",
+              `${pendingReset.username}'s password was reset.`,
+              "/super-admin/user-manager",
+            );
+            notifyUser(
+              pendingReset.id,
+              "Your password was reset",
+              "An administrator reset your password. Use the new password they shared with you to log in.",
+            );
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to reset password",
+            );
+          }
         }}
       />
     </div>

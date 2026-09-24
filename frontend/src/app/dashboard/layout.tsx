@@ -9,6 +9,7 @@ import {
   INSTITUTION_NAV,
 } from "@/config/nav";
 import { useInstitutions } from "@/hooks/use-institutions";
+import { useMe } from "@/hooks/use-login";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { useRbacStore } from "@/store/rbac.store";
@@ -18,6 +19,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const roles = useRbacStore((state) => state.roles);
   const institutions = useInstitutionsStore((state) => state.institutions);
   const setInstitutions = useInstitutionsStore(
@@ -32,6 +34,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       router.replace("/super-admin");
     }
   }, [hasHydrated, token, user, router]);
+
+  // Refresh this user's own session data (name, avatar, institution
+  // assignment) from the live backend — see use-login.ts's useMe for why.
+  const { data: me } = useMe(hasHydrated && !!token);
+  useEffect(() => {
+    if (me) setUser(me);
+  }, [me, setUser]);
 
   // The institution_admin's own nav is capped by their institution's real
   // moduleKeys (filterNavByModules below) — hydrate the shared store from

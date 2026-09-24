@@ -12,9 +12,8 @@ export interface UserManagerAccount {
   email: string;
   phone: string;
   username: string;
-  /** Mock-only plaintext — there is no backend yet (see CLAUDE.md). */
-  password: string;
-  /** Institution this admin account is assigned to, from `useInstitutionsStore`. */
+  /** Institution this admin account is assigned to. */
+  institutionId: string;
   institutionName: string;
   isPrimaryAdmin: boolean;
   avatarUrl?: string;

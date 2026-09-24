@@ -148,8 +148,18 @@ takes effect on that institution's accounts' next login automatically.
 does a server-side signed upload to Cloudinary (`config/CloudinaryConfig.java`,
 same account as the sibling `t-coop-backend` project — credentials in
 `.env`, never in `.env.example`). Any authenticated user can call it; PNG/
-JPEG/WEBP only, 5MB max. Wired to the frontend for institution logos; not
-yet for profile avatars (still a local data URL there).
+JPEG/WEBP only, 5MB max. Wired to the frontend for institution logos, User
+Manager avatars, and (as of 2026-09-24) individual profile avatars too.
+
+**§4.5 User Manager is now wired to the frontend as well (2026-09-24)** —
+`/super-admin/user-manager` calls the real endpoints directly (no more
+mock store on the frontend side); see `frontend/CLAUDE.md` for the
+read/write architecture. Separately, `frontend/hooks/use-login.ts` gained
+a `useMe()` session-refresh hook (wired into both dashboard layouts) so
+that an account edited here — or an institution renamed/relogoed via
+Institutions — is reflected for that user without requiring a fresh
+login, since the backend already resolved all of this live on every
+`/auth/me` call and the frontend just wasn't asking again mid-session.
 
 Verified end-to-end via `docker compose up -d --build` (both `sqlserver` and
 `app` services): Flyway applies all 3 migrations, the app connects to

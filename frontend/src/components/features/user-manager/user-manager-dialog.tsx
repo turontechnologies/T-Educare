@@ -21,8 +21,12 @@ import { Switch } from "@/components/ui/switch";
 import { readFileAsDataUrl } from "@/lib/files";
 import { generatePassword, generateUsername } from "@/lib/mock-generators";
 import { notifyInstitution, notifyPlatform, notifyUser } from "@/lib/notify";
+import {
+  useCreateUserManager,
+  useUpdateUserManager,
+} from "@/hooks/use-user-managers";
+import { useUploadFile } from "@/hooks/use-upload";
 import { useInstitutionsStore } from "@/store/institutions.store";
-import { useUserManagersStore } from "@/store/user-managers.store";
 import type {
   UserManagerAccount,
   UserManagerGender,
@@ -97,23 +101,20 @@ function UserManagerForm({
     () => institutions.filter((institution) => !institution.archivedAt),
     [institutions],
   );
-  const createUserManager = useUserManagersStore(
-    (state) => state.createUserManager,
-  );
-  const updateUserManager = useUserManagersStore(
-    (state) => state.updateUserManager,
-  );
+  const createUserManager = useCreateUserManager();
+  const updateUserManager = useUpdateUserManager();
+  const uploadFile = useUploadFile();
 
   const [gender, setGender] = useState<UserManagerGender | "">(
     account?.gender ?? "",
   );
-  const [institutionName, setInstitutionName] = useState(
-    account?.institutionName ?? "",
+  const [institutionId, setInstitutionId] = useState(
+    account?.institutionId ?? "",
   );
   const [isPrimaryAdmin, setIsPrimaryAdmin] = useState(
     account?.isPrimaryAdmin ?? false,
   );
-  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(
     account?.avatarUrl,
   );
   const [showPassword, setShowPassword] = useState(false);
@@ -128,7 +129,7 @@ function UserManagerForm({
         email: account?.email ?? "",
         phone: account?.phone ?? "",
         username: account?.username ?? "",
-        password: account?.password ?? "",
+        password: "",
       },
     });
 
@@ -136,7 +137,17 @@ function UserManagerForm({
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
-    if (file) setAvatarPreview(await readFileAsDataUrl(file));
+    if (!file) return;
+
+    // Instant local preview while the real upload is in flight.
+    setAvatarUrl(await readFileAsDataUrl(file));
+    try {
+      const { url } = await uploadFile.mutateAsync(file);
+      setAvatarUrl(url);
+    } catch {
+      toast.error("Failed to upload photo. Please try again.");
+      setAvatarUrl(account?.avatarUrl);
+    }
   };
 
   const handleGenerateUsername = () => {
@@ -153,58 +164,86 @@ function UserManagerForm({
     setShowPassword(true);
   };
 
-  const onSubmit = (values: UserManagerFormValues) => {
-    if (!gender || !institutionName) {
+  const onSubmit = async (values: UserManagerFormValues) => {
+    if (!gender || !institutionId) {
       toast.error("Select a gender and institution to assign");
       return;
     }
-
-    if (account) {
-      updateUserManager(account.id, {
-        ...values,
-        gender,
-        institutionName,
-        isPrimaryAdmin,
-        avatarUrl: avatarPreview,
-      });
-      toast.success(`${values.firstName} ${values.lastName} updated`);
-      notifyPlatform(
-        "Account updated",
-        `${values.firstName} ${values.lastName}'s account was updated.`,
-        "/super-admin/user-manager",
-      );
-      notifyUser(
-        account.id,
-        "Your profile was updated",
-        "An administrator updated your account details.",
-      );
-    } else {
-      const created = createUserManager({
-        ...values,
-        gender,
-        institutionName,
-        isPrimaryAdmin,
-        avatarUrl: avatarPreview,
-        status: "active",
-      });
-      toast.success(`${values.firstName} ${values.lastName} added`);
-      notifyPlatform(
-        "New account added",
-        `${created.firstName} ${created.lastName} was added as an admin for ${institutionName}.`,
-        "/super-admin/user-manager",
-      );
-      const assignedInstitution = institutions.find(
-        (i) => i.name === institutionName,
-      );
-      if (assignedInstitution) {
-        notifyInstitution(
-          assignedInstitution.id,
-          "A new admin was assigned",
-          `${created.firstName} ${created.lastName} was added as an admin for your institution.`,
-        );
-      }
+    if (uploadFile.isPending) {
+      toast.error("Please wait for the photo to finish uploading.");
+      return;
     }
-    onDone();
+    if (!account && !values.password) {
+      toast.error("Enter or generate a password");
+      return;
+    }
+
+    const institution = activeInstitutions.find((i) => i.id === institutionId);
+
+    try {
+      if (account) {
+        await updateUserManager.mutateAsync({
+          id: account.id,
+          payload: {
+            firstName: values.firstName,
+            otherName: values.otherName,
+            lastName: values.lastName,
+            email: values.email,
+            phone: values.phone,
+            username: values.username,
+            gender,
+            institutionId,
+            isPrimaryAdmin,
+            avatarUrl,
+          },
+        });
+        toast.success(`${values.firstName} ${values.lastName} updated`);
+        notifyPlatform(
+          "Account updated",
+          `${values.firstName} ${values.lastName}'s account was updated.`,
+          "/super-admin/user-manager",
+        );
+        notifyUser(
+          account.id,
+          "Your profile was updated",
+          "An administrator updated your account details.",
+        );
+      } else {
+        const created = await createUserManager.mutateAsync({
+          firstName: values.firstName,
+          otherName: values.otherName,
+          lastName: values.lastName,
+          email: values.email,
+          phone: values.phone,
+          username: values.username,
+          password: values.password,
+          gender,
+          institutionId,
+          isPrimaryAdmin,
+          avatarUrl,
+        });
+        toast.success(`${values.firstName} ${values.lastName} added`);
+        notifyPlatform(
+          "New account added",
+          `${created.firstName} ${created.lastName} was added as an admin for ${created.institutionName}.`,
+          "/super-admin/user-manager",
+        );
+        if (institution) {
+          notifyInstitution(
+            institution.id,
+            "A new admin was assigned",
+            `${created.firstName} ${created.lastName} was added as an admin for your institution.`,
+          );
+        }
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
+      );
+    }
   };
 
   return (
@@ -216,10 +255,10 @@ function UserManagerForm({
       >
         <div className="flex shrink-0 flex-col items-center gap-3">
           <div className="flex size-28 items-center justify-center overflow-hidden rounded-md border-2 border-secondary bg-muted">
-            {avatarPreview ? (
+            {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={avatarPreview}
+                src={avatarUrl}
                 alt="Profile preview"
                 className="size-full object-cover"
               />
@@ -235,6 +274,7 @@ function UserManagerForm({
             variant="secondary"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
+            disabled={uploadFile.isPending}
             className="gap-1.5 rounded-md"
           >
             Upload
@@ -308,45 +348,57 @@ function UserManagerForm({
             </button>
           </div>
 
-          <div className="space-y-2">
-            <NotchedField
-              label="Password"
-              labelClassName="bg-popover"
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter password"
-              endAdornment={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
-                </button>
-              }
-              {...register("password", { required: true })}
-            />
-            <button
-              type="button"
-              onClick={handleGeneratePassword}
-              className="cursor-pointer rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
-            >
-              Generate password
-            </button>
-          </div>
+          {account ? (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Password</Label>
+              <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+                Use “Reset password” from the table to change this
+                account&apos;s password.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <NotchedField
+                label="Password"
+                labelClassName="bg-popover"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter password"
+                endAdornment={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                }
+                {...register("password", { required: !account })}
+              />
+              <button
+                type="button"
+                onClick={handleGeneratePassword}
+                className="cursor-pointer rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+              >
+                Generate password
+              </button>
+            </div>
+          )}
 
           <NotchedComboboxField
             label="Assign to University"
             labelClassName="bg-popover"
-            value={institutionName}
-            onValueChange={setInstitutionName}
+            value={institutionId}
+            onValueChange={setInstitutionId}
             options={activeInstitutions.map((institution) => ({
               label: institution.name,
-              value: institution.name,
+              value: institution.id,
             }))}
             placeholder="Select institution"
             searchPlaceholder="Search institutions…"
@@ -373,7 +425,7 @@ function UserManagerForm({
         <Button
           type="submit"
           form="user-manager-form"
-          disabled={formState.isSubmitting}
+          disabled={formState.isSubmitting || uploadFile.isPending}
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Submit

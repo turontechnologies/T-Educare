@@ -507,6 +507,14 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   trigger for building §4.5 for real). Don't try to "fix" this by
   re-adding client-side login matching — that would be regressing the
   real-backend integration that was the whole point of this change.
+  **Superseded (2026-09-24): §4.5 User Manager is now real on both ends.**
+  The backend grew a real `UserManagerAccount`-backed login (reusing
+  `dbo.users` directly, filtered to `role = 'institution_admin'` — see
+  `backend/CLAUDE.md`), and `/super-admin/user-manager` now calls it for
+  real (see the dedicated bullet further down). Editing, resetting the
+  password of, or deactivating an account there **does** now affect
+  `/login` immediately — the caveat above only describes the
+  now-closed gap between those two builds.
 - **Auth, Dashboard, Profile, and Institutions are wired to a real backend
   now — everything else below is still mocked.** `backend/` is a real
   Spring Boot app, MSSQL-backed via Flyway (not in-memory) — see
@@ -593,8 +601,48 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   resolves; the form is blocked from submitting while an upload is still
   in flight. This isn't optional cosmetics — the backend's `logo_url`
   column is `NVARCHAR(500)` and a data URL for any real image blows past
-  that. `ProfileHeroCard`'s avatar picker still uses a plain data URL
-  (not wired to this endpoint yet) — same fix when that happens.
+  that. **`ProfileHeroCard`'s avatar picker is wired to it too now
+  (2026-09-24)** — same instant-preview-then-swap pattern, used by both
+  `/dashboard/profile` and `/super-admin/profile`; `UserAccount.avatar_url`
+  has the identical 500-char limit, so this was the same real bug, not a
+  cosmetic one. The picker also disables itself while the upload is in
+  flight so a second file can't be picked mid-upload.
+- **User Manager (`/super-admin/user-manager`) is real now too (2026-09-24)
+  — `user-managers.store.ts` is deleted, not just de-seeded.** Unlike
+  Institutions, nothing else in the app read that store (no cross-cutting
+  consumer like `app-header.tsx`), so there was no reason to keep a
+  Zustand layer at all: `user-manager.service.ts` +
+  `hooks/use-user-managers.ts` (same TanStack Query shape as
+  `use-institutions.ts`, plus `useResetUserManagerPassword`) are called
+  directly from `user-manager/page.tsx` and `user-manager-dialog.tsx`.
+  `UserManagerAccount` dropped its mock-only `password` field entirely —
+  the backend never returns one. The institution picker in the dialog now
+  keys off `institutionId` (matching the backend's real field), not
+  `institutionName` — `useInstitutionsStore` is still where the option
+  list comes from, just read by id now. **The password field only renders
+  when creating** — `UpdateUserManagerRequest` has no password field on
+  the backend at all (by design; changing an existing account's password
+  only ever goes through `POST /{id}/reset-password`), so the edit form
+  shows a short explanatory note instead of a field that would silently do
+  nothing. The avatar picker uses the same real-upload pattern as
+  institution logos, for the same 500-char-column reason.
+- **A super admin's User Manager edits now reach the affected
+  institution_admin without them re-typing credentials — `hooks/use-login.ts`
+  gained `useMe()`, wired into both `dashboard/layout.tsx` and
+  `super-admin/layout.tsx` (2026-09-24).** `useAuthStore.user` used to be
+  set exactly once, at login, and never touched again — so a name/email/
+  phone/avatar/institution-assignment change made via User Manager (or an
+  institution rename/logo change) wouldn't show up anywhere driven by that
+  store (the header, the sidebar brand) until the affected user logged out
+  and back in, even though the backend already resolved all of it live on
+  every `/auth/me` call. `useMe()` re-fetches `/auth/me` on every app mount
+  and lets TanStack Query's default `refetchOnWindowFocus` refresh it again
+  whenever the tab regains focus — no polling added, matching how
+  `useInstitutions` already keeps the institutions store fresh in these
+  same two layouts. The Profile pages themselves didn't need this fix —
+  `useProfile()` already fetched `GET /profile` fresh, independent of
+  `useAuthStore` — this was specifically about everything reading the auth
+  snapshot instead.
 - **An institution_admin's institution name and logo now come from the
   real backend at login, not this frontend** — `AuthenticatedUser` gained
   `institutionLogoUrl` (backend resolves both fields live from the real
