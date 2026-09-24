@@ -107,24 +107,36 @@ static/hardcoded per-institution rather than computed from real rows —
 that's still worth moving onto the DB later.
 
 **Institutions §4.1/4.3/4.4 (list/create/edit, activate/deactivate,
-archive/restore) are also real now** — `institution/Institution.java`
-(JPA entity, table `dbo.institutions`, `V2__institutions.sql`),
-`InstitutionRepository`/`InstitutionService`/`InstitutionController`, seeded
-with 5 demo institutions (`DemoInstitutionSeeder.java`) including the two
-already referenced by the `turon_admin`/`amara_bello` login accounts. This
-is **backend-only for now** — the frontend hasn't been pointed at it yet
-(`institutions.store.ts` still mocks it); that's an explicit next step, not
-forgotten. §4.5 (User Manager), §4.6 (Modules), and §4.7 (License Manager)
-remain unbuilt. Everything else in `API_CONTRACT.md` (roles, users,
-academics, staff, students, notifications, etc.) has no backend yet — the
-frontend still mocks those via its Zustand stores.
+archive/restore) are also real now, and wired to the frontend** —
+`institution/Institution.java` (JPA entity, table `dbo.institutions`,
+`V2__institutions.sql`), `InstitutionRepository`/`InstitutionService`/
+`InstitutionController`, seeded with 5 demo institutions
+(`DemoInstitutionSeeder.java`) including the two already referenced by the
+`turon_admin`/`amara_bello` login accounts. `institutions.store.ts` no
+longer mocks this — it's hydrated from the real endpoints (see
+`frontend/CLAUDE.md`). §4.5 (User Manager), §4.6 (Modules), and §4.7
+(License Manager) remain unbuilt — the frontend's actions for those stay
+local-only (in-memory, reset on reload), clearly flagged in their own UI
+rather than pretending to persist. Everything else in `API_CONTRACT.md`
+(roles, users, academics, staff, students, notifications, etc.) has no
+backend yet — the frontend still mocks those via its Zustand stores.
+
+**Deactivating an institution actually blocks its logins now** —
+`CustomAuthenticationProvider` checks the real institution's `status`
+right after the password check; an `inactive` institution's accounts get
+a clear `401` on their *next* login attempt (already-issued JWTs from
+before deactivation aren't revoked — there's no session/token store to
+revoke them from). `institutionName`/`institutionLogoUrl` in the login/`me`
+response are resolved **live** from the real Institution record every
+time, not a stale snapshot — renaming an institution or setting its logo
+takes effect on that institution's accounts' next login automatically.
 
 **File uploads (§3.2) are real too** — `POST /uploads` (`upload/UploadController.java`)
 does a server-side signed upload to Cloudinary (`config/CloudinaryConfig.java`,
 same account as the sibling `t-coop-backend` project — credentials in
 `.env`, never in `.env.example`). Any authenticated user can call it; PNG/
-JPEG/WEBP only, 5MB max. Not wired to the frontend yet — avatars/logos
-still go through local data URLs on that side.
+JPEG/WEBP only, 5MB max. Wired to the frontend for institution logos; not
+yet for profile avatars (still a local data URL there).
 
 Verified end-to-end via `docker compose up -d --build` (both `sqlserver` and
 `app` services): Flyway applies all 3 migrations, the app connects to

@@ -488,6 +488,22 @@ clears the security context server-side) both work as documented above.
 - Wrong credentials → `401 { "error": "Invalid username or password." }`
   (exact copy the frontend already shows for its mocked version — keep it,
   or update `frontend/src/services/auth.service.ts` to match a new one).
+- **A deactivated institution's accounts cannot log in**, even with correct
+  credentials → `401 { "error": "Your institution's access has been
+  deactivated. Contact the platform administrator." }`. Checked at login
+  time against the institution's real `status` (§4.3) — enforced in
+  `CustomAuthenticationProvider`, right after the password check. This only
+  blocks *new* logins; an already-issued JWT from before deactivation stays
+  valid until it expires (no server-side session/token store exists to
+  revoke it early — see §9's dashboard-numbers note for the same
+  "in-memory demo, not yet a full session store" caveat).
+- `institutionName`/`institutionLogoUrl` are resolved **live** from the
+  real Institution record (§4) at login time, not a stale snapshot —
+  renaming an institution or setting its logo on `/super-admin/institutions`
+  shows up on that institution's accounts' *next* login automatically.
+  `institutionLogoUrl` is `""` until a logo is set (Jackson's `non_null`
+  inclusion would otherwise omit the field entirely — normalized to `""`
+  server-side the same way `phone`/`avatarUrl` already are).
 
 ### `GET /auth/me`
 

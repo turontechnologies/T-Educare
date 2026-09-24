@@ -13,5 +13,6 @@ public record AuthenticatedUserDto(
                 String roleId,
                 List<String> menuKeys,
                 String phone,
-                String avatarUrl) {
+                String avatarUrl,
+                String institutionLogoUrl) {
 }

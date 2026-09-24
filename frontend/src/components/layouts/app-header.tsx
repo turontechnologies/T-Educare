@@ -58,9 +58,19 @@ export function AppHeader({ menu, onMenuClick }: AppHeaderProps) {
       .slice(0, 8);
   }, [menu, query]);
 
-  const institution =
+  // The live institutions store (real backend data) wins once hydrated;
+  // the auth snapshot from login is the fallback so the name/logo show
+  // immediately without waiting on that separate fetch.
+  const liveInstitution =
     user?.role === "institution_admin"
       ? institutions.find((i) => i.id === user.institutionId)
+      : undefined;
+  const institutionDisplayName = liveInstitution?.name ?? user?.institutionName;
+  const institutionLogoUrl =
+    liveInstitution?.logoUrl ?? user?.institutionLogoUrl;
+  const institution =
+    user?.role === "institution_admin" && institutionDisplayName
+      ? { name: institutionDisplayName, logoUrl: institutionLogoUrl }
       : undefined;
 
   const initials = user

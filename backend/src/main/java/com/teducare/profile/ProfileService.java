@@ -35,6 +35,7 @@ public class ProfileService {
         profile.put("role", user.role());
         profile.put("institutionId", user.institutionId());
         profile.put("institutionName", user.institutionName());
+        profile.put("institutionLogoUrl", user.institutionLogoUrl() == null ? "" : user.institutionLogoUrl());
         profile.put("roleId", user.roleId());
         profile.put("phone", user.phone() == null ? "" : user.phone());
         profile.put("avatarUrl", user.avatarUrl() == null ? "" : user.avatarUrl());

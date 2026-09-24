@@ -479,27 +479,32 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   trigger for building §4.5 for real). Don't try to "fix" this by
   re-adding client-side login matching — that would be regressing the
   real-backend integration that was the whole point of this change.
-- **Auth, Dashboard, and Profile are wired to a real backend now — everything
-  else below is still mocked.** `backend/` is a real Spring Boot app (see
+- **Auth, Dashboard, Profile, and Institutions are wired to a real backend
+  now — everything else below is still mocked.** `backend/` is a real
+  Spring Boot app, MSSQL-backed via Flyway (not in-memory) — see
   `backend/API_CONTRACT.md`'s Status line for exactly which sections are
-  live); `auth.service.ts`, `dashboard.service.ts`, and `profile.service.ts`
-  all call it via `apiClient` (`src/lib/axios.ts`) rather than reading a
-  Zustand store. It's backed by an in-memory, non-persistent 3-account
-  directory server-side (not a database yet), so **the three demo logins
-  are now server-defined, not frontend-defined** — `super_admin`/
+  live. `auth.service.ts`, `dashboard.service.ts`, `profile.service.ts`,
+  and `institution.service.ts` all call it via `apiClient`
+  (`src/lib/axios.ts`) rather than reading a Zustand store. **The three
+  demo logins are server-defined, not frontend-defined** — `super_admin`/
   `Super@2024`, `turon_admin`/`Turon@2024` (XYZ College, unrestricted),
   `amara_bello`/`Amara@2024` (Ahmadu Bello University, restricted "Front
   Desk Officer" role) — the credentials aren't in this frontend's source at
-  all anymore. Every other store in `src/store/` — `rbac.store.ts`,
-  `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
-  `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
-  `departments.store.ts`, `programs.store.ts`, `program-levels.store.ts`,
-  `course-grades.store.ts`, `courses.store.ts`, `staff-members.store.ts`,
-  `lecturers.store.ts`, `rollover.store.ts` — is still a `persist`-backed
-  Zustand store standing in for a real API that doesn't exist yet, seeded
-  with demo data, exactly as before. When wiring a new page to data that
-  has no real backend section yet, keep following that same pattern — a
-  small typed Zustand store with seed data — rather than reaching for a real
+  all anymore. `institutions.store.ts` is no longer seeded mock data either
+  — it's hydrated from the real backend by `super-admin/layout.tsx` and
+  `dashboard/layout.tsx` (see the Institutions bullet further down for the
+  full read/write architecture, including how Modules/License Manager's
+  own still-unbuilt backend stays local-only on top of the real rows).
+  Every other store in `src/store/` — `rbac.store.ts`, `academics.store.ts`,
+  `staff.store.ts`, `students.store.ts`, `schools.store.ts`,
+  `faculties.store.ts`, `departments.store.ts`, `programs.store.ts`,
+  `program-levels.store.ts`, `course-grades.store.ts`, `courses.store.ts`,
+  `staff-members.store.ts`, `lecturers.store.ts`, `rollover.store.ts` — is
+  still a `persist`-backed Zustand store standing in for a real API that
+  doesn't exist yet, seeded with demo data, exactly as before. When wiring
+  a new page to data that has no real backend section yet, keep following
+  that same pattern — a small typed Zustand store with seed data — rather
+  than reaching for a real
   fetch call prematurely. Because `persist` only rehydrates in the browser,
   any component reading one of these stores **must** be a Client Component
   using the store's hook (`useXStore((s) => s.thing)`) — never
@@ -521,6 +526,63 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   new seed data or fields) — the symptom is old/incomplete rows sitting
   next to blank columns for fields that didn't exist yet when that browser
   first loaded the app.
+- **Institutions (`/super-admin/institutions`) is real, and `institutions.store.ts`
+  now serves as a shared cache other pages read from — not a mock seed.**
+  `institution.service.ts` + `hooks/use-institutions.ts` (TanStack Query,
+  same shape as `use-profile.ts`) call the real backend for list/create/
+  edit/activate-deactivate/archive-restore. `super-admin/layout.tsx` and
+  `dashboard/layout.tsx` each fetch the full list once
+  (`{ includeArchived: true, perPage: 1000 }`) and call
+  `useInstitutionsStore().setInstitutions()` to hydrate the shared store —
+  the same "fetch then setX" convention `dashboard.store.ts` already used
+  for its own real-API-backed state (§ above). Every read-only consumer
+  (`app-header.tsx`, `user-manager-dialog.tsx`, `role-dialog.tsx`,
+  `dashboard/layout.tsx`'s own module-gating) needed **zero code changes**
+  — they already just read `state.institutions`. **Modules
+  (`/super-admin/modules`) and License Manager
+  (`/super-admin/license-manager`) have no backend yet (§4.6/§4.7 aren't
+  built)**, so their dialogs still call `state.updateInstitution(id, patch)`
+  for `moduleKeys`/`licenseType`/`licenseKey`/etc., but that action is now
+  explicitly **local-only** — it layers a patch on top of the real data via
+  an internal `localOverrides` map rather than mutating the real array
+  directly, specifically so a background refetch of real institutions
+  (e.g. the layout's query going stale) doesn't silently wipe an
+  in-progress local edit mid-session. Both dialogs (and the License
+  Manager page's own Regenerate-key/Revoke confirm dialogs, which bypass
+  the form entirely) now say so directly in the UI — an amber notice or an
+  appended confirm description — rather than showing a fake "saved"
+  toast with nothing behind it. `institutions.store.ts` dropped `persist`
+  entirely (no longer mock data to survive a refresh; local overrides are
+  intentionally ephemeral, resetting on reload, so they never look "saved"
+  when they aren't) and dropped `createInstitution`/`archiveInstitution`/
+  `restoreInstitution` (moved to the real mutation hooks, called directly
+  from `institutions/page.tsx`/`institution-dialog.tsx`).
+- **Institution logos go through the real upload endpoint, not a data
+  URL** — `institution-dialog.tsx` calls `useUploadFile()`
+  (`hooks/use-upload.ts` → `services/upload.service.ts` →
+  `POST /uploads`, real Cloudinary) on file select, showing the local
+  preview instantly and swapping in the real hosted URL once the upload
+  resolves; the form is blocked from submitting while an upload is still
+  in flight. This isn't optional cosmetics — the backend's `logo_url`
+  column is `NVARCHAR(500)` and a data URL for any real image blows past
+  that. `ProfileHeroCard`'s avatar picker still uses a plain data URL
+  (not wired to this endpoint yet) — same fix when that happens.
+- **An institution_admin's institution name and logo now come from the
+  real backend at login, not this frontend** — `AuthenticatedUser` gained
+  `institutionLogoUrl` (backend resolves both fields live from the real
+  Institution record every login/`/auth/me`, not a stale copy — see
+  `backend/CLAUDE.md`). `app-header.tsx` prefers the **live**
+  `institutions.store.ts` lookup once hydrated, falling back to the auth
+  snapshot (`user.institutionName`/`user.institutionLogoUrl`) so the
+  header never flashes empty while that separate fetch is in flight.
+  Fixed a real pre-existing bug found while wiring this: `dashboard/profile/page.tsx`'s
+  "My Institution" card was rendering `profile.avatarUrl` (the _user's own_
+  avatar) inside a box labeled as the institution — swapped to the actual
+  `profile.institutionLogoUrl`. **A deactivated institution's accounts
+  can't log in at all** (backend-enforced, `401` with a clear message) —
+  nothing frontend-specific needed here beyond `axios.ts`'s existing error
+  passthrough, since the message already reads directly from
+  `error.response.data.error`.
 - **New nav pages**: most `INSTITUTION_NAV`/`SUPER_ADMIN_NAV` entries beyond
   the ones with real pages currently render `<ModulePlaceholder>`
   (`src/components/shared/module-placeholder.tsx`) — a styled "not built yet"

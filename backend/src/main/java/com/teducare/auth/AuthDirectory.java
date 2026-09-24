@@ -7,6 +7,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.teducare.institution.Institution;
+import com.teducare.institution.InstitutionRepository;
+
 @Component
 public class AuthDirectory {
 
@@ -14,10 +17,15 @@ public class AuthDirectory {
         }
 
         private final UserAccountRepository repository;
+        private final InstitutionRepository institutionRepository;
         private final PasswordEncoder passwordEncoder;
 
-        public AuthDirectory(UserAccountRepository repository, PasswordEncoder passwordEncoder) {
+        public AuthDirectory(
+                        UserAccountRepository repository,
+                        InstitutionRepository institutionRepository,
+                        PasswordEncoder passwordEncoder) {
                 this.repository = repository;
+                this.institutionRepository = institutionRepository;
                 this.passwordEncoder = passwordEncoder;
         }
 
@@ -25,7 +33,7 @@ public class AuthDirectory {
                 if (username == null || username.isBlank()) {
                         return Optional.empty();
                 }
-                return repository.findByUsernameIgnoreCase(username.trim()).map(AuthDirectory::toAccount);
+                return repository.findByUsernameIgnoreCase(username.trim()).map(this::toAccount);
         }
 
         public Account require(String username) {
@@ -68,7 +76,26 @@ public class AuthDirectory {
                 return value == null || value.isBlank() ? fallback : value;
         }
 
-        private static Account toAccount(UserAccount entity) {
+        private Account toAccount(UserAccount entity) {
+                String institutionName = entity.getInstitutionName();
+                String institutionLogoUrl = "";
+
+                if (entity.getInstitutionId() != null) {
+                        Institution institution = institutionRepository.findById(entity.getInstitutionId())
+                                        .orElse(null);
+                        if (institution != null) {
+                                // Resolved live from the real Institution record rather than the
+                                // denormalized snapshot on UserAccount, so a super admin renaming an
+                                // institution or setting its logo takes effect on this user's next
+                                // login without needing to keep the two in sync by hand.
+                                institutionName = institution.getName();
+                                // Normalized to "" (never null/omitted) the same way phone/avatarUrl
+                                // already are, so the frontend never has to distinguish "no logo"
+                                // from "field absent".
+                                institutionLogoUrl = institution.getLogoUrl() == null ? "" : institution.getLogoUrl();
+                        }
+                }
+
                 return new Account(entity.getUsername(), entity.getPasswordHash(), new AuthenticatedUserDto(
                                 entity.getId(),
                                 entity.getFirstName(),
@@ -76,11 +103,12 @@ public class AuthDirectory {
                                 entity.getEmail(),
                                 entity.getRole(),
                                 entity.getInstitutionId(),
-                                entity.getInstitutionName(),
+                                institutionName,
                                 entity.getRoleId(),
                                 splitMenuKeys(entity.getMenuKeys()),
                                 entity.getPhone(),
-                                entity.getAvatarUrl()));
+                                entity.getAvatarUrl(),
+                                institutionLogoUrl));
         }
 
         private static List<String> splitMenuKeys(String menuKeys) {

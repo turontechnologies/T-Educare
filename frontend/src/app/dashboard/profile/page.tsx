@@ -29,6 +29,7 @@ export default function InstitutionAdminProfilePage() {
     phone: authUser?.phone ?? "",
     avatarUrl: authUser?.avatarUrl ?? "",
     institutionName: authUser?.institutionName ?? "",
+    institutionLogoUrl: authUser?.institutionLogoUrl ?? "",
     role: authUser?.role ?? "institution_admin",
   };
 
@@ -92,7 +93,7 @@ export default function InstitutionAdminProfilePage() {
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <Avatar className="size-16 shrink-0 rounded-md" size="lg">
               <AvatarImage
-                src={profile.avatarUrl ?? ""}
+                src={profile.institutionLogoUrl ?? ""}
                 alt={profile.institutionName || "Institution"}
                 className="rounded-md object-cover"
               />
