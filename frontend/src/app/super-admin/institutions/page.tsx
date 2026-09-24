@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { InstitutionDetailsDialog } from "@/components/features/institutions/institution-details-dialog";
 import { InstitutionDialog } from "@/components/features/institutions/institution-dialog";
 import { cn } from "@/lib/utils";
 import { notifyInstitution, notifyPlatform } from "@/lib/notify";
@@ -90,6 +91,9 @@ export default function InstitutionsPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInstitution, setEditingInstitution] = useState<
+    Institution | undefined
+  >();
+  const [viewingInstitution, setViewingInstitution] = useState<
     Institution | undefined
   >();
   const [view, setView] = useState<"active" | "archived">("active");
@@ -269,8 +273,14 @@ export default function InstitutionsPage() {
                     <TableCell className="text-muted-foreground">
                       {institution.code}
                     </TableCell>
-                    <TableCell className="font-medium text-secondary hover:underline">
-                      {institution.name}
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => setViewingInstitution(institution)}
+                        className="cursor-pointer text-left font-medium text-secondary hover:underline"
+                      >
+                        {institution.name}
+                      </button>
                     </TableCell>
                     <TableCell>{institution.modulesCount}</TableCell>
                     <TableCell>{institution.licenseType}</TableCell>
@@ -457,6 +467,12 @@ export default function InstitutionsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         institution={editingInstitution}
+      />
+
+      <InstitutionDetailsDialog
+        open={!!viewingInstitution}
+        onOpenChange={(open) => !open && setViewingInstitution(undefined)}
+        institution={viewingInstitution}
       />
 
       <ConfirmDialog
