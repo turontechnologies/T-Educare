@@ -625,7 +625,15 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   only ever goes through `POST /{id}/reset-password`), so the edit form
   shows a short explanatory note instead of a field that would silently do
   nothing. The avatar picker uses the same real-upload pattern as
-  institution logos, for the same 500-char-column reason.
+  institution logos, for the same 500-char-column reason. **The username
+  cell is a real "view details" link now too (2026-09-24)** — it was
+  styled as clickable (`text-secondary hover:underline`) with no `onClick`
+  at all, the same fake-link pattern already caught once on
+  `/super-admin/institutions` (institution name cell) and once on Lecture
+  Management (username column). `user-manager-details-dialog.tsx` mirrors
+  `institution-details-dialog.tsx`'s exact structure (header avatar + name
+  - badges, then grouped `Field` rows) and the cell is now a real button
+    opening it.
 - **A super admin's User Manager edits now reach the affected
   institution_admin without them re-typing credentials — `hooks/use-login.ts`
   gained `useMe()`, wired into both `dashboard/layout.tsx` and
