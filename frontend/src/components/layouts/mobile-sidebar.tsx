@@ -10,6 +10,7 @@ interface MobileSidebarProps {
   menu: NavItem[];
   brand: string;
   brandSuffix?: string;
+  logoSrc?: string;
 }
 
 export function MobileSidebar({
@@ -18,6 +19,7 @@ export function MobileSidebar({
   menu,
   brand,
   brandSuffix,
+  logoSrc,
 }: MobileSidebarProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -31,6 +33,7 @@ export function MobileSidebar({
           menu={menu}
           brand={brand}
           brandSuffix={brandSuffix}
+          logoSrc={logoSrc}
           onNavigate={() => onOpenChange(false)}
         />
       </SheetContent>

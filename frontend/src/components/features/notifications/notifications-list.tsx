@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { Bell, BellOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
+import { NotificationDetailsDialog } from "./notification-details-dialog";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import { useAuthStore } from "@/store/auth.store";
@@ -13,6 +13,7 @@ import {
   notificationsForUser,
   useNotificationsStore,
 } from "@/store/notifications.store";
+import type { AppNotification } from "@/types/notification";
 
 interface NotificationsListProps {
   breadcrumb: string[];
@@ -20,7 +21,6 @@ interface NotificationsListProps {
 
 /** Full notifications feed — shared by `/super-admin/notifications` and `/dashboard/notifications`; scoping to "what's mine" happens once, in `notificationsForUser`. */
 export function NotificationsList({ breadcrumb }: NotificationsListProps) {
-  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const allNotifications = useNotificationsStore(
     (state) => state.notifications,
@@ -28,6 +28,7 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
   const markAsRead = useNotificationsStore((state) => state.markAsRead);
   const markManyAsRead = useNotificationsStore((state) => state.markManyAsRead);
   const dismiss = useNotificationsStore((state) => state.dismiss);
+  const [selected, setSelected] = useState<AppNotification | null>(null);
 
   const mine = useMemo(
     () => notificationsForUser(allNotifications, user),
@@ -84,7 +85,7 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
                   type="button"
                   onClick={() => {
                     markAsRead(notification.id);
-                    if (notification.href) router.push(notification.href);
+                    setSelected(notification);
                   }}
                   className="min-w-0 flex-1 cursor-pointer text-left"
                 >
@@ -111,6 +112,11 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
           )}
         </CardContent>
       </Card>
+
+      <NotificationDetailsDialog
+        notification={selected}
+        onOpenChange={(open) => !open && setSelected(null)}
+      />
     </div>
   );
 }

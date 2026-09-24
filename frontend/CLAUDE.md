@@ -76,6 +76,25 @@ next-themes, sonner.
   genuine bug fix), touch only what the fix requires — layout/overflow
   classes, not color or iconography — and call out explicitly in your
   response that you touched it and why.
+  **One deliberate, user-requested exception (2026-09-24)**: for
+  `institution_admin` only, the brand band's mark and text now show that
+  institution's own logo/name instead of the TEduCare mark/wordmark —
+  explicitly asked for, discussed, and confirmed by the user first (not a
+  unilateral restyle), so this doesn't violate the lock. `SidebarContent`
+  gained a `logoSrc?: string` prop (threaded through `AppSidebar`/
+  `MobileSidebar`/`AppShell`); when set it renders the institution's own
+  image (no fixed `next/image` loader, no decorative purple "C" badge —
+  that badge is specific to the TEduCare mark and looks wrong stamped on
+  someone else's logo) instead of `<Logo variant="light" size="sm"
+showWordmark={false} />`. `dashboard/layout.tsx` computes
+  `brand`/`logoSrc` the same live-store-then-auth-snapshot-fallback way
+  `app-header.tsx` already does, and drops the old `brandSuffix="TECH"`
+  entirely (an institution's real name replacing "TEduCare TECH" outright,
+  not appending to it). `super-admin/layout.tsx` is untouched — no
+  institution context there, so it still always shows the platform brand.
+  The gold band's **color/iconography rules above are unchanged** — this
+  only swaps which mark/text renders inside the still-locked band, not its
+  styling.
 - **Admin tables must stay identical to each other.** Institutions
   (`src/app/super-admin/institutions/page.tsx`), User Manager
   (`src/app/super-admin/user-manager/page.tsx`), and License Manager
@@ -138,6 +157,15 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   (`src/components/features/notifications/`) and the full
   `/super-admin/notifications` / `/dashboard/notifications` list pages —
   never duplicate that filtering logic elsewhere.
+  **Clicking a notification no longer navigates immediately (2026-09-24)**
+  — it marks it read and opens `NotificationDetailsDialog` (untruncated
+  title/message, since the bell dropdown's row itself is `line-clamp-2`)
+  with an explicit "Take me there" button that navigates `href` and closes
+  the dialog; a notification with no `href` just shows details with no
+  such button. Both `NotificationsBell` and `NotificationsList` render
+  this dialog as a **sibling** of the dropdown/list, never nested inside
+  `DropdownMenuContent` — that unmounts on close, which would tear the
+  dialog down before it could show if it were nested there instead.
 - **Session Rollover is append-only and must never be confused with editing
   a student's level in place.** `src/types/student.ts`
   (`Student.academicHistory: StudentAcademicRecord[]`) and

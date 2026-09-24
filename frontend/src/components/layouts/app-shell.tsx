@@ -11,6 +11,7 @@ interface AppShellProps {
   menu: NavItem[];
   brand: string;
   brandSuffix?: string;
+  logoSrc?: string;
   children: ReactNode;
 }
 
@@ -19,6 +20,7 @@ export function AppShell({
   menu,
   brand,
   brandSuffix,
+  logoSrc,
   children,
 }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -26,13 +28,19 @@ export function AppShell({
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted">
-      <AppSidebar menu={menu} brand={brand} brandSuffix={brandSuffix} />
+      <AppSidebar
+        menu={menu}
+        brand={brand}
+        brandSuffix={brandSuffix}
+        logoSrc={logoSrc}
+      />
       <MobileSidebar
         open={mobileNavOpen}
         onOpenChange={setMobileNavOpen}
         menu={menu}
         brand={brand}
         brandSuffix={brandSuffix}
+        logoSrc={logoSrc}
       />
 
       <div className="flex min-h-0 flex-1 flex-col">

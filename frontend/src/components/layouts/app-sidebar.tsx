@@ -15,6 +15,8 @@ interface SidebarContentProps {
   menu: NavItem[];
   brand: string;
   brandSuffix?: string;
+  /** An institution's own logo, shown instead of the TEduCare mark (institution_admin only — see dashboard/layout.tsx). Falls back to the TEduCare mark when absent. */
+  logoSrc?: string;
   /** Called on any nav click — the mobile drawer uses this to close itself. */
   onNavigate?: () => void;
 }
@@ -149,6 +151,7 @@ export function SidebarContent({
   menu,
   brand,
   brandSuffix,
+  logoSrc,
   onNavigate,
 }: SidebarContentProps) {
   const pathname = usePathname();
@@ -170,17 +173,25 @@ export function SidebarContent({
 
   return (
     <div className="flex h-full w-full flex-col bg-primary">
-      <div className="flex shrink-0 items-center gap-2 bg-tertiary px-6 py-5">
-        <span className="relative inline-flex">
-          <Logo variant="light" size="sm" showWordmark={false} />
-          <span
-            aria-hidden
-            className="absolute -top-2 left-4 flex size-4 items-center justify-center rounded-full bg-[#8B5CF6] text-[9px] font-semibold text-white ring-2 ring-tertiary"
-          >
-            C
+      <div className="flex min-w-0 shrink-0 items-center gap-2 bg-tertiary px-6 py-5">
+        {logoSrc ? (
+          <span className="relative block size-7 shrink-0 overflow-hidden rounded-md bg-white/10">
+            {/* An institution's own uploaded logo — arbitrary source/aspect ratio, so no fixed Image loader (see Logo's fixed local marks) and no decorative badge (that's specific to the TEduCare mark below). */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoSrc} alt={brand} className="size-full object-cover" />
           </span>
-        </span>
-        <span className="text-lg leading-tight font-semibold text-white">
+        ) : (
+          <span className="relative inline-flex shrink-0">
+            <Logo variant="light" size="sm" showWordmark={false} />
+            <span
+              aria-hidden
+              className="absolute -top-2 left-4 flex size-4 items-center justify-center rounded-full bg-[#8B5CF6] text-[9px] font-semibold text-white ring-2 ring-tertiary"
+            >
+              C
+            </span>
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate text-lg leading-tight font-semibold text-white">
           {brand}
           {brandSuffix && (
             <span className="font-normal text-white/80"> {brandSuffix}</span>
@@ -225,13 +236,24 @@ interface AppSidebarProps {
   menu: NavItem[];
   brand: string;
   brandSuffix?: string;
+  logoSrc?: string;
 }
 
 /** Desktop-only fixed sidebar. Below `lg`, `<MobileSidebar>` renders the same content in a drawer. */
-export function AppSidebar({ menu, brand, brandSuffix }: AppSidebarProps) {
+export function AppSidebar({
+  menu,
+  brand,
+  brandSuffix,
+  logoSrc,
+}: AppSidebarProps) {
   return (
     <aside className="hidden h-full w-64 shrink-0 lg:flex lg:flex-col">
-      <SidebarContent menu={menu} brand={brand} brandSuffix={brandSuffix} />
+      <SidebarContent
+        menu={menu}
+        brand={brand}
+        brandSuffix={brandSuffix}
+        logoSrc={logoSrc}
+      />
     </aside>
   );
 }

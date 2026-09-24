@@ -44,18 +44,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (institutionsData) setInstitutions(institutionsData.data);
   }, [institutionsData, setInstitutions]);
 
+  const liveInstitution = institutions.find(
+    (i) => i.id === user?.institutionId,
+  );
+
   const menu = useMemo(() => {
-    const institution = institutions.find((i) => i.id === user?.institutionId);
     const moduleScopedNav = filterNavByModules(
       INSTITUTION_NAV,
-      institution?.moduleKeys ?? [],
+      liveInstitution?.moduleKeys ?? [],
     );
 
     const role = roles.find((r) => r.id === user?.roleId);
     const allowedKeys =
       !user?.roleId || role?.isSystem ? null : (role?.menuKeys ?? []);
     return filterNavByAccess(moduleScopedNav, allowedKeys);
-  }, [institutions, roles, user?.institutionId, user?.roleId]);
+  }, [liveInstitution, roles, user?.roleId]);
 
   if (!token || user?.role !== "institution_admin") {
     // Either still hydrating (AppSplash covers this) or unauthenticated/wrong
@@ -65,8 +68,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return null;
   }
 
+  // The sidebar's brand band shows this institution's own name/logo instead
+  // of the platform's — live store wins once hydrated, falling back to the
+  // login snapshot (same pattern as app-header.tsx) so it's never blank
+  // while that fetch is in flight, and finally "TEduCare" if truly nothing
+  // has resolved yet.
+  const brand = liveInstitution?.name ?? user?.institutionName ?? "TEduCare";
+  const logoSrc = liveInstitution?.logoUrl ?? user?.institutionLogoUrl;
+
   return (
-    <AppShell menu={menu} brand="TEduCare" brandSuffix="TECH">
+    <AppShell menu={menu} brand={brand} logoSrc={logoSrc}>
       {children}
     </AppShell>
   );
