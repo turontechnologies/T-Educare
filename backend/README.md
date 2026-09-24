@@ -74,6 +74,7 @@ backend/
 │  │  │  ├─ config/       # SecurityConfig, JwtService, CustomAuthenticationProvider
 │  │  │  ├─ common/       # GlobalExceptionHandler
 │  │  │  ├─ dashboard/    # super-admin + institution-admin dashboard stats
+│  │  │  ├─ institution/  # Institutions list/create/edit/status/archive (super admin)
 │  │  │  ├─ profile/      # GET/PATCH profile, password change
 │  │  │  ├─ health/
 │  │  │  └─ TeducareBackendApplication.java
@@ -102,10 +103,20 @@ password/profile updates — no more in-memory map). `auth/DemoAccountSeeder.jav
 inserts the 3 demo accounts once on first boot if the table is empty, so a
 fresh `docker compose up` seeds itself. Dashboard numbers are still
 static/hardcoded per-institution rather than computed from real rows —
-that's the next thing to move onto the DB. Everything else in
-`API_CONTRACT.md` (institutions, roles, users, academics, staff, students,
-notifications, etc.) has no backend yet — the frontend still mocks those via
-its Zustand stores.
+that's still worth moving onto the DB later.
+
+**Institutions §4.1/4.3/4.4 (list/create/edit, activate/deactivate,
+archive/restore) are also real now** — `institution/Institution.java`
+(JPA entity, table `dbo.institutions`, `V2__institutions.sql`),
+`InstitutionRepository`/`InstitutionService`/`InstitutionController`, seeded
+with 5 demo institutions (`DemoInstitutionSeeder.java`) including the two
+already referenced by the `turon_admin`/`amara_bello` login accounts. This
+is **backend-only for now** — the frontend hasn't been pointed at it yet
+(`institutions.store.ts` still mocks it); that's an explicit next step, not
+forgotten. §4.5 (User Manager), §4.6 (Modules), and §4.7 (License Manager)
+remain unbuilt. Everything else in `API_CONTRACT.md` (roles, users,
+academics, staff, students, notifications, etc.) has no backend yet — the
+frontend still mocks those via its Zustand stores.
 
 Verified end-to-end via `docker compose up -d --build` (both `sqlserver` and
 `app` services): Flyway applies the migration, the app connects to

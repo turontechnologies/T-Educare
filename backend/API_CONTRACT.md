@@ -24,11 +24,12 @@ conventions below and get added here as each one is built.
 
 ## Status
 
-**Auth (§3), Profile (§3.1), and Dashboards (§9) are implemented and live** —
-see `backend/README.md`'s "What's implemented" section for exactly what that
-covers (a real MSSQL-backed `dbo.users` table via Flyway, seeded with 3
-BCrypt-hashed demo accounts on first boot — not in-memory anymore).
-Everything else below (Institutions, Roles, Users, Academic Sessions,
+**Auth (§3), Profile (§3.1), Dashboards (§9), and Institutions §4.1/4.3/4.4
+(§4) are implemented and live** — see `backend/README.md`'s "What's
+implemented" section for exactly what that covers (real MSSQL-backed
+tables via Flyway, not in-memory). Institutions is backend-only for now —
+not yet wired to the frontend (see §4's own note). Everything else below
+(§4.5-4.7, Roles, Users, Academic Sessions,
 Students, Schools/Faculties/Departments/Programs, Staff, Notifications) is
 **not implemented yet** — this file remains what to build those *against*.
 
@@ -576,6 +577,27 @@ either side.
 ## 4. Institutions — super admin only
 
 All routes below require `role: "super_admin"` → otherwise `403`.
+
+**4.1, 4.3, and 4.4 are implemented** (`backend/src/main/java/com/teducare/institution/`),
+backed by a real `dbo.institutions` table (Flyway, `V2__institutions.sql`),
+seeded with 5 demo institutions on first boot (`DemoInstitutionSeeder.java`) —
+two of which (`inst-xyz-college`, `inst-ahmadubellouniversit-1`) reuse the
+exact ids the `turon_admin`/`amara_bello` login accounts already reference
+as their `institutionId`, so both stay consistent. The `role: "super_admin"`
+check above is enforced manually in `InstitutionController` (there's no
+Spring `hasRole`/authorities set up yet — see `JwtAuthenticationFilter`,
+which grants an empty authority list — so this resolves the caller's real
+role the same way `ProfileController`/`DashboardController` already do, via
+`AuthDirectory`; the same small guard method is the pattern to reuse for
+4.5/4.6/4.7 once those get built). **4.2 is folded into 4.1's `POST`** (same
+endpoint, this subsection just documents its request shape) — implemented
+alongside it. **4.5 (User Manager), 4.6 (Modules), and 4.7 (License
+Manager) are not implemented yet** — those are separate super-admin pages
+(`/super-admin/user-manager`, `/super-admin/modules`,
+`/super-admin/license-manager`), not part of this pass. Not yet wired to
+the frontend — `frontend/src/store/institutions.store.ts` still mocks this
+resource for now; the frontend will be pointed at these real endpoints in a
+later step.
 
 ### 4.1 List / create / edit
 
