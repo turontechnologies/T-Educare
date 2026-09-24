@@ -1,12 +1,7 @@
 package com.teducare.auth;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,67 +13,19 @@ public class AuthDirectory {
         public record Account(String username, String password, AuthenticatedUserDto user) {
         }
 
+        private final UserAccountRepository repository;
         private final PasswordEncoder passwordEncoder;
-        private final Map<String, Account> accounts;
 
-        public AuthDirectory(PasswordEncoder passwordEncoder) {
+        public AuthDirectory(UserAccountRepository repository, PasswordEncoder passwordEncoder) {
+                this.repository = repository;
                 this.passwordEncoder = passwordEncoder;
-                this.accounts = new ConcurrentHashMap<>(Stream.of(
-                                new Account(
-                                                "super_admin",
-                                                passwordEncoder.encode("Super@2024"),
-                                                new AuthenticatedUserDto(
-                                                                "demo-super-admin",
-                                                                "Ada",
-                                                                "Okoye",
-                                                                "ada.okoye@turontech.com",
-                                                                "super_admin",
-                                                                null,
-                                                                null,
-                                                                null,
-                                                                null,
-                                                                "08012345678",
-                                                                "")),
-                                new Account(
-                                                "turon_admin",
-                                                passwordEncoder.encode("Turon@2024"),
-                                                new AuthenticatedUserDto(
-                                                                "um-christian-smart",
-                                                                "Christian",
-                                                                "Smart",
-                                                                "christian.smart@turontech.com",
-                                                                "institution_admin",
-                                                                "inst-xyz-college",
-                                                                "XYZ College of Technology",
-                                                                "role-institution-admin",
-                                                                null,
-                                                                "08022223333",
-                                                                "")),
-                                new Account(
-                                                "amara_bello",
-                                                passwordEncoder.encode("Amara@2024"),
-                                                new AuthenticatedUserDto(
-                                                                "um-amara-bello",
-                                                                "Amara",
-                                                                "Bello",
-                                                                "amara.bello@turontech.com",
-                                                                "institution_admin",
-                                                                "inst-ahmadubellouniversit-1",
-                                                                "Ahmadu Bello University",
-                                                                "role-front-desk",
-                                                                List.of("dashboard", "registration", "students"),
-                                                                "08033334444",
-                                                                "")))
-                                .collect(Collectors.toMap(
-                                                account -> account.username().toLowerCase(),
-                                                Function.identity())));
         }
 
         public Optional<Account> find(String username) {
                 if (username == null || username.isBlank()) {
                         return Optional.empty();
                 }
-                return Optional.ofNullable(accounts.get(username.trim().toLowerCase()));
+                return repository.findByUsernameIgnoreCase(username.trim()).map(AuthDirectory::toAccount);
         }
 
         public Account require(String username) {
@@ -87,40 +34,56 @@ public class AuthDirectory {
         }
 
         public void updatePassword(String username, String currentPassword, String newPassword) {
-                Account account = require(username);
-                if (!passwordEncoder.matches(currentPassword, account.password())) {
+                UserAccount entity = requireEntity(username);
+                if (!passwordEncoder.matches(currentPassword, entity.getPasswordHash())) {
                         throw new BadCredentialsException("Current password is incorrect.");
                 }
 
-                accounts.put(username.trim().toLowerCase(), new Account(
-                                account.username(),
-                                passwordEncoder.encode(newPassword),
-                                account.user()));
+                entity.setPasswordHash(passwordEncoder.encode(newPassword));
+                repository.save(entity);
         }
 
         public AuthenticatedUserDto updateProfile(
                         String username, String firstName, String lastName, String email, String phone, String avatarUrl) {
-                Account account = require(username);
-                AuthenticatedUserDto current = account.user();
+                UserAccount entity = requireEntity(username);
 
-                AuthenticatedUserDto updated = new AuthenticatedUserDto(
-                                current.id(),
-                                orDefault(firstName, current.firstName()),
-                                orDefault(lastName, current.lastName()),
-                                orDefault(email, current.email()),
-                                current.role(),
-                                current.institutionId(),
-                                current.institutionName(),
-                                current.roleId(),
-                                current.menuKeys(),
-                                phone != null ? phone : current.phone(),
-                                avatarUrl != null ? avatarUrl : current.avatarUrl());
+                entity.setFirstName(orDefault(firstName, entity.getFirstName()));
+                entity.setLastName(orDefault(lastName, entity.getLastName()));
+                entity.setEmail(orDefault(email, entity.getEmail()));
+                entity.setPhone(phone != null ? phone : entity.getPhone());
+                entity.setAvatarUrl(avatarUrl != null ? avatarUrl : entity.getAvatarUrl());
 
-                accounts.put(username.trim().toLowerCase(), new Account(account.username(), account.password(), updated));
-                return updated;
+                return toAccount(repository.save(entity)).user();
+        }
+
+        private UserAccount requireEntity(String username) {
+                if (username == null || username.isBlank()) {
+                        throw new BadCredentialsException("Invalid username or password.");
+                }
+                return repository.findByUsernameIgnoreCase(username.trim())
+                                .orElseThrow(() -> new BadCredentialsException("Invalid username or password."));
         }
 
         private static String orDefault(String value, String fallback) {
                 return value == null || value.isBlank() ? fallback : value;
+        }
+
+        private static Account toAccount(UserAccount entity) {
+                return new Account(entity.getUsername(), entity.getPasswordHash(), new AuthenticatedUserDto(
+                                entity.getId(),
+                                entity.getFirstName(),
+                                entity.getLastName(),
+                                entity.getEmail(),
+                                entity.getRole(),
+                                entity.getInstitutionId(),
+                                entity.getInstitutionName(),
+                                entity.getRoleId(),
+                                splitMenuKeys(entity.getMenuKeys()),
+                                entity.getPhone(),
+                                entity.getAvatarUrl()));
+        }
+
+        private static List<String> splitMenuKeys(String menuKeys) {
+                return (menuKeys == null || menuKeys.isBlank()) ? null : List.of(menuKeys.split(","));
         }
 }

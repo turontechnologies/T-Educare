@@ -70,7 +70,7 @@ backend/
 ├─ src/
 │  ├─ main/
 │  │  ├─ java/com/teducare/
-│  │  │  ├─ auth/         # login, JWT issuance, in-memory demo account directory
+│  │  │  ├─ auth/         # login, JWT issuance, MSSQL-backed user directory
 │  │  │  ├─ config/       # SecurityConfig, JwtService, CustomAuthenticationProvider
 │  │  │  ├─ common/       # GlobalExceptionHandler
 │  │  │  ├─ dashboard/    # super-admin + institution-admin dashboard stats
@@ -92,15 +92,29 @@ backend/
 ## What's implemented
 
 Auth, Dashboard, and Profile (§3, §9, and the Profile section of
-`API_CONTRACT.md`) are real, working endpoints — not scaffolding. They run
-against an **in-memory demo account directory** (`auth/AuthDirectory.java`,
-3 hardcoded accounts, BCrypt-hashed at startup), not a database yet — nothing
-in `db/migration/V1__init_schema.sql` is wired up (Flyway is disabled,
-`jpa.hibernate.ddl-auto: none`), and dashboard numbers are static/hardcoded
-per-institution rather than computed from real rows. Everything else in
+`API_CONTRACT.md`) are real, working endpoints — not scaffolding. `auth/`
+is now **MSSQL-backed for real**: `dbo.users` (`db/migration/V1__init_schema.sql`,
+applied by Flyway on startup — `flyway.enabled: true`) holds the account
+rows, `auth/UserAccount.java`/`UserAccountRepository.java` are the JPA
+entity/repository, and `auth/AuthDirectory.java` is a thin wrapper over the
+repository (BCrypt-hashed passwords, mutated via `repository.save()` on
+password/profile updates — no more in-memory map). `auth/DemoAccountSeeder.java`
+inserts the 3 demo accounts once on first boot if the table is empty, so a
+fresh `docker compose up` seeds itself. Dashboard numbers are still
+static/hardcoded per-institution rather than computed from real rows —
+that's the next thing to move onto the DB. Everything else in
 `API_CONTRACT.md` (institutions, roles, users, academics, staff, students,
 notifications, etc.) has no backend yet — the frontend still mocks those via
 its Zustand stores.
+
+Verified end-to-end via `docker compose up -d --build` (both `sqlserver` and
+`app` services): Flyway applies the migration, the app connects to
+`teducare_db` on the `sqlserver` service, `POST /auth/login`,
+`GET /dashboard/stats`, and `GET /profile` all return real, DB-backed data,
+and a value written by an earlier test run (`amara_bello`'s phone number)
+was still there after the containers were fully torn down and recreated —
+confirming this is real persistence, not just an in-memory demo that resets
+on restart.
 
 ## CORS and frontend integration
 

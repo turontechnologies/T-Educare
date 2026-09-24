@@ -58,7 +58,16 @@ class ProfileControllerTest {
                 .content("{\"username\":\"turon_admin\",\"password\":\"Turon@2024\"}"))
                 .andExpect(status().isUnauthorized());
 
-        loginAs("turon_admin", "Turon@2025Updated");
+        String newToken = loginAs("turon_admin", "Turon@2025Updated");
+
+        // Restore the documented demo password — the account now lives in a real,
+        // persistent database (not an in-memory map reset on every run), so this
+        // test must leave it exactly as it found it for the next run.
+        mockMvc.perform(patch("/api/profile/password")
+                .header("Authorization", "Bearer " + newToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"currentPassword\":\"Turon@2025Updated\",\"newPassword\":\"Turon@2024\"}"))
+                .andExpect(status().isOk());
     }
 
     @Test

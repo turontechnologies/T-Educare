@@ -2,11 +2,18 @@ IF OBJECT_ID(N'dbo.users', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.users (
         id NVARCHAR(64) PRIMARY KEY,
+        username NVARCHAR(100) NOT NULL UNIQUE,
         first_name NVARCHAR(100) NOT NULL,
         last_name NVARCHAR(100) NOT NULL,
         email NVARCHAR(255) NOT NULL UNIQUE,
         password_hash NVARCHAR(255) NOT NULL,
         role NVARCHAR(50) NOT NULL,
+        institution_id NVARCHAR(64) NULL,
+        institution_name NVARCHAR(255) NULL,
+        role_id NVARCHAR(64) NULL,
+        menu_keys NVARCHAR(1000) NULL,
+        phone NVARCHAR(30) NULL,
+        avatar_url NVARCHAR(500) NULL,
         status NVARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
         created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );

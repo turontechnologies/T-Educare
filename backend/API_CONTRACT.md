@@ -26,7 +26,8 @@ conventions below and get added here as each one is built.
 
 **Auth (§3), Profile (§3.1), and Dashboards (§9) are implemented and live** —
 see `backend/README.md`'s "What's implemented" section for exactly what that
-covers (an in-memory 3-account directory, BCrypt-hashed, not a database yet).
+covers (a real MSSQL-backed `dbo.users` table via Flyway, seeded with 3
+BCrypt-hashed demo accounts on first boot — not in-memory anymore).
 Everything else below (Institutions, Roles, Users, Academic Sessions,
 Students, Schools/Faculties/Departments/Programs, Staff, Notifications) is
 **not implemented yet** — this file remains what to build those *against*.
@@ -437,10 +438,12 @@ erDiagram
 }
 ```
 
-**Implemented** (`backend/src/main/java/com/teducare/auth/`) against an
-in-memory `AuthDirectory` of 3 BCrypt-hashed demo accounts — `super_admin`,
-`turon_admin` (XYZ College, unrestricted), `amara_bello` (Ahmadu Bello
-University, restricted "Front Desk Officer" role) — not a database yet. JWT
+**Implemented** (`backend/src/main/java/com/teducare/auth/`), backed by a
+real `dbo.users` table in MSSQL (Flyway-managed, see
+`db/migration/V1__init_schema.sql`), seeded with 3 BCrypt-hashed demo
+accounts on first boot if the table is empty (`DemoAccountSeeder.java`) —
+`super_admin`, `turon_admin` (XYZ College, unrestricted), `amara_bello`
+(Ahmadu Bello University, restricted "Front Desk Officer" role). JWT
 claims carry `role`/`userId`; `GET /auth/me` and `POST /auth/logout` (204,
 clears the security context server-side) both work as documented above.
 
@@ -1374,8 +1377,11 @@ Don't merge the two lists; they're deliberately separate.
 ## 9. Dashboards
 
 **Implemented** (`backend/src/main/java/com/teducare/dashboard/`), against
-the same in-memory `AuthDirectory` accounts as Auth/Profile above — not a
-database. Both dashboards (`frontend/src/app/dashboard/page.tsx` and
+the same MSSQL-backed `AuthDirectory` accounts as Auth/Profile above — the
+stats numbers themselves are still hardcoded per-institution server-side,
+not computed from real rows, but institution resolution (which set of
+numbers a given login sees) is real. Both dashboards
+(`frontend/src/app/dashboard/page.tsx` and
 `frontend/src/app/super-admin/page.tsx`) now call these routes instead of
 reading `frontend/src/store/dashboard.store.ts` directly; `institutions.store.ts`
 still backs the "Recent Added Institutions" table's underlying data model,
