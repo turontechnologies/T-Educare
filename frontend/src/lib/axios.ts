@@ -14,6 +14,18 @@ apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   const isAuthRequest = config.url?.includes("/auth/login");
 
+  // The instance-wide default below is "application/json" — for a
+  // FormData body (file uploads) that must be deleted, not overridden,
+  // so the browser can set its own "multipart/form-data; boundary=..."
+  // header. The boundary is generated per-request and can't be supplied
+  // manually, so any explicit multipart Content-Type value here is wrong
+  // by construction. Deleting here on the final merged config is the
+  // reliable way to do this — it doesn't depend on per-call header-merge
+  // semantics for an `undefined` override.
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
+
   if (isAuthRequest) {
     delete config.headers.Authorization;
     return config;

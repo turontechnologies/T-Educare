@@ -4,15 +4,12 @@ export const uploadService = {
   async upload(file: File): Promise<{ url: string }> {
     const formData = new FormData();
     formData.append("file", file);
-    // Must NOT set "multipart/form-data" explicitly — that has no boundary
-    // parameter, which breaks the server's multipart parsing. Overriding
-    // apiClient's default "application/json" with `undefined` lets the
-    // browser generate the correct header (including the boundary) itself
-    // when it serializes the FormData body.
+    // apiClient's request interceptor (src/lib/axios.ts) strips the default
+    // JSON Content-Type for any FormData body, so the browser can set its
+    // own "multipart/form-data; boundary=..." — nothing to override here.
     const { data } = await apiClient.post<{ url: string }>(
       "/uploads",
       formData,
-      { headers: { "Content-Type": undefined } },
     );
     return data;
   },
