@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -63,14 +62,7 @@ export function LoginForm() {
         {...register("password")}
       />
 
-      <div className="flex items-center justify-between gap-4 pt-1">
-        <Link
-          href="/forgot-password"
-          className="text-sm font-medium text-foreground/70 transition-colors hover:text-primary"
-        >
-          Forgot Password?
-        </Link>
-
+      <div className="flex items-center justify-end gap-4 pt-1">
         <Button
           type="submit"
           disabled={isPending}

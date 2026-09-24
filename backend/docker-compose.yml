@@ -29,7 +29,7 @@ services:
       sqlserver:
         condition: service_healthy
     environment:
-      DB_URL: "jdbc:sqlserver://sqlserver:1433;databaseName=master;encrypt=true;trustServerCertificate=true"
+      DB_URL: "jdbc:sqlserver://sqlserver:1433;databaseName=teducare_db;encrypt=true;trustServerCertificate=true"
       DB_USERNAME: "sa"
       DB_PASSWORD: "StrongPassword123!"
       JWT_SECRET: "super-secret-jwt-key-change-this-in-production"

@@ -40,7 +40,8 @@ docker compose up -d --build
 ### 3) Health check
 
 ```bash
-curl http://localhost:8081/api/health
+curl http://localhost:8080/api/health   # mvn spring-boot:run (SERVER_PORT default)
+curl http://localhost:8081/api/health   # docker compose (host 8081 -> container 8080)
 ```
 
 Expected response:
@@ -69,7 +70,11 @@ backend/
 ├─ src/
 │  ├─ main/
 │  │  ├─ java/com/teducare/
-│  │  │  ├─ config/
+│  │  │  ├─ auth/         # login, JWT issuance, in-memory demo account directory
+│  │  │  ├─ config/       # SecurityConfig, JwtService, CustomAuthenticationProvider
+│  │  │  ├─ common/       # GlobalExceptionHandler
+│  │  │  ├─ dashboard/    # super-admin + institution-admin dashboard stats
+│  │  │  ├─ profile/      # GET/PATCH profile, password change
 │  │  │  ├─ health/
 │  │  │  └─ TeducareBackendApplication.java
 │  │  └─ resources/
@@ -83,6 +88,19 @@ backend/
 ├─ README.md
 └─ CLAUDE.md
 ```
+
+## What's implemented
+
+Auth, Dashboard, and Profile (§3, §9, and the Profile section of
+`API_CONTRACT.md`) are real, working endpoints — not scaffolding. They run
+against an **in-memory demo account directory** (`auth/AuthDirectory.java`,
+3 hardcoded accounts, BCrypt-hashed at startup), not a database yet — nothing
+in `db/migration/V1__init_schema.sql` is wired up (Flyway is disabled,
+`jpa.hibernate.ddl-auto: none`), and dashboard numbers are static/hardcoded
+per-institution rather than computed from real rows. Everything else in
+`API_CONTRACT.md` (institutions, roles, users, academics, staff, students,
+notifications, etc.) has no backend yet — the frontend still mocks those via
+its Zustand stores.
 
 ## CORS and frontend integration
 

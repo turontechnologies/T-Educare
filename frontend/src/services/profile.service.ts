@@ -18,9 +18,25 @@ export type ProfileResponse = {
   summary: ProfileSummary;
 };
 
+export type ProfileUpdatePayload = Partial<{
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  avatarUrl: string;
+}>;
+
 export const profileService = {
   async getProfile(): Promise<ProfileResponse> {
     const { data } = await apiClient.get<ProfileResponse>("/profile");
+    return data;
+  },
+
+  async updateProfile(payload: ProfileUpdatePayload): Promise<ProfileResponse> {
+    const { data } = await apiClient.patch<ProfileResponse>(
+      "/profile",
+      payload,
+    );
     return data;
   },
 

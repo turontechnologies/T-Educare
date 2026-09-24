@@ -32,6 +32,22 @@ class DashboardControllerTest {
     }
 
     @Test
+    void institutionAdminDashboardStatsDifferByInstitution() throws Exception {
+        String turonToken = loginAs("turon_admin", "Turon@2024");
+        String amaraToken = loginAs("amara_bello", "Amara@2024");
+
+        mockMvc.perform(get("/api/dashboard/stats")
+                .header("Authorization", "Bearer " + turonToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registeredStudents").value(48043));
+
+        mockMvc.perform(get("/api/dashboard/stats")
+                .header("Authorization", "Bearer " + amaraToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registeredStudents").value(22000));
+    }
+
+    @Test
     void recentInstitutionsEndpointReturnsLatestInstitutions() throws Exception {
         String token = loginAs("super_admin", "Super@2024");
 

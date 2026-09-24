@@ -16,7 +16,7 @@ export interface PersonalInfoFormValues {
 
 interface PersonalInfoCardProps {
   defaultValues: PersonalInfoFormValues;
-  onSave: (values: PersonalInfoFormValues) => void;
+  onSave: (values: PersonalInfoFormValues) => Promise<void>;
 }
 
 /** Shared "Personal Information" editor — same on both profile pages, just wired to a different store by the caller. */
@@ -28,9 +28,15 @@ export function PersonalInfoCard({
     { values: defaultValues },
   );
 
-  const onSubmit = (values: PersonalInfoFormValues) => {
-    onSave(values);
-    toast.success("Profile updated");
+  const onSubmit = async (values: PersonalInfoFormValues) => {
+    try {
+      await onSave(values);
+      toast.success("Profile updated");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile",
+      );
+    }
   };
 
   return (

@@ -4,17 +4,23 @@ import { Building2, EyeOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
+import { toast } from "sonner";
 import { ChangePasswordCard } from "@/components/features/profile/change-password-card";
 import { PersonalInfoCard } from "@/components/features/profile/personal-info-card";
 import { ProfileHeroCard } from "@/components/features/profile/profile-hero-card";
 import { cn } from "@/lib/utils";
-import { useProfile } from "@/hooks/use-profile";
-import { profileService } from "@/services/profile.service";
+import {
+  useChangePassword,
+  useProfile,
+  useUpdateProfile,
+} from "@/hooks/use-profile";
 import { useAuthStore } from "@/store/auth.store";
 
 export default function InstitutionAdminProfilePage() {
   const authUser = useAuthStore((state) => state.user);
   const { data, isLoading, isError } = useProfile();
+  const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
 
   const profile = data?.profile ?? {
     firstName: authUser?.firstName ?? "",
@@ -63,7 +69,19 @@ export default function InstitutionAdminProfilePage() {
         avatarUrl={profile.avatarUrl ?? ""}
         roleLabel={roleLabel}
         subtitle={profile.institutionName ?? ""}
-        onAvatarChange={() => undefined}
+        onAvatarChange={(avatarUrl) =>
+          updateProfile.mutate(
+            { avatarUrl },
+            {
+              onError: (error) =>
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to update photo",
+                ),
+            },
+          )
+        }
       />
 
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
@@ -127,17 +145,15 @@ export default function InstitutionAdminProfilePage() {
           email: profile.email,
           phone: profile.phone ?? "",
         }}
-        onSave={() => undefined}
+        onSave={async (values) => {
+          await updateProfile.mutateAsync(values);
+        }}
       />
 
       <ChangePasswordCard
-        currentPassword=""
-        onChangePassword={async (newPassword) => {
-          await profileService.updatePassword({
-            currentPassword: "",
-            newPassword,
-          });
-        }}
+        onChangePassword={(currentPassword, newPassword) =>
+          changePassword.mutateAsync({ currentPassword, newPassword })
+        }
       />
     </div>
   );

@@ -5,6 +5,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.teducare.auth.AuthDirectory;
@@ -13,9 +14,11 @@ import com.teducare.auth.AuthDirectory;
 public class CustomAuthenticationProvider implements AuthenticationProvider {
 
     private final AuthDirectory authDirectory;
+    private final PasswordEncoder passwordEncoder;
 
-    public CustomAuthenticationProvider(AuthDirectory authDirectory) {
+    public CustomAuthenticationProvider(AuthDirectory authDirectory, PasswordEncoder passwordEncoder) {
         this.authDirectory = authDirectory;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -26,7 +29,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         AuthDirectory.Account account = authDirectory.find(username)
                 .orElseThrow(() -> new BadCredentialsException("Invalid username or password."));
 
-        if (!account.password().equals(password)) {
+        if (!passwordEncoder.matches(password, account.password())) {
             throw new BadCredentialsException("Invalid username or password.");
         }
 

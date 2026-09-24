@@ -42,6 +42,44 @@ class ProfileControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void passwordUpdateEndpointSucceedsAndNewPasswordWorksOnNextLogin() throws Exception {
+        String token = loginAs("turon_admin", "Turon@2024");
+
+        mockMvc.perform(patch("/api/profile/password")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"currentPassword\":\"Turon@2024\",\"newPassword\":\"Turon@2025Updated\"}"))
+                .andExpect(status().isOk());
+
+        // Old password must be rejected now, and the new one must work.
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"turon_admin\",\"password\":\"Turon@2024\"}"))
+                .andExpect(status().isUnauthorized());
+
+        loginAs("turon_admin", "Turon@2025Updated");
+    }
+
+    @Test
+    void profileUpdateEndpointPersistsChangesAndLeavesUnrelatedFieldsUntouched() throws Exception {
+        String token = loginAs("amara_bello", "Amara@2024");
+
+        mockMvc.perform(patch("/api/profile")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"phone\":\"08099998888\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profile.phone").value("08099998888"))
+                .andExpect(jsonPath("$.profile.firstName").value("Amara"))
+                .andExpect(jsonPath("$.profile.lastName").value("Bello"));
+
+        mockMvc.perform(get("/api/profile")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profile.phone").value("08099998888"));
+    }
+
     private String loginAs(String username, String password) throws Exception {
         String body = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
 

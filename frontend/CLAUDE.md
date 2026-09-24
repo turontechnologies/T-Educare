@@ -458,53 +458,53 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   always shows a full nav — verified during development that pointing a
   login at a partially-linked institution (e.g. Babcock's 10-of-19 module
   set) correctly hides Registration, Transport, and most of Academics.
-- **Institution admin logins authenticate against `UserManagerAccount`
-  records, not a separate hardcoded list.** `authService.login`
-  (`src/services/auth.service.ts`) only hardcodes `super_admin`; every other
-  login matches `username`/`password` against `useUserManagersStore`,
-  requires `status === "active"`, resolves the institution by matching
-  `institutionName` against `useInstitutionsStore` (a denormalized string
-  match, not a real FK — an accepted limitation of the mock layer), and then
-  resolves the live Role by matching email against `useRbacStore`'s
-  `ManagedUser` list (falling back to unrestricted if no match). So editing,
-  resetting the password of, or deactivating an account on
-  `/super-admin/user-manager` changes what actually works at `/login`
-  immediately — there's no separate seed to keep in sync. **Keep one User
-  Manager account per institution** — `turon_admin` → XYZ College of
-  Technology, `amara_bello` → Ahmadu Bello University (a restricted "Front
-  Desk Officer" Role tested against an institution that has _more_ modules
-  active than her Role grants, so what she can't see proves the Role is
-  limiting her, not the institution), `chrissmart10` → Babcock University,
-  and so on for the rest of `user-managers.store.ts`'s seed — each is a
-  distinct, independently-testable login. If you add a new demo scenario,
-  add a new `UserManagerAccount` rather than reusing an institution that
-  already has one.
-- **No backend yet** (`backend/` is unscaffolded — see
-  `backend/API_CONTRACT.md` for the spec every mock store below stands in
-  for): every store in `src/store/` — `rbac.store.ts`,
+- **`authService.login` no longer matches against `UserManagerAccount`
+  records — it's a real HTTP call now, and only the backend's 3 demo
+  accounts can actually log in.** This used to be mocked entirely
+  client-side (matching `username`/`password` against
+  `useUserManagersStore`, resolving the institution via `institutionName`
+  against `useInstitutionsStore`, then the live Role via `useRbacStore`),
+  which meant every seeded `UserManagerAccount` in `user-managers.store.ts`
+  (`chrissmart10` → Babcock University, and the rest of that store's seed)
+  was independently logable-in-as. **That's no longer true.** `auth.service.ts`
+  is now a thin wrapper over `POST /auth/login` (§3), and the backend only
+  knows about `super_admin`, `turon_admin` (XYZ College, unrestricted), and
+  `amara_bello` (Ahmadu Bello University, restricted "Front Desk Officer"
+  role) — see `backend/API_CONTRACT.md`'s Status line. Editing, resetting
+  the password of, or deactivating a `UserManagerAccount` on
+  `/super-admin/user-manager` no longer has any effect on what works at
+  `/login` — that table is still a real, working mock CRUD screen (§4.5),
+  it's just disconnected from auth until the backend grows a real
+  `UserManagerAccount`-backed login (closing this gap is the natural
+  trigger for building §4.5 for real). Don't try to "fix" this by
+  re-adding client-side login matching — that would be regressing the
+  real-backend integration that was the whole point of this change.
+- **Auth, Dashboard, and Profile are wired to a real backend now — everything
+  else below is still mocked.** `backend/` is a real Spring Boot app (see
+  `backend/API_CONTRACT.md`'s Status line for exactly which sections are
+  live); `auth.service.ts`, `dashboard.service.ts`, and `profile.service.ts`
+  all call it via `apiClient` (`src/lib/axios.ts`) rather than reading a
+  Zustand store. It's backed by an in-memory, non-persistent 3-account
+  directory server-side (not a database yet), so **the three demo logins
+  are now server-defined, not frontend-defined** — `super_admin`/
+  `Super@2024`, `turon_admin`/`Turon@2024` (XYZ College, unrestricted),
+  `amara_bello`/`Amara@2024` (Ahmadu Bello University, restricted "Front
+  Desk Officer" role) — the credentials aren't in this frontend's source at
+  all anymore. Every other store in `src/store/` — `rbac.store.ts`,
   `institutions.store.ts`, `academics.store.ts`, `staff.store.ts`,
   `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
   `departments.store.ts`, `programs.store.ts`, `program-levels.store.ts`,
   `course-grades.store.ts`, `courses.store.ts`, `staff-members.store.ts`,
-  `lecturers.store.ts`, `rollover.store.ts` — is a
-  `persist`-backed Zustand store standing in for a real API, seeded with
-  demo data. `dashboard.store.ts` is the one exception: it's read-only mock
-  data for the two dashboards' stat cards/chart/recent-list, so it's
-  intentionally _not_ `persist`-backed (nothing ever mutates it locally) —
-  when wiring it to a real API, call its `setStats`/`setEnrollment`/
-  `setRecentStudents` after each fetch rather than adding persistence.
-  `authService.login`
-  (`src/services/auth.service.ts`) hardcodes three demo accounts (see its
-  header comment for credentials) covering all three cases worth testing:
-  the super admin, an unrestricted institution root admin, and a
-  RBAC-restricted staff account. When wiring a new page to data, follow this
-  same pattern — a small typed Zustand store with seed data — rather than
-  reaching for a real fetch call, until `backend/` exists. Because
-  `persist` only rehydrates in the browser, any component reading one of
-  these stores **must** be a Client Component using the store's hook
-  (`useXStore((s) => s.thing)`) — never `useXStore.getState()` in a Server
-  Component, which would silently always show the seed data and never a
-  user's changes.
+  `lecturers.store.ts`, `rollover.store.ts` — is still a `persist`-backed
+  Zustand store standing in for a real API that doesn't exist yet, seeded
+  with demo data, exactly as before. When wiring a new page to data that
+  has no real backend section yet, keep following that same pattern — a
+  small typed Zustand store with seed data — rather than reaching for a real
+  fetch call prematurely. Because `persist` only rehydrates in the browser,
+  any component reading one of these stores **must** be a Client Component
+  using the store's hook (`useXStore((s) => s.thing)`) — never
+  `useXStore.getState()` in a Server Component, which would silently always
+  show the seed data and never a user's changes.
 - **Bump `version` whenever you change a persisted store's shape.** Every
   `persist(...)` config in `src/store/` has an explicit version number and
   a `migrate: () => (<fresh seed/empty state>)` — every persisted store in

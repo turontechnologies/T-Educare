@@ -15,14 +15,14 @@ interface ChangePasswordFormValues {
 }
 
 interface ChangePasswordCardProps {
-  /** The account's live stored password, to validate "current password" against. */
-  currentPassword: string;
-  onChangePassword: (newPassword: string) => void;
+  onChangePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<void>;
 }
 
-/** Shared "Change Password" form — same on both profile pages; the caller supplies the live current password and where the new one gets saved. */
+/** Shared "Change Password" form — same on both profile pages; the caller decides where the change actually gets saved. */
 export function ChangePasswordCard({
-  currentPassword,
   onChangePassword,
 }: ChangePasswordCardProps) {
   const [revealCurrent, setRevealCurrent] = useState(false);
@@ -38,22 +38,25 @@ export function ChangePasswordCard({
       },
     });
 
-  const onSubmit = (values: ChangePasswordFormValues) => {
-    if (values.currentPassword !== currentPassword) {
-      toast.error("Current password is incorrect");
-      return;
-    }
-    if (values.newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters");
+  const onSubmit = async (values: ChangePasswordFormValues) => {
+    if (values.newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
       return;
     }
     if (values.newPassword !== values.confirmPassword) {
       toast.error("New password and confirmation don't match");
       return;
     }
-    onChangePassword(values.newPassword);
-    toast.success("Password updated");
-    reset();
+
+    try {
+      await onChangePassword(values.currentPassword, values.newPassword);
+      toast.success("Password updated");
+      reset();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update password",
+      );
+    }
   };
 
   return (

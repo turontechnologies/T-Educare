@@ -33,6 +33,17 @@ public class ProfileController {
         return profileService.getProfile(authentication.getName());
     }
 
+    @PatchMapping("/profile")
+    public Map<String, Object> updateProfile(
+            Authentication authentication,
+            @Valid @RequestBody ProfileUpdateRequest request) {
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
+        }
+
+        return profileService.updateProfile(authentication.getName(), request);
+    }
+
     @PatchMapping("/profile/password")
     public ResponseEntity<Map<String, String>> updatePassword(
             Authentication authentication,

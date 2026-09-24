@@ -9,14 +9,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.teducare.auth.AuthDirectory;
+
 @RestController
 @RequestMapping("/api")
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final AuthDirectory authDirectory;
 
-    public DashboardController(DashboardService dashboardService) {
+    public DashboardController(DashboardService dashboardService, AuthDirectory authDirectory) {
         this.dashboardService = dashboardService;
+        this.authDirectory = authDirectory;
     }
 
     @GetMapping("/super-admin/stats")
@@ -30,11 +34,8 @@ public class DashboardController {
 
     @GetMapping("/dashboard/stats")
     public ResponseEntity<Map<String, Object>> dashboardStats(Authentication authentication) {
-        String institutionId = authentication != null && authentication.getName() != null
-                ? authentication.getName()
-                : null;
-
-        DashboardService.DashboardStatsResponse stats = dashboardService.institutionStats(institutionId);
+        DashboardService.DashboardStatsResponse stats =
+                dashboardService.institutionStats(resolveInstitutionId(authentication));
         return ResponseEntity.ok(Map.of(
                 "registeredStudents", stats.registeredStudents(),
                 "applicants", stats.applicants(),
@@ -55,5 +56,15 @@ public class DashboardController {
     @GetMapping("/super-admin/recent-institutions")
     public ResponseEntity<Map<String, Object>> recentInstitutions(@RequestParam(defaultValue = "5") int limit) {
         return ResponseEntity.ok(Map.of("data", dashboardService.recentInstitutions(limit).data()));
+    }
+
+    /** The JWT subject is the login username, not an institutionId — resolve the real one via the directory. */
+    private String resolveInstitutionId(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return null;
+        }
+        return authDirectory.find(authentication.getName())
+                .map(account -> account.user().institutionId())
+                .orElse(null);
     }
 }

@@ -3,16 +3,22 @@
 import { Boxes, Landmark, ShieldCheck, UserCog } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { toast } from "sonner";
 import { ChangePasswordCard } from "@/components/features/profile/change-password-card";
 import { PersonalInfoCard } from "@/components/features/profile/personal-info-card";
 import { ProfileHeroCard } from "@/components/features/profile/profile-hero-card";
-import { useProfile } from "@/hooks/use-profile";
-import { profileService } from "@/services/profile.service";
+import {
+  useChangePassword,
+  useProfile,
+  useUpdateProfile,
+} from "@/hooks/use-profile";
 import { useAuthStore } from "@/store/auth.store";
 
 export default function SuperAdminProfilePage() {
   const authUser = useAuthStore((state) => state.user);
   const { data, isLoading, isError } = useProfile();
+  const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
 
   const profile = data?.profile ?? {
     firstName: authUser?.firstName ?? "",
@@ -58,7 +64,19 @@ export default function SuperAdminProfilePage() {
         avatarUrl={profile.avatarUrl ?? ""}
         roleLabel="Super Admin"
         subtitle="Platform owner"
-        onAvatarChange={() => undefined}
+        onAvatarChange={(avatarUrl) =>
+          updateProfile.mutate(
+            { avatarUrl },
+            {
+              onError: (error) =>
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to update photo",
+                ),
+            },
+          )
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -98,17 +116,15 @@ export default function SuperAdminProfilePage() {
           email: profile.email,
           phone: profile.phone ?? "",
         }}
-        onSave={() => undefined}
+        onSave={async (values) => {
+          await updateProfile.mutateAsync(values);
+        }}
       />
 
       <ChangePasswordCard
-        currentPassword=""
-        onChangePassword={async (newPassword) => {
-          await profileService.updatePassword({
-            currentPassword: "",
-            newPassword,
-          });
-        }}
+        onChangePassword={(currentPassword, newPassword) =>
+          changePassword.mutateAsync({ currentPassword, newPassword })
+        }
       />
     </div>
   );

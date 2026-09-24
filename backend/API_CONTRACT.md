@@ -24,9 +24,12 @@ conventions below and get added here as each one is built.
 
 ## Status
 
-**Not implemented yet.** `backend/` has no code — see
-[README.md](./README.md) for scaffolding steps. This file is what to build
-*against*.
+**Auth (§3), Profile (§3.1), and Dashboards (§9) are implemented and live** —
+see `backend/README.md`'s "What's implemented" section for exactly what that
+covers (an in-memory 3-account directory, BCrypt-hashed, not a database yet).
+Everything else below (Institutions, Roles, Users, Academic Sessions,
+Students, Schools/Faculties/Departments/Programs, Staff, Notifications) is
+**not implemented yet** — this file remains what to build those *against*.
 
 ## Deployment
 
@@ -425,11 +428,21 @@ erDiagram
     "role": "institution_admin",
     "institutionId": "inst_xyz",
     "institutionName": "XYZ College of Technology",
-    "menuKeys": null
+    "roleId": "role_abc",
+    "menuKeys": null,
+    "phone": "08022223333",
+    "avatarUrl": ""
   },
   "token": "opaque-bearer-token"
 }
 ```
+
+**Implemented** (`backend/src/main/java/com/teducare/auth/`) against an
+in-memory `AuthDirectory` of 3 BCrypt-hashed demo accounts — `super_admin`,
+`turon_admin` (XYZ College, unrestricted), `amara_bello` (Ahmadu Bello
+University, restricted "Front Desk Officer" role) — not a database yet. JWT
+claims carry `role`/`userId`; `GET /auth/me` and `POST /auth/logout` (204,
+clears the security context server-side) both work as documented above.
 
 - **An `institution_admin` login authenticates against `UserManagerAccount`
   records (4.5), not a separate identity.** The username/password an
@@ -491,6 +504,69 @@ sequenceDiagram
     F->>F: filterNavByAccess(NAV_TREE, user.menuKeys)
     F-->>U: redirect to /super-admin or /dashboard with filtered sidebar
 ```
+
+### 3.1 Profile — the logged-in user's own account
+
+**Implemented** (`backend/src/main/java/com/teducare/profile/`). Scoped to
+whoever the bearer token belongs to — there's no `:id` in any of these
+routes, unlike every admin-facing resource elsewhere in this contract.
+
+| Method | Path              | Body                                                        | Notes |
+|--------|-------------------|---------------------------------------------------------------|-------|
+| GET    | `/profile`       | —                                                                | returns `{ profile, summary }` — see below |
+| PATCH  | `/profile`       | any subset of `{ firstName, lastName, email, phone, avatarUrl }` | partial update — a field left out (or `null`) keeps its current value; a blank string is also treated as "no change" for `firstName`/`lastName`/`email` (there's no way to blank those out) |
+| PATCH  | `/profile/password` | `{ currentPassword, newPassword }`                            | `400` if `currentPassword` doesn't match, or `newPassword` is under 8 characters |
+
+```json
+// GET /profile response 200 (super_admin)
+{
+  "profile": {
+    "id": "demo-super-admin",
+    "firstName": "Ada",
+    "lastName": "Okoye",
+    "email": "ada.okoye@turontech.com",
+    "role": "super_admin",
+    "institutionId": null,
+    "institutionName": null,
+    "roleId": null,
+    "phone": "08012345678",
+    "avatarUrl": "",
+    "menuKeys": []
+  },
+  "summary": {
+    "institutionsCount": 27,
+    "licensed": 18,
+    "linkedModules": 14,
+    "userManagerAccounts": 23
+  }
+}
+```
+
+`summary` shape depends on `role`: a `super_admin` gets the platform-wide
+counters above; an `institution_admin` instead gets
+`{ institutionName, roleId, menuKeysCount }`. **The super admin's `summary`
+numbers here are currently a separate hardcoded block, not derived from
+`GET /super-admin/stats` (§9.4)** — both happen to agree on institution
+count (27) today, but they're two independent literals, not one shared
+source of truth; wiring both from the same real query is a follow-up once
+institutions move off the mock store.
+
+`PATCH /profile/password` never returns the new password (unlike the super
+admin's `POST /user-managers/:id/reset-password`, §4.5.4, which is a
+different action performed *on someone else's* account) — the caller
+already knows it, since they just typed it.
+
+### 3.2 Avatar upload
+
+The frontend's `ProfileHeroCard` reads a picked file into a `data:` URL
+client-side (`readFileAsDataUrl()`, same convention as institution logos
+and User Manager avatars — see §4.2) and sends the result straight through
+as `avatarUrl` on `PATCH /profile` above — there is no separate upload
+endpoint for this one, unlike §4.2's suggested `/uploads/institution-logo`.
+If avatars move to real file storage later, add a dedicated upload endpoint
+the same way and have the frontend call it first, then send the returned
+URL as `avatarUrl` here instead of a data URL — no other change needed on
+either side.
 
 ---
 
@@ -1297,14 +1373,29 @@ Don't merge the two lists; they're deliberately separate.
 
 ## 9. Dashboards
 
-Both dashboards (`frontend/src/app/dashboard/page.tsx` and
-`frontend/src/app/super-admin/page.tsx`) read from
-`frontend/src/store/dashboard.store.ts` and `institutions.store.ts` today —
-these routes are what should replace those stores' seed data.
+**Implemented** (`backend/src/main/java/com/teducare/dashboard/`), against
+the same in-memory `AuthDirectory` accounts as Auth/Profile above — not a
+database. Both dashboards (`frontend/src/app/dashboard/page.tsx` and
+`frontend/src/app/super-admin/page.tsx`) now call these routes instead of
+reading `frontend/src/store/dashboard.store.ts` directly; `institutions.store.ts`
+still backs the "Recent Added Institutions" table's underlying data model,
+but is superseded for that one table by `GET /super-admin/recent-institutions`
+below (see the note in 9.4 — the original plan to reuse `GET /institutions`
+sorted client-side didn't survive contact with per-institution auth scoping,
+so this got its own dedicated route instead).
 
 ### 9.1 Institution admin — `GET /dashboard/stats`
 
-Scoped to the caller's own institution.
+Scoped to the caller's own institution — resolved server-side from the
+bearer token's subject (the login username) via `AuthDirectory`, **not**
+from a client-supplied value, same multi-tenancy rule as everywhere else in
+this contract (§1). `turon_admin` and `amara_bello` (§3) get different
+numbers because their accounts resolve to different `institutionId`s; a
+regression where the controller passed the raw JWT subject straight into
+the stats lookup (so every institution admin silently saw the same
+fallback numbers regardless of which institution they belonged to) was
+caught and fixed — covered by
+`DashboardControllerTest#institutionAdminDashboardStatsDifferByInstitution`.
 
 ```json
 {
@@ -1356,9 +1447,27 @@ pagination/search demo — see `institutions.store.ts`. Numbers above match
 that seed; a real backend obviously computes them from actual rows and
 should exclude archived institutions from the count, same as §4.4.)
 
-The "Recent Added Institutions" table on this same dashboard is just
-`GET /institutions` (§4) sorted by `createdAt` desc, `limit=5` — no separate
-endpoint needed.
+### 9.5 Super admin — `GET /super-admin/recent-institutions?limit=5`
+
+**This superseded the original plan of reusing `GET /institutions` (§4)
+sorted client-side** — that still works once §4 exists, but this dashboard
+got its own dedicated, purpose-built route instead so it doesn't have to
+wait on the full Institutions CRUD resource:
+
+```json
+{
+  "data": [
+    { "id": "inst-landmark", "name": "Landmark University", "modulesCount": 7,
+      "createdAt": "2026-03-03T14:32:00.000Z", "status": "active" }
+  ]
+}
+```
+
+Newest `createdAt` first, capped at `limit`. Once `GET /institutions`
+exists for real, either keep this as a small purpose-built projection of
+it, or drop it and have the frontend call `GET /institutions?limit=5` —
+whichever a real implementation finds cleaner; the frontend only cares
+about the response shape above, not which route produces it.
 
 ```mermaid
 sequenceDiagram
@@ -1446,12 +1555,16 @@ client to only ask for its own.
 
 ## 11. What's mocked today, for reference
 
-Until the above exists, the frontend fakes all of it client-side. Only
-`super_admin` is a hardcoded login (see 3 and
-`frontend/src/services/auth.service.ts`) — every `institution_admin` login
-authenticates against the real `UserManagerAccount` records instead, so
-there's no separate "demo account" list to keep in sync. Every domain is a
-Zustand store seeded with fixture data (`persist`-backed for anything a
+**Auth (§3), Profile (§3.1), and Dashboards (§9) are no longer mocked** —
+`frontend/src/services/auth.service.ts`, `profile.service.ts`, and
+`dashboard.service.ts` all call the real backend now. Everything else below
+this line is still fully mocked client-side, until the corresponding
+section above (§4 onward) gets built. Every `institution_admin` login
+still ultimately needs to authenticate against real `UserManagerAccount`
+records rather than the 3-account demo directory the real backend ships
+with today (§3) — that's the gap closed once §4.5 (User Manager) exists —
+so there's a second "demo account" list to keep in sync for now, not one.
+Every unbuilt domain below is a Zustand store seeded with fixture data (`persist`-backed for anything a
 user edits — roles, users, institutions, user managers, sessions,
 designations, notifications, students, schools, faculties, departments,
 programs, program levels, course grades, courses, staff members,

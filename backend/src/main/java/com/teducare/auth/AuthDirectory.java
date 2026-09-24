@@ -3,11 +3,13 @@ package com.teducare.auth;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,13 +18,15 @@ public class AuthDirectory {
         public record Account(String username, String password, AuthenticatedUserDto user) {
         }
 
+        private final PasswordEncoder passwordEncoder;
         private final Map<String, Account> accounts;
 
-        public AuthDirectory() {
-                this.accounts = Stream.of(
+        public AuthDirectory(PasswordEncoder passwordEncoder) {
+                this.passwordEncoder = passwordEncoder;
+                this.accounts = new ConcurrentHashMap<>(Stream.of(
                                 new Account(
                                                 "super_admin",
-                                                "Super@2024",
+                                                passwordEncoder.encode("Super@2024"),
                                                 new AuthenticatedUserDto(
                                                                 "demo-super-admin",
                                                                 "Ada",
@@ -37,7 +41,7 @@ public class AuthDirectory {
                                                                 "")),
                                 new Account(
                                                 "turon_admin",
-                                                "Turon@2024",
+                                                passwordEncoder.encode("Turon@2024"),
                                                 new AuthenticatedUserDto(
                                                                 "um-christian-smart",
                                                                 "Christian",
@@ -52,7 +56,7 @@ public class AuthDirectory {
                                                                 "")),
                                 new Account(
                                                 "amara_bello",
-                                                "Amara@2024",
+                                                passwordEncoder.encode("Amara@2024"),
                                                 new AuthenticatedUserDto(
                                                                 "um-amara-bello",
                                                                 "Amara",
@@ -65,9 +69,9 @@ public class AuthDirectory {
                                                                 List.of("dashboard", "registration", "students"),
                                                                 "08033334444",
                                                                 "")))
-                                .collect(Collectors.toUnmodifiableMap(
+                                .collect(Collectors.toMap(
                                                 account -> account.username().toLowerCase(),
-                                                Function.identity()));
+                                                Function.identity())));
         }
 
         public Optional<Account> find(String username) {
@@ -84,24 +88,39 @@ public class AuthDirectory {
 
         public void updatePassword(String username, String currentPassword, String newPassword) {
                 Account account = require(username);
-                if (!account.password().equals(currentPassword)) {
+                if (!passwordEncoder.matches(currentPassword, account.password())) {
                         throw new BadCredentialsException("Current password is incorrect.");
                 }
 
                 accounts.put(username.trim().toLowerCase(), new Account(
                                 account.username(),
-                                newPassword,
-                                new AuthenticatedUserDto(
-                                                account.user().id(),
-                                                account.user().firstName(),
-                                                account.user().lastName(),
-                                                account.user().email(),
-                                                account.user().role(),
-                                                account.user().institutionId(),
-                                                account.user().institutionName(),
-                                                account.user().roleId(),
-                                                account.user().menuKeys(),
-                                                account.user().phone(),
-                                                account.user().avatarUrl())));
+                                passwordEncoder.encode(newPassword),
+                                account.user()));
+        }
+
+        public AuthenticatedUserDto updateProfile(
+                        String username, String firstName, String lastName, String email, String phone, String avatarUrl) {
+                Account account = require(username);
+                AuthenticatedUserDto current = account.user();
+
+                AuthenticatedUserDto updated = new AuthenticatedUserDto(
+                                current.id(),
+                                orDefault(firstName, current.firstName()),
+                                orDefault(lastName, current.lastName()),
+                                orDefault(email, current.email()),
+                                current.role(),
+                                current.institutionId(),
+                                current.institutionName(),
+                                current.roleId(),
+                                current.menuKeys(),
+                                phone != null ? phone : current.phone(),
+                                avatarUrl != null ? avatarUrl : current.avatarUrl());
+
+                accounts.put(username.trim().toLowerCase(), new Account(account.username(), account.password(), updated));
+                return updated;
+        }
+
+        private static String orDefault(String value, String fallback) {
+                return value == null || value.isBlank() ? fallback : value;
         }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -15,9 +16,11 @@ import com.teducare.auth.AuthenticatedUserDto;
 public class ProfileService {
 
     private final AuthDirectory authDirectory;
+    private final PasswordEncoder passwordEncoder;
 
-    public ProfileService(AuthDirectory authDirectory) {
+    public ProfileService(AuthDirectory authDirectory, PasswordEncoder passwordEncoder) {
         this.authDirectory = authDirectory;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Map<String, Object> getProfile(String username) {
@@ -55,6 +58,13 @@ public class ProfileService {
         return response;
     }
 
+    public Map<String, Object> updateProfile(String username, ProfileUpdateRequest request) {
+        authDirectory.updateProfile(
+                username, request.firstName(), request.lastName(), request.email(), request.phone(),
+                request.avatarUrl());
+        return getProfile(username);
+    }
+
     public void updatePassword(String username, String currentPassword, String newPassword) {
         if (currentPassword == null || currentPassword.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is required.");
@@ -65,7 +75,7 @@ public class ProfileService {
         }
 
         AuthDirectory.Account account = authDirectory.require(username);
-        if (!account.password().equals(currentPassword)) {
+        if (!passwordEncoder.matches(currentPassword, account.password())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect.");
         }
 
