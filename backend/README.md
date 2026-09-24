@@ -76,6 +76,7 @@ backend/
 │  │  │  ├─ dashboard/    # super-admin + institution-admin dashboard stats
 │  │  │  ├─ institution/  # Institutions list/create/edit/status/archive (super admin)
 │  │  │  ├─ profile/      # GET/PATCH profile, password change
+│  │  │  ├─ upload/       # POST /uploads (Cloudinary)
 │  │  │  ├─ health/
 │  │  │  └─ TeducareBackendApplication.java
 │  │  └─ resources/
@@ -118,14 +119,43 @@ remain unbuilt. Everything else in `API_CONTRACT.md` (roles, users,
 academics, staff, students, notifications, etc.) has no backend yet — the
 frontend still mocks those via its Zustand stores.
 
+**File uploads (§3.2) are real too** — `POST /uploads` (`upload/UploadController.java`)
+does a server-side signed upload to Cloudinary (`config/CloudinaryConfig.java`,
+same account as the sibling `t-coop-backend` project — credentials in
+`.env`, never in `.env.example`). Any authenticated user can call it; PNG/
+JPEG/WEBP only, 5MB max. Not wired to the frontend yet — avatars/logos
+still go through local data URLs on that side.
+
 Verified end-to-end via `docker compose up -d --build` (both `sqlserver` and
-`app` services): Flyway applies the migration, the app connects to
-`teducare_db` on the `sqlserver` service, `POST /auth/login`,
-`GET /dashboard/stats`, and `GET /profile` all return real, DB-backed data,
-and a value written by an earlier test run (`amara_bello`'s phone number)
-was still there after the containers were fully torn down and recreated —
-confirming this is real persistence, not just an in-memory demo that resets
-on restart.
+`app` services): Flyway applies all 3 migrations, the app connects to
+`teducare_db` on the `sqlserver` service, login/dashboard/profile/
+institutions all return real DB-backed data, `POST /uploads` returns a
+genuine `res.cloudinary.com` URL for a real uploaded file, and a value
+written by an earlier test run (`amara_bello`'s phone number) was still
+there after the containers were fully torn down and recreated — confirming
+this is real persistence, not an in-memory demo that resets on restart.
+
+**Two real bugs were caught and fixed while building Institutions, worth
+knowing about if something similar bites again:**
+
+1. `SecurityConfig`'s `AuthenticationManager` bean used to be built via
+   `AuthenticationConfiguration.getAuthenticationManager()` — a
+   bean-creation-order-sensitive path that silently fell back to Spring
+   Boot's default in-memory user (breaking *every* login, not just new
+   endpoints) once the bean graph grew past a certain size. Fixed by
+   building it directly as `new ProviderManager(customAuthenticationProvider)`
+   instead — no ordering dependency, can't silently fall back.
+2. `V1__init_schema.sql` had created placeholder `dbo.institutions`/
+   `dbo.roles`/`dbo.auth_tokens` tables (a handful of stub columns each)
+   long before any real feature used them. When `V2__institutions.sql`
+   later tried to create the *real* `dbo.institutions` table, its own
+   `IF OBJECT_ID(...) IS NULL` guard saw the stub already existed and
+   silently no-op'd — so the real table never got created, and Hibernate
+   failed at query time with `Invalid column name 'address'`. Fixed with
+   `V3__fix_institutions_schema.sql` (unconditional `DROP TABLE` + recreate
+   — safe, since the stub never held real data). **The same landmine still
+   exists for `dbo.roles`/`dbo.auth_tokens`** — see `CLAUDE.md`'s note
+   before building anything against those.
 
 ## CORS and frontend integration
 

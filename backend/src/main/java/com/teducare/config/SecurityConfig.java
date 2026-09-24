@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -49,9 +49,19 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Built directly from our one provider rather than via
+     * {@code AuthenticationConfiguration.getAuthenticationManager()} — that
+     * global-builder path lazily auto-discovers providers and is sensitive to
+     * bean-creation order; as this app's bean graph grew it started resolving
+     * before CustomAuthenticationProvider was visible to it, silently falling
+     * back to Spring Boot's default in-memory user (breaking every login,
+     * confirmed via the "Using generated security password" log line). This
+     * form has no such ordering dependency.
+     */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(CustomAuthenticationProvider authProvider) {
+        return new ProviderManager(authProvider);
     }
 
     @Bean

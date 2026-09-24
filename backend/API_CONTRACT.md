@@ -24,12 +24,13 @@ conventions below and get added here as each one is built.
 
 ## Status
 
-**Auth (§3), Profile (§3.1), Dashboards (§9), and Institutions §4.1/4.3/4.4
-(§4) are implemented and live** — see `backend/README.md`'s "What's
-implemented" section for exactly what that covers (real MSSQL-backed
-tables via Flyway, not in-memory). Institutions is backend-only for now —
-not yet wired to the frontend (see §4's own note). Everything else below
-(§4.5-4.7, Roles, Users, Academic Sessions,
+**Auth (§3), Profile (§3.1), file uploads (§3.2), Dashboards (§9), and
+Institutions §4.1/4.3/4.4 (§4) are implemented and live** — see
+`backend/README.md`'s "What's implemented" section for exactly what that
+covers (real MSSQL-backed tables via Flyway, not in-memory; real Cloudinary
+uploads, not local-only previews). Institutions and uploads are
+backend-only for now — not yet wired to the frontend (see each section's
+own note). Everything else below (§4.5-4.7, Roles, Users, Academic Sessions,
 Students, Schools/Faculties/Departments/Programs, Staff, Notifications) is
 **not implemented yet** — this file remains what to build those *against*.
 
@@ -560,17 +561,30 @@ admin's `POST /user-managers/:id/reset-password`, §4.5.4, which is a
 different action performed *on someone else's* account) — the caller
 already knows it, since they just typed it.
 
-### 3.2 Avatar upload
+### 3.2 File uploads
 
-The frontend's `ProfileHeroCard` reads a picked file into a `data:` URL
-client-side (`readFileAsDataUrl()`, same convention as institution logos
-and User Manager avatars — see §4.2) and sends the result straight through
-as `avatarUrl` on `PATCH /profile` above — there is no separate upload
-endpoint for this one, unlike §4.2's suggested `/uploads/institution-logo`.
-If avatars move to real file storage later, add a dedicated upload endpoint
-the same way and have the frontend call it first, then send the returned
-URL as `avatarUrl` here instead of a data URL — no other change needed on
-either side.
+**Implemented** (`backend/src/main/java/com/teducare/upload/UploadController.java`):
+
+```
+POST /uploads   multipart/form-data, field name "file"   → 200, { "url": "..." }
+```
+
+Any authenticated user may call this — it's not super-admin-gated like
+Institutions (§4). Server-side signed upload to Cloudinary (same account as
+the sibling `t-coop-backend` project, `config/CloudinaryConfig.java`), PNG/
+JPEG/WEBP only, 5MB max, stored under the `t-educare/uploads` folder.
+Verified live: a real upload returns a genuine
+`https://res.cloudinary.com/...` URL.
+
+**Not wired to the frontend yet** — `ProfileHeroCard` still reads a picked
+file into a `data:` URL client-side (`readFileAsDataUrl()`) and sends that
+directly as `avatarUrl` on `PATCH /profile` (§3.1) rather than calling this
+endpoint first. Same for institution `logoUrl` (§4.2) — still
+`URL.createObjectURL`, local-only. Switching either over is: call
+`POST /uploads` first, take the returned `url`, send *that* as
+`avatarUrl`/`logoUrl` instead of a data URL/object URL — no backend change
+needed, and no reason the two avatar/logo call sites can't share one
+`useUpload()` mutation hook when this happens.
 
 ---
 
@@ -635,10 +649,11 @@ starts unlinked/unlicensed: `modulesCount: 0`, `licenseType: "Basic"`,
 ```
 
 `logoUrl` — the frontend currently only previews the picked file locally
-(via `URL.createObjectURL`, never uploaded anywhere). A real backend should
-expose a small upload endpoint (e.g. `POST /uploads/institution-logo`,
-multipart, returning `{ "url": "..." }`) that the frontend calls first, then
-sends the resulting `url` as `logoUrl` in this request.
+(via `URL.createObjectURL`, never uploaded anywhere). `POST /uploads`
+(§3.2) is that upload endpoint now, already implemented and generic (not
+institution-specific) — the frontend calls it first, then sends the
+resulting `url` as `logoUrl` in this request. Not wired up yet, same as
+avatars (§3.2's note).
 
 `code` and `tokenKey` are server-generated — never accept them from the
 client. `id` and `createdAt` are standard server-generated fields.
