@@ -1,5 +1,6 @@
 package com.teducare.auth;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,7 +14,15 @@ import com.teducare.institution.InstitutionRepository;
 @Component
 public class AuthDirectory {
 
-        public record Account(String username, String password, AuthenticatedUserDto user) {
+        /**
+         * {@code status}/{@code archivedAt} are internal-only — used by
+         * CustomAuthenticationProvider to reject a login, never exposed via
+         * AuthenticatedUserDto (that's what actually gets serialized to the
+         * client).
+         */
+        public record Account(
+                        String username, String password, AuthenticatedUserDto user, String status,
+                        Instant archivedAt) {
         }
 
         private final UserAccountRepository repository;
@@ -96,19 +105,24 @@ public class AuthDirectory {
                         }
                 }
 
-                return new Account(entity.getUsername(), entity.getPasswordHash(), new AuthenticatedUserDto(
-                                entity.getId(),
-                                entity.getFirstName(),
-                                entity.getLastName(),
-                                entity.getEmail(),
-                                entity.getRole(),
-                                entity.getInstitutionId(),
-                                institutionName,
-                                entity.getRoleId(),
-                                splitMenuKeys(entity.getMenuKeys()),
-                                entity.getPhone(),
-                                entity.getAvatarUrl(),
-                                institutionLogoUrl));
+                return new Account(
+                                entity.getUsername(),
+                                entity.getPasswordHash(),
+                                new AuthenticatedUserDto(
+                                                entity.getId(),
+                                                entity.getFirstName(),
+                                                entity.getLastName(),
+                                                entity.getEmail(),
+                                                entity.getRole(),
+                                                entity.getInstitutionId(),
+                                                institutionName,
+                                                entity.getRoleId(),
+                                                splitMenuKeys(entity.getMenuKeys()),
+                                                entity.getPhone(),
+                                                entity.getAvatarUrl(),
+                                                institutionLogoUrl),
+                                entity.getStatus(),
+                                entity.getArchivedAt());
         }
 
         private static List<String> splitMenuKeys(String menuKeys) {

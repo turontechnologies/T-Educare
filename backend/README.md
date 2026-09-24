@@ -114,12 +114,25 @@ archive/restore) are also real now, and wired to the frontend** —
 (`DemoInstitutionSeeder.java`) including the two already referenced by the
 `turon_admin`/`amara_bello` login accounts. `institutions.store.ts` no
 longer mocks this — it's hydrated from the real endpoints (see
-`frontend/CLAUDE.md`). §4.5 (User Manager), §4.6 (Modules), and §4.7
-(License Manager) remain unbuilt — the frontend's actions for those stay
-local-only (in-memory, reset on reload), clearly flagged in their own UI
-rather than pretending to persist. Everything else in `API_CONTRACT.md`
-(roles, users, academics, staff, students, notifications, etc.) has no
-backend yet — the frontend still mocks those via its Zustand stores.
+`frontend/CLAUDE.md`). §4.6 (Modules) and §4.7 (License Manager) remain
+unbuilt — the frontend's actions for those stay local-only (in-memory,
+reset on reload), clearly flagged in their own UI rather than pretending
+to persist. Everything else in `API_CONTRACT.md` (roles, users, academics,
+staff, students, notifications, etc.) has no backend yet — the frontend
+still mocks those via its Zustand stores.
+
+**§4.5 User Manager is real now too, backend-only for now** —
+architecturally, this reuses `auth/UserAccount.java`/`dbo.users` directly
+(filtered to `role = 'institution_admin'`) rather than a separate table,
+since per §3's own design a User Manager account *is* the institution_admin
+login identity, not a parallel record. `usermanager/UserManagerController`/
+`Service`/`Response` cover list/create/edit/reset-password/activate-
+deactivate/archive-restore. Creating one immediately produces a real,
+working login — verified live. Deactivating or archiving one blocks login
+the same way institution deactivation does. `V4__user_manager_fields.sql`
+added the missing columns to `dbo.users`; `V5` backfilled the 2 pre-existing
+demo institution_admin accounts to match, since they'd existed since
+before V4 and `DemoAccountSeeder` only seeds an empty table.
 
 **Deactivating an institution actually blocks its logins now** —
 `CustomAuthenticationProvider` checks the real institution's `status`

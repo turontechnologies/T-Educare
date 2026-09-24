@@ -15,9 +15,11 @@ interface InstitutionDetailsDialogProps {
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-muted-foreground">{label}</p>
-      <p className="font-medium text-foreground">{value || "—"}</p>
+      <p className="font-medium wrap-break-word text-foreground">
+        {value || "—"}
+      </p>
     </div>
   );
 }
@@ -41,7 +43,7 @@ export function InstitutionDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-lg gap-0 overflow-hidden p-0"
+        className="w-full max-w-2xl gap-0 overflow-hidden p-0 sm:max-w-2xl"
       >
         <div className="flex items-center justify-between bg-primary px-6 py-4">
           <DialogTitle className="text-base font-medium text-white">
@@ -58,7 +60,7 @@ export function InstitutionDetailsDialog({
         </div>
 
         {institution && (
-          <div className="max-h-[70vh] space-y-5 overflow-y-auto p-6">
+          <div className="space-y-6 p-7">
             <div className="flex items-start gap-4">
               <Avatar className="size-16 shrink-0 rounded-md" size="lg">
                 <AvatarImage
@@ -100,7 +102,7 @@ export function InstitutionDetailsDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 rounded-md border border-border bg-muted/40 p-4 text-sm">
+            <div className="grid grid-cols-2 gap-5 rounded-md border border-border bg-muted/40 p-5 text-sm">
               <Field label="City" value={institution.city} />
               <Field label="Country/State" value={institution.countryState} />
               <div className="col-span-2">
@@ -109,7 +111,7 @@ export function InstitutionDetailsDialog({
               <div className="col-span-2">
                 <Field label="Principal" value={institution.principalName} />
               </div>
-              <div className="col-span-2 flex flex-wrap gap-x-4 gap-y-1">
+              <div className="col-span-2 flex flex-wrap gap-x-6 gap-y-1.5">
                 <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                   <Mail className="size-3.5" />
                   {institution.principalEmail || "—"}
@@ -121,12 +123,12 @@ export function InstitutionDetailsDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 rounded-md border border-border bg-muted/40 p-4 text-sm">
+            <div className="grid grid-cols-2 gap-5 rounded-md border border-border bg-muted/40 p-5 text-sm">
               <Field label="Primary Admin" value={institution.adminUser} />
               <Field label="Admin Email" value={institution.adminEmail} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 rounded-md border border-border bg-muted/40 p-4 text-sm">
+            <div className="grid grid-cols-3 gap-5 rounded-md border border-border bg-muted/40 p-5 text-sm">
               <Field
                 label="Modules Linked"
                 value={String(institution.modulesCount)}

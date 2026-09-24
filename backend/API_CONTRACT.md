@@ -730,6 +730,31 @@ section 6 (`USER`/roles) — that's institution-scoped staff managed by an
 *institution admin*; this is the super admin provisioning the institution's
 own admin accounts.
 
+**Implemented (2026-09-24)**, backend-only for now (not wired to the
+frontend yet — `user-managers.store.ts` still mocks it). Architecturally,
+this does **not** introduce a separate `UserManagerAccount` table — per
+§3's own note above ("An institution_admin login authenticates against
+UserManagerAccount records, not a separate identity"), a User Manager
+account genuinely *is* the login identity, so it lives in the same
+`dbo.users` table `auth/UserAccount.java` already maps, filtered to
+`role = 'institution_admin'`. Creating one via `POST /user-managers`
+creates a real row that can log in immediately through the existing
+`POST /auth/login` (§3) — verified live. `V4__user_manager_fields.sql`
+added `code`/`other_name`/`gender`/`is_primary_admin`/`archived_at` to
+`dbo.users` (`status` already existed from `V1` but had never been mapped
+or used by any code until this); `V5` backfilled the 3 pre-existing demo
+accounts to the same shape, since `DemoAccountSeeder` only seeds on a
+genuinely empty table and these rows had existed since long before V4 —
+its current code updating them correctly never actually ran against them
+until this explicit backfill. **A deactivated or archived User Manager
+account is rejected at login** (`CustomAuthenticationProvider`, checked
+right after the password check, same pattern and specific rejection
+message style as institution deactivation in §3 — `401 { "error": "Your
+account has been deactivated. Contact the platform administrator." }`).
+Role-gated the same way Institutions is
+(`UserManagerController`'s own `requireSuperAdmin` guard via
+`AuthDirectory` — no Spring authorities exist yet).
+
 #### 4.5.1 List / create / edit
 
 | Method | Path                     | Body                                          | Notes |

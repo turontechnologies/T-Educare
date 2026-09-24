@@ -1,5 +1,7 @@
 package com.teducare.auth;
 
+import java.time.Instant;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -50,6 +52,28 @@ public class UserAccount {
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
+    /** Display-only sequential code (e.g. "001") — User Manager accounts only, null for super_admin. */
+    @Column(name = "code", length = 10)
+    private String code;
+
+    @Column(name = "other_name", length = 100)
+    private String otherName;
+
+    @Column(name = "gender", length = 20)
+    private String gender;
+
+    @Column(name = "is_primary_admin", nullable = false)
+    private boolean isPrimaryAdmin;
+
+    @Column(name = "status", nullable = false, length = 30)
+    private String status;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "archived_at")
+    private Instant archivedAt;
+
     protected UserAccount() {
     }
 
@@ -66,7 +90,14 @@ public class UserAccount {
             String roleId,
             String menuKeys,
             String phone,
-            String avatarUrl) {
+            String avatarUrl,
+            String code,
+            String otherName,
+            String gender,
+            boolean isPrimaryAdmin,
+            String status,
+            Instant createdAt,
+            Instant archivedAt) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
@@ -80,6 +111,13 @@ public class UserAccount {
         this.menuKeys = menuKeys;
         this.phone = phone;
         this.avatarUrl = avatarUrl;
+        this.code = code;
+        this.otherName = otherName;
+        this.gender = gender;
+        this.isPrimaryAdmin = isPrimaryAdmin;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.archivedAt = archivedAt;
     }
 
     public String getId() {
@@ -88,6 +126,10 @@ public class UserAccount {
 
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getPasswordHash() {
@@ -130,8 +172,16 @@ public class UserAccount {
         return institutionId;
     }
 
+    public void setInstitutionId(String institutionId) {
+        this.institutionId = institutionId;
+    }
+
     public String getInstitutionName() {
         return institutionName;
+    }
+
+    public void setInstitutionName(String institutionName) {
+        this.institutionName = institutionName;
     }
 
     public String getRoleId() {
@@ -156,5 +206,53 @@ public class UserAccount {
 
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public String getOtherName() {
+        return otherName;
+    }
+
+    public void setOtherName(String otherName) {
+        this.otherName = otherName;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public boolean isPrimaryAdmin() {
+        return isPrimaryAdmin;
+    }
+
+    public void setPrimaryAdmin(boolean primaryAdmin) {
+        this.isPrimaryAdmin = primaryAdmin;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(Instant archivedAt) {
+        this.archivedAt = archivedAt;
     }
 }

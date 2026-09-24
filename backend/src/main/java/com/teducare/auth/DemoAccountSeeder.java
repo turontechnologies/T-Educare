@@ -1,5 +1,6 @@
 package com.teducare.auth;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -39,7 +40,14 @@ public class DemoAccountSeeder {
                         null,
                         null,
                         "08012345678",
-                        ""),
+                        "",
+                        null,
+                        null,
+                        null,
+                        false,
+                        "active",
+                        Instant.parse("2026-01-01T00:00:00Z"),
+                        null),
                 new UserAccount(
                         "um-christian-smart",
                         "turon_admin",
@@ -53,7 +61,14 @@ public class DemoAccountSeeder {
                         "role-institution-admin",
                         null,
                         "08022223333",
-                        ""),
+                        "",
+                        "001",
+                        "",
+                        "Male",
+                        true,
+                        "active",
+                        Instant.parse("2026-01-01T00:00:00Z"),
+                        null),
                 new UserAccount(
                         "um-amara-bello",
                         "amara_bello",
@@ -67,6 +82,13 @@ public class DemoAccountSeeder {
                         "role-front-desk",
                         "dashboard,registration,students",
                         "08033334444",
-                        "")));
+                        "",
+                        "002",
+                        "",
+                        "Female",
+                        false,
+                        "active",
+                        Instant.parse("2026-01-06T00:00:00Z"),
+                        null)));
     }
 }

@@ -40,6 +40,11 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             throw new BadCredentialsException("Invalid username or password.");
         }
 
+        if (account.archivedAt() != null || "inactive".equals(account.status())) {
+            throw new BadCredentialsException(
+                    "Your account has been deactivated. Contact the platform administrator.");
+        }
+
         String institutionId = account.user().institutionId();
         if (institutionId != null) {
             Institution institution = institutionRepository.findById(institutionId).orElse(null);
