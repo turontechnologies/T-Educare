@@ -615,6 +615,29 @@ JPEG/WEBP only, 5MB max, stored under the `t-educare/uploads` folder.
 Verified live: a real upload returns a genuine
 `https://res.cloudinary.com/...` URL.
 
+**Real bug fixed (2026-09-26): any file over 1MB failed with a silent
+500.** Spring Boot's own default multipart limit
+(`spring.servlet.multipart.max-file-size`) is **1MB**, well below this
+controller's documented 5MB business limit — a real photo between 1MB
+and 5MB never even reached the controller's own size check; Spring
+rejected it first with `MaxUploadSizeExceededException`, which fell
+through to the generic exception handler and returned
+`{"error":"Something went wrong."}` with **no server-side log entry at
+all** (see `common/GlobalExceptionHandler.java` — reported by a real user
+trying to change an institution admin's profile picture). Fixed by
+raising `application.yml`'s `spring.servlet.multipart.max-file-size`/
+`max-request-size` to 10MB (a technical ceiling above the controller's
+real 5MB rule, not a new business limit) and adding a dedicated
+`@ExceptionHandler(MaxUploadSizeExceededException.class)` returning a
+clean `400 {"error":"File is too large."}` for anything past that.
+`GlobalExceptionHandler`'s catch-all now also logs every unhandled
+exception server-side (`log.error("Unhandled exception", ex)`) — it
+previously swallowed the real cause of *every* 500 in the app, not just
+this one, making any future 500 equally undebuggable from the logs alone.
+Verified live: a real 1.4MB PNG now uploads successfully (200, genuine
+`res.cloudinary.com` URL); a 12MB file now gets a clean 400 instead of
+hanging or 500ing.
+
 **Wired to the frontend for institution logos (2026-09-24)** —
 `institution-dialog.tsx` calls `POST /uploads` on file select and sends the
 returned Cloudinary `url` as `logoUrl`, not a data URL (the `logo_url`

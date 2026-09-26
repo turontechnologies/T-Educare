@@ -835,6 +835,36 @@ menu items)"`), and `Status` reads a new `summary.institutionStatus`
   institution → "Full access"/"Active") and `amara_bello` (restricted role
   → "Restricted (N menu items)") — real values differ correctly per
   account rather than both showing the same hardcoded text.
+- **Two more real bugs found and fixed the same day (2026-09-26), reported
+  live by a user changing an institution admin's profile picture.** (1)
+  **Backend**: any real photo between 1MB and 5MB failed the upload with a
+  silent `500 {"error":"Something went wrong."}` — Spring Boot's own
+  default multipart limit (1MB) sat below the documented 5MB business
+  rule, and the resulting `MaxUploadSizeExceededException` fell into a
+  catch-all handler that never logged anything server-side either (see
+  `backend/CLAUDE.md`/`API_CONTRACT.md` §3.2 for the full fix). (2)
+  **Frontend, found while verifying the same flow**: after a successful
+  photo change, `/dashboard/profile`'s own hero card updated instantly,
+  but the **header** avatar (top-right corner) stayed stale — sometimes
+  for the rest of the session — until a window refocus or reload. Root
+  cause: the header reads `useAuthStore`'s `user` snapshot (only ever set
+  at login, or refreshed by `useMe` on a ~30s-stale window/refocus — see
+  `use-login.ts`), while `useUpdateProfile`'s `onSuccess` only ever
+  refreshed the separate `["profile"]` TanStack Query cache the Profile
+  page itself reads — the two were never connected. Fixed by having
+  `useUpdateProfile` (`hooks/use-profile.ts`) merge the fresh `profile`
+  fields straight into `useAuthStore` in the same `onSuccess`
+  (`useAuthStore.getState().setUser({ ...currentUser, ...data.profile })`)
+  — zero extra network round trip, since the PATCH response already has
+  everything needed. This is the same _shape_ of bug as the modules/
+  logout/session-cache issues found earlier this project (a mutation
+  updates the query cache a _reader_ is looking at, but a _different_
+  reader — here, `useAuthStore` — needs an explicit sync of its own);
+  worth checking for this pattern any time a "the page updated but
+  something else on screen didn't" report comes in. Playwright-verified
+  live: header avatar matches the hero card's real Cloudinary URL
+  immediately after a real (1.4MB, not a tiny fixture) file upload, no
+  refocus or reload needed.
 - **New nav pages**: most `INSTITUTION_NAV`/`SUPER_ADMIN_NAV` entries beyond
   the ones with real pages currently render `<ModulePlaceholder>`
   (`src/components/shared/module-placeholder.tsx`) — a styled "not built yet"
