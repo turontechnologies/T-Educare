@@ -5,6 +5,7 @@ import {
   type ProfileResponse,
   type ProfileUpdatePayload,
 } from "@/services/profile.service";
+import { useAuthStore } from "@/store/auth.store";
 
 export function useProfile() {
   return useQuery<ProfileResponse>({
@@ -23,6 +24,16 @@ export function useUpdateProfile() {
       profileService.updateProfile(payload),
     onSuccess: (data) => {
       queryClient.setQueryData(["profile"], data);
+      // The header/sidebar read the *auth store's* snapshot of the user
+      // (only ever set at login, or refreshed by useMe on a ~30s stale
+      // window/refocus) — without this, a photo/name change showed up
+      // instantly on the profile page itself but left the header stale
+      // until the next refocus or reload. Merge the fresh fields in
+      // immediately since we already have them, no extra round trip needed.
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        useAuthStore.getState().setUser({ ...currentUser, ...data.profile });
+      }
     },
   });
 }
