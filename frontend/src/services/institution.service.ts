@@ -1,5 +1,9 @@
 import { apiClient } from "@/lib/axios";
-import type { Institution, InstitutionStatus } from "@/types/institution";
+import type {
+  Institution,
+  InstitutionStatus,
+  LicenseType,
+} from "@/types/institution";
 
 export type InstitutionsListParams = {
   page?: number;
@@ -8,6 +12,15 @@ export type InstitutionsListParams = {
   includeArchived?: boolean;
   /** Only institutions with no modules linked yet (API_CONTRACT.md §4.6.2) — for the "Link New Institution" picker. */
   unlinkedOnly?: boolean;
+  /** Only institutions with no license issued yet (API_CONTRACT.md §4.7.1) — for the "Select Institution" picker on "Create New License". */
+  unlicensedOnly?: boolean;
+};
+
+export type LicensePayload = {
+  licenseType: LicenseType;
+  /** Required unless licenseType is "Basic" — the backend forces it to null for Basic regardless of what's sent here. */
+  expiringAt?: string;
+  licenseKey: string;
 };
 
 export type InstitutionsListResponse = {
@@ -42,6 +55,7 @@ export const institutionService = {
           search: params.search || undefined,
           includeArchived: params.includeArchived,
           unlinkedOnly: params.unlinkedOnly,
+          unlicensedOnly: params.unlicensedOnly,
         },
       },
     );
@@ -97,6 +111,29 @@ export const institutionService = {
     const { data } = await apiClient.patch<Institution>(
       `/institutions/${id}/modules`,
       { moduleKeys },
+    );
+    return data;
+  },
+
+  /** Sets licenseType/expiringAt/licenseKey; the backend forces expiringAt to null for "Basic" and sets licenseIssuedAt only the first time (immutable afterward) — API_CONTRACT.md §4.7.1. */
+  async saveLicense(id: string, payload: LicensePayload): Promise<Institution> {
+    const { data } = await apiClient.patch<Institution>(
+      `/institutions/${id}/license`,
+      payload,
+    );
+    return data;
+  },
+
+  async regenerateLicenseKey(id: string): Promise<{ licenseKey: string }> {
+    const { data } = await apiClient.post<{ licenseKey: string }>(
+      `/institutions/${id}/regenerate-license-key`,
+    );
+    return data;
+  },
+
+  async revokeLicense(id: string): Promise<Institution> {
+    const { data } = await apiClient.post<Institution>(
+      `/institutions/${id}/revoke-license`,
     );
     return data;
   },

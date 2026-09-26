@@ -4,6 +4,7 @@ import {
   institutionService,
   type InstitutionFormPayload,
   type InstitutionsListParams,
+  type LicensePayload,
 } from "@/services/institution.service";
 import type { InstitutionStatus } from "@/types/institution";
 
@@ -84,6 +85,34 @@ export function useLinkModules() {
   return useMutation({
     mutationFn: ({ id, moduleKeys }: { id: string; moduleKeys: string[] }) =>
       institutionService.linkModules(id, moduleKeys),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+  });
+}
+
+export function useSaveLicense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: LicensePayload }) =>
+      institutionService.saveLicense(id, payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+  });
+}
+
+export function useRegenerateLicenseKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => institutionService.regenerateLicenseKey(id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+  });
+}
+
+export function useRevokeLicense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => institutionService.revokeLicense(id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["institutions"] }),
   });

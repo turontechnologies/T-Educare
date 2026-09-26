@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ArrowRight, X } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import {
 } from "@/components/shared/notched-field";
 import { generateKey } from "@/lib/mock-generators";
 import { notifyInstitution, notifyPlatform } from "@/lib/notify";
+import { useInstitutions, useSaveLicense } from "@/hooks/use-institutions";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import type { LicenseType } from "@/types/institution";
 
@@ -81,26 +82,25 @@ function LicenseForm({
   onDone: () => void;
 }) {
   const institutions = useInstitutionsStore((state) => state.institutions);
-  const updateInstitution = useInstitutionsStore(
-    (state) => state.updateInstitution,
-  );
+  const saveLicense = useSaveLicense();
 
   const isEditing = !!institutionId;
   const initialInstitution = institutionId
     ? institutions.find((institution) => institution.id === institutionId)
     : undefined;
 
-  // "Create New License" only offers institutions that don't have one yet
-  // — an already-licensed institution is edited by clicking its name in
-  // the table instead, not re-selected from here.
-  const availableInstitutions = useMemo(() => {
-    const unlicensed = institutions.filter(
-      (institution) => !institution.archivedAt && !institution.licenseKey,
-    );
-    return initialInstitution
-      ? [initialInstitution, ...unlicensed]
-      : unlicensed;
-  }, [institutions, initialInstitution]);
+  // "Create New License" only offers institutions that don't have one yet —
+  // fetched fresh via the server-authoritative unlicensedOnly filter
+  // (API_CONTRACT.md §4.7.1), not derived client-side from the
+  // already-hydrated store, so it can't go stale if another admin issued
+  // one moments ago. An already-licensed institution is edited by clicking
+  // its name in the table instead, not re-selected from here — so this is
+  // only needed in "create" mode.
+  const { data: unlicensedData } = useInstitutions(
+    { unlicensedOnly: true, perPage: 1000 },
+    { enabled: !institutionId },
+  );
+  const availableInstitutions = unlicensedData?.data ?? [];
 
   const [selectedInstitutionId, setSelectedInstitutionId] = useState(
     institutionId ?? "",
@@ -124,7 +124,7 @@ function LicenseForm({
   const handleGenerateKey = () => setValue("licenseKey", generateKey());
   const handleClearKey = () => setValue("licenseKey", "");
 
-  const onSubmit = (values: LicenseFormValues) => {
+  const onSubmit = async (values: LicenseFormValues) => {
     if (!selectedInstitutionId) {
       toast.error("Select an institution first");
       return;
@@ -138,30 +138,39 @@ function LicenseForm({
       return;
     }
 
-    const institution = institutions.find(
-      (i) => i.id === selectedInstitutionId,
-    );
-    if (!institution) return;
+    const institutionName =
+      initialInstitution?.name ??
+      availableInstitutions.find((i) => i.id === selectedInstitutionId)?.name;
 
-    updateInstitution(institution.id, {
-      licenseType,
-      expiringAt:
-        licenseType !== "Basic" ? new Date(expiringAt).toISOString() : null,
-      licenseKey: values.licenseKey.trim(),
-      licenseIssuedAt: institution.licenseIssuedAt ?? new Date().toISOString(),
-    });
-    toast.success(`License saved for ${institution.name}`);
-    notifyPlatform(
-      "License saved",
-      `${institution.name}'s license was set to ${licenseType}.`,
-      "/super-admin/license-manager",
-    );
-    notifyInstitution(
-      institution.id,
-      "Your license was updated",
-      `Your institution's license is now ${licenseType}.`,
-    );
-    onDone();
+    try {
+      await saveLicense.mutateAsync({
+        id: selectedInstitutionId,
+        payload: {
+          licenseType,
+          expiringAt:
+            licenseType !== "Basic"
+              ? new Date(expiringAt).toISOString()
+              : undefined,
+          licenseKey: values.licenseKey.trim(),
+        },
+      });
+      toast.success(`License saved for ${institutionName ?? "institution"}`);
+      notifyPlatform(
+        "License saved",
+        `${institutionName}'s license was set to ${licenseType}.`,
+        "/super-admin/license-manager",
+      );
+      notifyInstitution(
+        selectedInstitutionId,
+        "Your license was updated",
+        `Your institution's license is now ${licenseType}.`,
+      );
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save license",
+      );
+    }
   };
 
   return (
@@ -171,12 +180,6 @@ function LicenseForm({
         onSubmit={handleSubmit(onSubmit)}
         className="grid max-h-[65vh] gap-5 overflow-y-auto p-6 sm:grid-cols-2"
       >
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:col-span-2">
-          License records aren&apos;t backed by the server yet — this only
-          updates what you see in this browser tab right now and resets on your
-          next page reload.
-        </div>
-
         <NotchedComboboxField
           label="Select Institution"
           labelClassName="bg-popover"
@@ -245,7 +248,7 @@ function LicenseForm({
         <Button
           type="submit"
           form="license-form"
-          disabled={formState.isSubmitting}
+          disabled={formState.isSubmitting || saveLicense.isPending}
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Submit
