@@ -152,7 +152,23 @@ function InstitutionModulesForm({
     new Set(initialInstitution?.moduleKeys ?? []),
   );
 
-  const allSelected = catalog.length > 0 && moduleKeys.size === catalog.length;
+  // An institution's stored moduleKeys can outlive the catalog itself — a
+  // key removed from ModuleCatalog since this institution was last saved
+  // (e.g. "exams", "reports" from an earlier, now-defunct catalog version)
+  // would otherwise count toward "selected" forever (nothing renders a
+  // checkbox for a key the fetched catalog doesn't have) and get
+  // resubmitted on save, which the backend correctly rejects with "Unknown
+  // module key". Rather than mutating `moduleKeys` itself to prune them
+  // (which would mean setState-in-an-effect just to keep a display in
+  // sync), the catalog-matched subset is derived at render time — it's
+  // what every visible checkbox/count/save-payload actually uses; stale
+  // keys simply stop being counted anywhere, and the next successful save
+  // naturally leaves them out of what's persisted.
+  const selectedValidKeys = catalog.filter((module) =>
+    moduleKeys.has(module.key),
+  );
+  const allSelected =
+    catalog.length > 0 && selectedValidKeys.length === catalog.length;
 
   const toggleModule = (key: string, checked: boolean) => {
     setModuleKeys((prev) => {
@@ -176,7 +192,10 @@ function InstitutionModulesForm({
       return;
     }
     setAddedInstitution(institution);
-    setModuleKeys(new Set(institution.moduleKeys));
+    const validKeys = new Set(catalog.map((module) => module.key));
+    setModuleKeys(
+      new Set(institution.moduleKeys.filter((key) => validKeys.has(key))),
+    );
   };
 
   const handleRemove = () => {
@@ -192,11 +211,20 @@ function InstitutionModulesForm({
     }
 
     try {
+      // Only ever submit keys the fetched catalog actually has — reusing
+      // the same derived list the checkboxes/counter already show, so this
+      // can never disagree with what the user saw on screen.
+      const staleCount = moduleKeys.size - selectedValidKeys.length;
       await linkModules.mutateAsync({
         id: addedInstitution.id,
-        moduleKeys: Array.from(moduleKeys),
+        moduleKeys: selectedValidKeys.map((module) => module.key),
       });
       toast.success(`${addedInstitution.name}'s modules saved`);
+      if (staleCount > 0) {
+        toast.info(
+          `Also cleared ${staleCount} module${staleCount === 1 ? "" : "s"} no longer offered by the platform`,
+        );
+      }
       onDone();
     } catch (error) {
       toast.error(
@@ -273,10 +301,10 @@ function InstitutionModulesForm({
               institution
             </p>
             <span
-              key={moduleKeys.size}
+              key={selectedValidKeys.length}
               className="animate-in zoom-in-95 shrink-0 rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary duration-200 ease-out"
             >
-              {moduleKeys.size} of {catalog.length} selected
+              {selectedValidKeys.length} of {catalog.length} selected
             </span>
           </div>
           <div className="max-h-[42vh] overflow-y-auto rounded-md border border-border">
