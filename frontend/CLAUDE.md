@@ -662,6 +662,18 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   has the identical 500-char limit, so this was the same real bug, not a
   cosmetic one. The picker also disables itself while the upload is in
   flight so a second file can't be picked mid-upload.
+- **`AvatarImage` (`components/ui/avatar.tsx`) coerces `src || undefined`
+  before handing it to the base-ui primitive (2026-09-26)** — several real
+  API responses deliberately normalize an absent url to `""` rather than
+  `null`/omitted (`avatarUrl`, `institutionLogoUrl` — see backend
+  `AuthDirectory`), and React renders that straight through as `<img
+src="">`, which Next.js's dev overlay warns on (a needless network
+  request for the current page). Fixed once at the shared primitive, not
+  per call site, so every current and future `<AvatarImage>` usage is
+  covered automatically. If you ever add a new raw `<img>` elsewhere (not
+  through this component), guard it the same way every existing one
+  already does: `{value ? <img src={value} /> : <fallback />}` — never pass
+  a possibly-empty string straight to `src`.
 - **User Manager (`/super-admin/user-manager`) is real now too (2026-09-24)
   — `user-managers.store.ts` is deleted, not just de-seeded.** Unlike
   Institutions, nothing else in the app read that store (no cross-cutting

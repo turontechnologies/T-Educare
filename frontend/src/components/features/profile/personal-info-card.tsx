@@ -51,18 +51,18 @@ export function PersonalInfoCard({
         >
           <NotchedField
             label="First Name"
-            placeholder="e.g. Ada"
+            placeholder="e.g. Adetunji"
             {...register("firstName", { required: true })}
           />
           <NotchedField
             label="Last Name"
-            placeholder="e.g. Okoye"
+            placeholder="e.g. Aderinwale"
             {...register("lastName", { required: true })}
           />
           <NotchedField
             label="Email Address"
             type="email"
-            placeholder="e.g. ada.okoye@turontech.com"
+            placeholder="e.g. ade.adetunji@turontech.com"
             {...register("email", { required: true })}
           />
           <NotchedField
