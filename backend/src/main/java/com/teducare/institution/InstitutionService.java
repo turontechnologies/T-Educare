@@ -13,17 +13,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.module.ModuleCatalog;
+import com.teducare.notification.NotificationService;
 
 @Service
 public class InstitutionService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String TOKEN_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final String SUPER_ADMIN_HREF = "/super-admin/institutions";
 
     private final InstitutionRepository repository;
+    private final NotificationService notificationService;
 
-    public InstitutionService(InstitutionRepository repository) {
+    public InstitutionService(InstitutionRepository repository, NotificationService notificationService) {
         this.repository = repository;
+        this.notificationService = notificationService;
     }
 
     public Map<String, Object> list(
@@ -107,7 +111,12 @@ public class InstitutionService {
                 Instant.now(),
                 null);
 
-        return InstitutionResponse.from(repository.save(institution));
+        Institution saved = repository.save(institution);
+        notificationService.notifyPlatform(
+                "New institution added",
+                saved.getName() + " was added to the platform.",
+                SUPER_ADMIN_HREF);
+        return InstitutionResponse.from(saved);
     }
 
     public InstitutionResponse update(String id, UpdateInstitutionRequest request) {
@@ -147,7 +156,15 @@ public class InstitutionService {
             institution.setLogoUrl(request.logoUrl());
         }
 
-        return InstitutionResponse.from(repository.save(institution));
+        Institution saved = repository.save(institution);
+        notificationService.notifyPlatform(
+                "Institution updated", saved.getName() + "'s details were updated.", SUPER_ADMIN_HREF);
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your institution's details were updated",
+                "The platform administrator updated your institution's profile.",
+                null);
+        return InstitutionResponse.from(saved);
     }
 
     public InstitutionResponse updateStatus(String id, String status) {
@@ -157,19 +174,49 @@ public class InstitutionService {
 
         Institution institution = requireInstitution(id);
         institution.setStatus(status);
-        return InstitutionResponse.from(repository.save(institution));
+        Institution saved = repository.save(institution);
+
+        String verb = "active".equals(status) ? "activated" : "deactivated";
+        notificationService.notifyPlatform(
+                "Institution " + verb, saved.getName() + " was " + verb + ".", SUPER_ADMIN_HREF);
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your institution was " + verb,
+                "active".equals(status)
+                        ? "Your institution has regained full access to the platform."
+                        : "Your institution has lost access to the platform until reactivated.",
+                null);
+        return InstitutionResponse.from(saved);
     }
 
     public InstitutionResponse archive(String id) {
         Institution institution = requireInstitution(id);
         institution.setArchivedAt(Instant.now());
-        return InstitutionResponse.from(repository.save(institution));
+        Institution saved = repository.save(institution);
+
+        notificationService.notifyPlatform(
+                "Institution deleted", saved.getName() + " was moved to the archive.", SUPER_ADMIN_HREF);
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your institution was deleted",
+                "Your institution was archived by the platform administrator.",
+                null);
+        return InstitutionResponse.from(saved);
     }
 
     public InstitutionResponse restore(String id) {
         Institution institution = requireInstitution(id);
         institution.setArchivedAt(null);
-        return InstitutionResponse.from(repository.save(institution));
+        Institution saved = repository.save(institution);
+
+        notificationService.notifyPlatform(
+                "Institution restored", saved.getName() + " was restored from the archive.", SUPER_ADMIN_HREF);
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Institution restored",
+                "Your institution has been restored and is visible on the platform again.",
+                null);
+        return InstitutionResponse.from(saved);
     }
 
     /**
@@ -192,7 +239,19 @@ public class InstitutionService {
         institution.setModulesCount(keys.size());
         institution.setModulesLastEditedAt(Instant.now());
         institution.setStatus("active");
-        return InstitutionResponse.from(repository.save(institution));
+        Institution saved = repository.save(institution);
+
+        String moduleWord = keys.size() == 1 ? "module" : "modules";
+        notificationService.notifyPlatform(
+                "Modules updated",
+                saved.getName() + " now has " + keys.size() + " " + moduleWord + " active.",
+                "/super-admin/modules");
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your modules were updated",
+                "Your institution now has " + keys.size() + " " + moduleWord + " active.",
+                null);
+        return InstitutionResponse.from(saved);
     }
 
     /**
@@ -225,7 +284,17 @@ public class InstitutionService {
             institution.setLicenseIssuedAt(Instant.now());
         }
 
-        return InstitutionResponse.from(repository.save(institution));
+        Institution saved = repository.save(institution);
+        notificationService.notifyPlatform(
+                "License saved",
+                saved.getName() + "'s license was set to " + licenseType + ".",
+                "/super-admin/license-manager");
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your license was updated",
+                "Your institution's license is now " + licenseType + ".",
+                null);
+        return InstitutionResponse.from(saved);
     }
 
     public Map<String, String> regenerateLicenseKey(String id) {
@@ -237,7 +306,17 @@ public class InstitutionService {
 
         String newKey = generateTokenKey();
         institution.setLicenseKey(newKey);
-        repository.save(institution);
+        Institution saved = repository.save(institution);
+
+        notificationService.notifyPlatform(
+                "License key regenerated",
+                "The license key for " + saved.getName() + " was regenerated.",
+                "/super-admin/license-manager");
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your license key was regenerated",
+                "Your institution's license key was regenerated by the platform administrator.",
+                null);
         return Map.of("licenseKey", newKey);
     }
 
@@ -248,7 +327,18 @@ public class InstitutionService {
         institution.setLicenseKey(null);
         institution.setExpiringAt(null);
         institution.setLicenseIssuedAt(null);
-        return InstitutionResponse.from(repository.save(institution));
+        Institution saved = repository.save(institution);
+
+        notificationService.notifyPlatform(
+                "License revoked",
+                saved.getName() + "'s license was revoked and reset to Basic.",
+                "/super-admin/license-manager");
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your license was revoked",
+                "Your institution's license was revoked and reset to Basic.",
+                null);
+        return InstitutionResponse.from(saved);
     }
 
     private Institution requireInstitution(String id) {

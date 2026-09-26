@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { NotchedComboboxField } from "@/components/shared/notched-field";
 import { INSTITUTION_NAV, type NavItem } from "@/config/nav";
-import { notifyInstitution, notifyPlatform } from "@/lib/notify";
 import { useModuleCatalog } from "@/hooks/use-modules";
 import { useInstitutions, useLinkModules } from "@/hooks/use-institutions";
 import { useInstitutionsStore } from "@/store/institutions.store";
@@ -198,16 +197,6 @@ function InstitutionModulesForm({
         moduleKeys: Array.from(moduleKeys),
       });
       toast.success(`${addedInstitution.name}'s modules saved`);
-      notifyPlatform(
-        "Modules updated",
-        `${addedInstitution.name} now has ${moduleKeys.size} module${moduleKeys.size === 1 ? "" : "s"} active.`,
-        "/super-admin/modules",
-      );
-      notifyInstitution(
-        addedInstitution.id,
-        "Your modules were updated",
-        `Your institution now has ${moduleKeys.size} module${moduleKeys.size === 1 ? "" : "s"} active.`,
-      );
       onDone();
     } catch (error) {
       toast.error(

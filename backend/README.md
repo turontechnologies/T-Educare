@@ -77,6 +77,7 @@ backend/
 │  │  │  ├─ institution/  # Institutions list/create/edit/status/archive (super admin)
 │  │  │  ├─ usermanager/  # User Manager — institution_admin accounts (super admin)
 │  │  │  ├─ module/       # Modules catalog + linking modules to an institution
+│  │  │  ├─ notification/ # In-app notifications (list/unread-count/read/dismiss)
 │  │  │  ├─ profile/      # GET/PATCH profile, password change
 │  │  │  ├─ upload/       # POST /uploads (Cloudinary)
 │  │  │  ├─ health/
@@ -220,7 +221,42 @@ already has one). `/super-admin/license-manager` calls these real endpoints
 directly now — this was the app's last remaining local-only screen, so
 `institutions.store.ts`'s `localOverrides`/`updateInstitution()` machinery
 (see `frontend/CLAUDE.md`) is deleted outright, not just unused. Every
-field on every resource this backend covers is real and server-backed now.
+field on every resource above is real and server-backed now.
+
+**§10 Notifications is real too, and wired to the frontend, same day
+(2026-09-26)** — explicitly requested ("make sure the notification is
+coming from the backend"), after the frontend-only mock version had been
+running since early in this project. New `notification/` package: a real
+`dbo.notifications` table (`V6__notifications.sql`), not an extension of
+an existing resource this time, since a notification doesn't belong to
+any single one of them. `NotificationService.notifyPlatform()`/
+`notifyInstitution()`/`notifyUser()` are the server-side equivalent of
+`frontend/src/lib/notify.ts`'s three functions, called from
+`InstitutionService`/`UserManagerService` at the exact same success
+points the frontend's own call sites used to fire from — every mutating
+method on both (create/update/status/archive/restore/linkModules/
+saveLicense/regenerateLicenseKey/revokeLicense on Institutions;
+create/update/status/resetPassword/archive/restore on User Manager) now
+creates one. `GET /notifications` scopes to the caller server-side
+(own `user` rows, plus their institution's rows if they're an
+institution_admin, plus every `platform` row if they're a super_admin) —
+any authenticated user can call it, no role restriction, since everyone
+reads only their own feed. `GET /notifications/unread-count` exists
+specifically so the frontend bell doesn't have to fetch and count the
+full list on every render. `PATCH /notifications/:id/read` and
+`DELETE /notifications/:id` both 404 (never 403) for an out-of-scope id —
+never confirms another user's or institution's notification even exists.
+`POST /notifications/read-all` is a bulk `@Modifying` JPQL update — the
+first one of those in this codebase — and needed `@Transactional` on the
+service method calling it; every other write elsewhere goes through
+`JpaRepository`'s already-transactional `save()`/`delete()`, so this was a
+genuinely new failure mode here (`InvalidDataAccessApiUsageException`,
+caught by the test suite, not by manual testing). **Only wired into
+resources that are actually real** — Students/Staff/Academic Sessions/
+etc. have no backend at all yet, so their existing `notify.ts` call sites
+on the frontend are untouched; the frontend merges the real feed with
+whatever's still locally-generated for those (see `frontend/CLAUDE.md`),
+so nothing regressed for domains this pass didn't touch.
 
 Verified end-to-end via `docker compose up -d --build` (both `sqlserver` and
 `app` services): Flyway applies all 3 migrations, the app connects to

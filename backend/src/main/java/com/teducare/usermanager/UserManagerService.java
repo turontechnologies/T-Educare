@@ -16,6 +16,7 @@ import com.teducare.auth.UserAccount;
 import com.teducare.auth.UserAccountRepository;
 import com.teducare.institution.Institution;
 import com.teducare.institution.InstitutionRepository;
+import com.teducare.notification.NotificationService;
 
 @Service
 public class UserManagerService {
@@ -23,18 +24,22 @@ public class UserManagerService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String PASSWORD_ALPHABET =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+    private static final String SUPER_ADMIN_HREF = "/super-admin/user-manager";
 
     private final UserAccountRepository repository;
     private final InstitutionRepository institutionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
     public UserManagerService(
             UserAccountRepository repository,
             InstitutionRepository institutionRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            NotificationService notificationService) {
         this.repository = repository;
         this.institutionRepository = institutionRepository;
         this.passwordEncoder = passwordEncoder;
+        this.notificationService = notificationService;
     }
 
     public Map<String, Object> list(int page, int perPage, String search, boolean includeArchived) {
@@ -93,7 +98,18 @@ public class UserManagerService {
                 Instant.now(),
                 null);
 
-        return UserManagerResponse.from(repository.save(account));
+        UserAccount saved = repository.save(account);
+        String fullName = saved.getFirstName() + " " + saved.getLastName();
+        notificationService.notifyPlatform(
+                "New account added",
+                fullName + " was added as an admin for " + institution.getName() + ".",
+                SUPER_ADMIN_HREF);
+        notificationService.notifyInstitution(
+                institution.getId(),
+                "A new admin was assigned",
+                fullName + " was added as an admin for your institution.",
+                null);
+        return UserManagerResponse.from(saved);
     }
 
     public UserManagerResponse update(String id, UpdateUserManagerRequest request) {
@@ -140,7 +156,14 @@ public class UserManagerService {
             account.setAvatarUrl(request.avatarUrl());
         }
 
-        return UserManagerResponse.from(repository.save(account));
+        UserAccount saved = repository.save(account);
+        notificationService.notifyPlatform(
+                "Account updated",
+                saved.getFirstName() + " " + saved.getLastName() + "'s account was updated.",
+                SUPER_ADMIN_HREF);
+        notificationService.notifyUser(
+                saved.getId(), "Your profile was updated", "An administrator updated your account details.", null);
+        return UserManagerResponse.from(saved);
     }
 
     public UserManagerResponse updateStatus(String id, String status) {
@@ -150,27 +173,55 @@ public class UserManagerService {
 
         UserAccount account = requireUserManager(id);
         account.setStatus(status);
-        return UserManagerResponse.from(repository.save(account));
+        UserAccount saved = repository.save(account);
+
+        String verb = "active".equals(status) ? "activated" : "deactivated";
+        notificationService.notifyPlatform(
+                "Account " + verb, saved.getUsername() + " was " + verb + ".", SUPER_ADMIN_HREF);
+        notificationService.notifyUser(
+                saved.getId(),
+                "Your account was " + verb,
+                "active".equals(status)
+                        ? "Your account has regained access."
+                        : "Your account has lost access until reactivated.",
+                null);
+        return UserManagerResponse.from(saved);
     }
 
     public String resetPassword(String id) {
         UserAccount account = requireUserManager(id);
         String newPassword = generatePassword();
         account.setPasswordHash(passwordEncoder.encode(newPassword));
-        repository.save(account);
+        UserAccount saved = repository.save(account);
+
+        notificationService.notifyPlatform(
+                "Password reset", saved.getUsername() + "'s password was reset.", SUPER_ADMIN_HREF);
+        notificationService.notifyUser(
+                saved.getId(),
+                "Your password was reset",
+                "An administrator reset your password. Use the new password they shared with you to log in.",
+                null);
         return newPassword;
     }
 
     public UserManagerResponse archive(String id) {
         UserAccount account = requireUserManager(id);
         account.setArchivedAt(Instant.now());
-        return UserManagerResponse.from(repository.save(account));
+        UserAccount saved = repository.save(account);
+
+        notificationService.notifyPlatform(
+                "Account deleted", saved.getUsername() + " was archived.", SUPER_ADMIN_HREF);
+        return UserManagerResponse.from(saved);
     }
 
     public UserManagerResponse restore(String id) {
         UserAccount account = requireUserManager(id);
         account.setArchivedAt(null);
-        return UserManagerResponse.from(repository.save(account));
+        UserAccount saved = repository.save(account);
+
+        notificationService.notifyPlatform(
+                "Account restored", saved.getUsername() + " was restored from the archive.", SUPER_ADMIN_HREF);
+        return UserManagerResponse.from(saved);
     }
 
     /** Only ever resolves an institution_admin row — a super_admin id here is treated as not found, not leaked. */

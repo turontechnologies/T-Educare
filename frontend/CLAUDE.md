@@ -140,32 +140,54 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   logo) must be visible both to the super admin later and to that
   account/institution's own login session — `URL.createObjectURL` cannot
   do that, `readFileAsDataUrl` can and does (verified in development).
-- **In-app notifications are real and automated, not a static bell icon.**
-  `src/store/notifications.store.ts` holds them (`persist`-backed);
-  `src/lib/notify.ts` exports `notifyPlatform`/`notifyInstitution`/
-  `notifyUser` — thin one-line wrappers, called at the exact same place as
-  the existing `toast.success(...)` for every meaningful action
-  (institution create/update/activate/deactivate/delete/restore, modules
-  linked, license created/regenerated/revoked, a User Manager account
-  create/update/activate/deactivate/delete/restore, a password reset).
-  When adding a new mutating action anywhere, add its `notify*` call right
-  next to its `toast.success` — don't let the two drift apart. Scoping
-  (`platform` = every super admin; `institution` = that institution's own
-  admins; `user` = one specific account) is resolved by
-  `notificationsForUser()` in the same store file, shared by both the
-  header's `NotificationsBell` dropdown
-  (`src/components/features/notifications/`) and the full
-  `/super-admin/notifications` / `/dashboard/notifications` list pages —
-  never duplicate that filtering logic elsewhere.
+- **In-app notifications are real and automated, not a static bell icon —
+  and as of 2026-09-26, the ones for real backend actions are genuinely
+  server-generated, not client-side mocked.** `src/lib/notify.ts` still
+  exports `notifyPlatform`/`notifyInstitution`/`notifyUser`, but they're
+  now **only called from domains with no backend yet** (Students, Staff,
+  Academic Sessions, etc.) — Institutions/User Manager/Modules/License
+  Manager's own call sites were removed entirely, since
+  `InstitutionService`/`UserManagerService` now create the equivalent
+  notification server-side at the same success point (API_CONTRACT.md
+  §10, `backend/CLAUDE.md`). When adding a new mutating action to a domain
+  that **already has a real backend**, add the notification there, in the
+  Java service — not here. Only add a frontend `notify*` call for a domain
+  that's still fully mocked.
+  **Two feeds, merged client-side** (`hooks/use-notifications.ts`'s
+  `useMergedNotifications`) — `services/notification.service.ts` calls the
+  real `GET /notifications` (already scoped to the caller server-side, no
+  client-side filtering needed for these), merged with whatever's still in
+  `notifications.store.ts` for the still-mocked domains, filtered through
+  the same `notificationsForUser()` as before. Both `NotificationsBell` and
+  `NotificationsList` read this single merged list; each item is tagged
+  `source: "real" | "local"` so marking-read/dismiss calls the right
+  action (a real mutation hook vs. the local store's own). As each mocked
+  domain gets a real backend later, move its `notify.ts` call site into
+  that service the same way Institutions'/User Manager's just moved — the
+  merge logic itself needs no changes when that happens, its local-side
+  notifications just stop appearing.
+  **The bell dropdown is an unread queue, not a history (2026-09-26)** —
+  explicitly requested: shows only the top 3 _unread_ notifications
+  (`unread.slice(0, 3)`, not the 8 most recent regardless of read state
+  like before). Reading one removes it from the dropdown but never from
+  the full `/super-admin/notifications` / `/dashboard/notifications` page,
+  which still shows everything regardless of read state — that page is
+  the permanent history, the dropdown is just "what's new."
   **Clicking a notification no longer navigates immediately (2026-09-24)**
   — it marks it read and opens `NotificationDetailsDialog` (untruncated
   title/message, since the bell dropdown's row itself is `line-clamp-2`)
   with an explicit "Take me there" button that navigates `href` and closes
   the dialog; a notification with no `href` just shows details with no
-  such button. Both `NotificationsBell` and `NotificationsList` render
-  this dialog as a **sibling** of the dropdown/list, never nested inside
-  `DropdownMenuContent` — that unmounts on close, which would tear the
-  dialog down before it could show if it were nested there instead.
+  such button. Every `href` used anywhere (`notify.ts` call sites and the
+  backend's own service methods alike) stays within the recipient's own
+  role area — a `platform`-scope notification's `href` always starts with
+  `/super-admin`, an `institution`/`user`-scope one always with
+  `/dashboard` — verified via a full-codebase grep for cross-contamination
+  before touching anything here; there was none. Both `NotificationsBell`
+  and `NotificationsList` render this dialog as a **sibling** of the
+  dropdown/list, never nested inside `DropdownMenuContent` — that unmounts
+  on close, which would tear the dialog down before it could show if it
+  were nested there instead.
 - **Session Rollover is append-only and must never be confused with editing
   a student's level in place.** `src/types/student.ts`
   (`Student.academicHistory: StudentAcademicRecord[]`) and

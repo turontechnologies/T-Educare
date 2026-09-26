@@ -13,28 +13,62 @@ import {
   notificationsForUser,
   useNotificationsStore,
 } from "@/store/notifications.store";
-import type { AppNotification } from "@/types/notification";
+import {
+  useDismissNotification,
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useMergedNotifications,
+  type MergedNotification,
+} from "@/hooks/use-notifications";
 
 interface NotificationsListProps {
   breadcrumb: string[];
 }
 
-/** Full notifications feed — shared by `/super-admin/notifications` and `/dashboard/notifications`; scoping to "what's mine" happens once, in `notificationsForUser`. */
+/** Full notifications feed — shared by `/super-admin/notifications` and `/dashboard/notifications`; the real/local merge happens once, in `useMergedNotifications`. */
 export function NotificationsList({ breadcrumb }: NotificationsListProps) {
   const user = useAuthStore((state) => state.user);
-  const allNotifications = useNotificationsStore(
-    (state) => state.notifications,
+  const localAll = useNotificationsStore((state) => state.notifications);
+  const localMarkAsRead = useNotificationsStore((state) => state.markAsRead);
+  const localMarkManyAsRead = useNotificationsStore(
+    (state) => state.markManyAsRead,
   );
-  const markAsRead = useNotificationsStore((state) => state.markAsRead);
-  const markManyAsRead = useNotificationsStore((state) => state.markManyAsRead);
-  const dismiss = useNotificationsStore((state) => state.dismiss);
-  const [selected, setSelected] = useState<AppNotification | null>(null);
+  const localDismiss = useNotificationsStore((state) => state.dismiss);
 
-  const mine = useMemo(
-    () => notificationsForUser(allNotifications, user),
-    [allNotifications, user],
-  );
+  const { notifications: mine } = useMergedNotifications();
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
+  const dismissReal = useDismissNotification();
+
+  const [selected, setSelected] = useState<MergedNotification | null>(null);
+
   const unread = useMemo(() => mine.filter((n) => !n.read), [mine]);
+
+  const handleSelect = (notification: MergedNotification) => {
+    if (notification.source === "real") {
+      markRead.mutate(notification.id);
+    } else {
+      localMarkAsRead(notification.id);
+    }
+    setSelected(notification);
+  };
+
+  const handleMarkAllRead = () => {
+    markAllRead.mutate();
+    localMarkManyAsRead(
+      notificationsForUser(localAll, user)
+        .filter((n) => !n.read)
+        .map((n) => n.id),
+    );
+  };
+
+  const handleDismiss = (notification: MergedNotification) => {
+    if (notification.source === "real") {
+      dismissReal.mutate(notification.id);
+    } else {
+      localDismiss(notification.id);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -50,7 +84,7 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
             variant="outline"
             size="sm"
             className="rounded-full"
-            onClick={() => markManyAsRead(unread.map((n) => n.id))}
+            onClick={handleMarkAllRead}
           >
             Mark all as read ({unread.length})
           </Button>
@@ -83,10 +117,7 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    markAsRead(notification.id);
-                    setSelected(notification);
-                  }}
+                  onClick={() => handleSelect(notification)}
                   className="min-w-0 flex-1 cursor-pointer text-left"
                 >
                   <p className="text-sm font-medium text-foreground">
@@ -102,7 +133,7 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
                 <button
                   type="button"
                   aria-label="Dismiss notification"
-                  onClick={() => dismiss(notification.id)}
+                  onClick={() => handleDismiss(notification)}
                   className="cursor-pointer rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
                 >
                   <X className="size-4" />

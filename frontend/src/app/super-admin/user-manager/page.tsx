@@ -43,7 +43,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import { UserManagerDetailsDialog } from "@/components/features/user-manager/user-manager-details-dialog";
 import { UserManagerDialog } from "@/components/features/user-manager/user-manager-dialog";
 import { cn } from "@/lib/utils";
-import { notifyPlatform, notifyUser } from "@/lib/notify";
 import {
   useArchiveUserManager,
   useResetUserManagerPassword,
@@ -356,11 +355,6 @@ export default function UserManagerPage() {
                               account.id,
                             );
                             toast.success(`${account.username} restored`);
-                            notifyPlatform(
-                              "Account restored",
-                              `${account.username} was restored from the archive.`,
-                              "/super-admin/user-manager",
-                            );
                           } catch (error) {
                             toast.error(
                               error instanceof Error
@@ -454,11 +448,6 @@ export default function UserManagerPage() {
           try {
             await archiveUserManagerMutation.mutateAsync(pendingArchive.id);
             toast.success(`${pendingArchive.username} deleted`);
-            notifyPlatform(
-              "Account deleted",
-              `${pendingArchive.username} was archived.`,
-              "/super-admin/user-manager",
-            );
           } catch (error) {
             toast.error(
               error instanceof Error
@@ -489,18 +478,6 @@ export default function UserManagerPage() {
               status: pendingStatus.nextActive ? "active" : "inactive",
             });
             toast.success(`${pendingStatus.account.username} ${verb}`);
-            notifyPlatform(
-              `Account ${verb}`,
-              `${pendingStatus.account.username} was ${verb}.`,
-              "/super-admin/user-manager",
-            );
-            notifyUser(
-              pendingStatus.account.id,
-              `Your account was ${verb}`,
-              pendingStatus.nextActive
-                ? "Your account has regained access."
-                : "Your account has lost access until reactivated.",
-            );
           } catch (error) {
             toast.error(
               error instanceof Error
@@ -524,16 +501,6 @@ export default function UserManagerPage() {
               await resetPasswordMutation.mutateAsync(pendingReset.id);
             toast.success(
               `New password for ${pendingReset.username}: ${newPassword}`,
-            );
-            notifyPlatform(
-              "Password reset",
-              `${pendingReset.username}'s password was reset.`,
-              "/super-admin/user-manager",
-            );
-            notifyUser(
-              pendingReset.id,
-              "Your password was reset",
-              "An administrator reset your password. Use the new password they shared with you to log in.",
             );
           } catch (error) {
             toast.error(

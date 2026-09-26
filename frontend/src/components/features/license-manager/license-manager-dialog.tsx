@@ -18,7 +18,6 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { generateKey } from "@/lib/mock-generators";
-import { notifyInstitution, notifyPlatform } from "@/lib/notify";
 import { useInstitutions, useSaveLicense } from "@/hooks/use-institutions";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import type { LicenseType } from "@/types/institution";
@@ -155,16 +154,6 @@ function LicenseForm({
         },
       });
       toast.success(`License saved for ${institutionName ?? "institution"}`);
-      notifyPlatform(
-        "License saved",
-        `${institutionName}'s license was set to ${licenseType}.`,
-        "/super-admin/license-manager",
-      );
-      notifyInstitution(
-        selectedInstitutionId,
-        "Your license was updated",
-        `Your institution's license is now ${licenseType}.`,
-      );
       onDone();
     } catch (error) {
       toast.error(

@@ -44,7 +44,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import { InstitutionDetailsDialog } from "@/components/features/institutions/institution-details-dialog";
 import { InstitutionDialog } from "@/components/features/institutions/institution-dialog";
 import { cn } from "@/lib/utils";
-import { notifyInstitution, notifyPlatform } from "@/lib/notify";
 import {
   useArchiveInstitution,
   useInstitutions,
@@ -383,16 +382,6 @@ export default function InstitutionsPage() {
                                 institution.id,
                               );
                               toast.success(`${institution.name} restored`);
-                              notifyPlatform(
-                                "Institution restored",
-                                `${institution.name} was restored from the archive.`,
-                                "/super-admin/institutions",
-                              );
-                              notifyInstitution(
-                                institution.id,
-                                "Institution restored",
-                                "Your institution has been restored and is visible on the platform again.",
-                              );
                             } catch (error) {
                               toast.error(
                                 error instanceof Error
@@ -495,18 +484,6 @@ export default function InstitutionsPage() {
               status: pendingStatus.nextActive ? "active" : "inactive",
             });
             toast.success(`${pendingStatus.institution.name} ${verb}`);
-            notifyPlatform(
-              `Institution ${verb}`,
-              `${pendingStatus.institution.name} was ${verb}.`,
-              "/super-admin/institutions",
-            );
-            notifyInstitution(
-              pendingStatus.institution.id,
-              `Your institution was ${verb}`,
-              pendingStatus.nextActive
-                ? "Your institution has regained full access to the platform."
-                : "Your institution has lost access to the platform until reactivated.",
-            );
           } catch (error) {
             toast.error(
               error instanceof Error
@@ -529,16 +506,6 @@ export default function InstitutionsPage() {
           try {
             await archiveInstitutionMutation.mutateAsync(pendingArchive.id);
             toast.success(`${pendingArchive.name} deleted`);
-            notifyPlatform(
-              "Institution deleted",
-              `${pendingArchive.name} was moved to the archive.`,
-              "/super-admin/institutions",
-            );
-            notifyInstitution(
-              pendingArchive.id,
-              "Your institution was deleted",
-              "Your institution was archived by the platform administrator.",
-            );
           } catch (error) {
             toast.error(
               error instanceof Error

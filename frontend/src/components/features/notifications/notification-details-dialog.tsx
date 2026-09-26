@@ -10,11 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { timeAgo } from "@/lib/time";
-import type { AppNotification } from "@/types/notification";
+import type { MergedNotification } from "@/hooks/use-notifications";
 
 interface NotificationDetailsDialogProps {
   /** Null closes the dialog — same controlled-by-selection pattern as the other feature dialogs in this app. */
-  notification: AppNotification | null;
+  notification: MergedNotification | null;
   onOpenChange: (open: boolean) => void;
 }
 

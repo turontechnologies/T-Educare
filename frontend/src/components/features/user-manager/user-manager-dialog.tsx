@@ -20,7 +20,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { readFileAsDataUrl } from "@/lib/files";
 import { generatePassword, generateUsername } from "@/lib/mock-generators";
-import { notifyInstitution, notifyPlatform, notifyUser } from "@/lib/notify";
 import {
   useCreateUserManager,
   useUpdateUserManager,
@@ -178,8 +177,6 @@ function UserManagerForm({
       return;
     }
 
-    const institution = activeInstitutions.find((i) => i.id === institutionId);
-
     try {
       if (account) {
         await updateUserManager.mutateAsync({
@@ -198,18 +195,8 @@ function UserManagerForm({
           },
         });
         toast.success(`${values.firstName} ${values.lastName} updated`);
-        notifyPlatform(
-          "Account updated",
-          `${values.firstName} ${values.lastName}'s account was updated.`,
-          "/super-admin/user-manager",
-        );
-        notifyUser(
-          account.id,
-          "Your profile was updated",
-          "An administrator updated your account details.",
-        );
       } else {
-        const created = await createUserManager.mutateAsync({
+        await createUserManager.mutateAsync({
           firstName: values.firstName,
           otherName: values.otherName,
           lastName: values.lastName,
@@ -223,18 +210,6 @@ function UserManagerForm({
           avatarUrl,
         });
         toast.success(`${values.firstName} ${values.lastName} added`);
-        notifyPlatform(
-          "New account added",
-          `${created.firstName} ${created.lastName} was added as an admin for ${created.institutionName}.`,
-          "/super-admin/user-manager",
-        );
-        if (institution) {
-          notifyInstitution(
-            institution.id,
-            "A new admin was assigned",
-            `${created.firstName} ${created.lastName} was added as an admin for your institution.`,
-          );
-        }
       }
       onDone();
     } catch (error) {
