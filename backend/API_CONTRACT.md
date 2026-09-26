@@ -1481,10 +1481,15 @@ Don't merge the two lists; they're deliberately separate.
 ## 9. Dashboards
 
 **Implemented** (`backend/src/main/java/com/teducare/dashboard/`), against
-the same MSSQL-backed `AuthDirectory` accounts as Auth/Profile above — the
-stats numbers themselves are still hardcoded per-institution server-side,
-not computed from real rows, but institution resolution (which set of
-numbers a given login sees) is real. Both dashboards
+the same MSSQL-backed `AuthDirectory` accounts as Auth/Profile above.
+**As of 2026-09-26, the institution admin dashboard's numbers are real
+wherever a real column exists to read them from, and honestly zero/empty
+where none does yet** — `registeredStudents`/`accumulatedProfit` read the
+real, per-institution `Institution.studentCount`/`revenue` columns (real
+since the Institutions build, just never read by this endpoint before);
+`applicants`/`lecturers` are `0` and the enrollment chart/recent-students
+list are empty, not fabricated, since Applicants/Lecturers/Students have
+no real backend at all yet — see §9.1-9.3. Both dashboards
 (`frontend/src/app/dashboard/page.tsx` and
 `frontend/src/app/super-admin/page.tsx`) now call these routes instead of
 reading `frontend/src/store/dashboard.store.ts` directly; `institutions.store.ts`
@@ -1500,47 +1505,54 @@ Scoped to the caller's own institution — resolved server-side from the
 bearer token's subject (the login username) via `AuthDirectory`, **not**
 from a client-supplied value, same multi-tenancy rule as everywhere else in
 this contract (§1). `turon_admin` and `amara_bello` (§3) get different
-numbers because their accounts resolve to different `institutionId`s; a
-regression where the controller passed the raw JWT subject straight into
-the stats lookup (so every institution admin silently saw the same
-fallback numbers regardless of which institution they belonged to) was
-caught and fixed — covered by
-`DashboardControllerTest#institutionAdminDashboardStatsDifferByInstitution`.
+numbers because their accounts resolve to different `institutionId`s, and
+(2026-09-26) because `registeredStudents`/`accumulatedProfit` now read
+that institution's own real `studentCount`/`revenue` row — a regression
+where the controller passed the raw JWT subject straight into the stats
+lookup (so every institution admin silently saw the same fallback numbers
+regardless of which institution they belonged to) was caught and fixed
+earlier, covered by
+`DashboardControllerTest#institutionAdminDashboardStatsReadRealPerInstitutionColumnsAndZeroWhatHasNoBackendYet`.
+`applicants`/`lecturers` are `0` — Applicants and Lecturers have no real
+backend yet, so these are honestly zero rather than a fabricated number;
+update this endpoint once either exists.
 
 ```json
 {
-  "registeredStudents": 48043,
-  "applicants": 158429,
-  "lecturers": 10238,
-  "accumulatedProfit": 1248043
+  "registeredStudents": 90,
+  "applicants": 0,
+  "lecturers": 0,
+  "accumulatedProfit": 120000
 }
 ```
 
 ### 9.2 Institution admin — `GET /dashboard/enrollment?range=day|week|month`
 
 Powers the "Registered students per program" chart. `range` defaults to
-`"day"`.
+`"day"`. **Honestly empty as of 2026-09-26** (`{ "data": [] }`) — Students
+has no real backend yet, so there's no real enrollment history to bucket;
+returning fabricated points here would contradict every other real
+endpoint in this contract. Once Students is built, bucket real
+registration timestamps by the requested `range` and populate this for
+real; `label` is whatever the frontend should print on the x-axis for that
+range (hour-of-day for `day`, weekday for `week`, month for `month`) — the
+backend owns the bucketing, the frontend just renders what it's given.
 
 ```json
-{ "data": [ { "label": "6am", "value": 8 }, { "label": "9am", "value": 22 } ] }
+{ "data": [] }
 ```
-
-`label` is whatever the frontend should print on the x-axis for that
-`range` (hour-of-day for `day`, weekday for `week`, month for `month`) —
-the backend owns the bucketing, the frontend just renders what it's given.
 
 ### 9.3 Institution admin — `GET /dashboard/recent-students?limit=4`
 
-```json
-{
-  "data": [
-    { "id": "std_1", "name": "Amaka Chukwu", "registeredAt": "2026-09-10T07:12:00.000Z" }
-  ]
-}
-```
+**Honestly empty as of 2026-09-26** (`{ "data": [] }`), same reasoning as
+9.2 — no real Students resource to draw "recent" registrations from yet.
+Once Students is real, `registeredAt` should be a real ISO timestamp; the
+frontend formats it as relative time ("2 hours ago") itself, don't
+pre-format it server-side.
 
-`registeredAt` is a real ISO timestamp — the frontend formats it as relative
-time ("2 hours ago") itself, don't pre-format it server-side.
+```json
+{ "data": [] }
+```
 
 ### 9.4 Super admin — `GET /super-admin/stats`
 

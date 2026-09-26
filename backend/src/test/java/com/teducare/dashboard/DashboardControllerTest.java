@@ -32,19 +32,45 @@ class DashboardControllerTest {
     }
 
     @Test
-    void institutionAdminDashboardStatsDifferByInstitution() throws Exception {
+    void institutionAdminDashboardStatsReadRealPerInstitutionColumnsAndZeroWhatHasNoBackendYet() throws Exception {
         String turonToken = loginAs("turon_admin", "Turon@2024");
         String amaraToken = loginAs("amara_bello", "Amara@2024");
 
+        // Real, seeded per-institution values (Institution.studentCount/revenue —
+        // see DemoInstitutionSeeder) — differ by institution because they're
+        // read live from the real row, not a hardcoded switch statement.
         mockMvc.perform(get("/api/dashboard/stats")
                 .header("Authorization", "Bearer " + turonToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.registeredStudents").value(48043));
+                .andExpect(jsonPath("$.registeredStudents").value(90))
+                .andExpect(jsonPath("$.accumulatedProfit").value(120000))
+                .andExpect(jsonPath("$.applicants").value(0))
+                .andExpect(jsonPath("$.lecturers").value(0));
 
         mockMvc.perform(get("/api/dashboard/stats")
                 .header("Authorization", "Bearer " + amaraToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.registeredStudents").value(22000));
+                .andExpect(jsonPath("$.registeredStudents").value(47))
+                .andExpect(jsonPath("$.accumulatedProfit").value(43300))
+                .andExpect(jsonPath("$.applicants").value(0))
+                .andExpect(jsonPath("$.lecturers").value(0));
+    }
+
+    @Test
+    void enrollmentAndRecentStudentsAreHonestlyEmptyRatherThanFabricated() throws Exception {
+        String token = loginAs("turon_admin", "Turon@2024");
+
+        mockMvc.perform(get("/api/dashboard/enrollment")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(0));
+
+        mockMvc.perform(get("/api/dashboard/recent-students")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(0));
     }
 
     @Test

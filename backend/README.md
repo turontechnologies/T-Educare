@@ -105,9 +105,18 @@ entity/repository, and `auth/AuthDirectory.java` is a thin wrapper over the
 repository (BCrypt-hashed passwords, mutated via `repository.save()` on
 password/profile updates — no more in-memory map). `auth/DemoAccountSeeder.java`
 inserts the 3 demo accounts once on first boot if the table is empty, so a
-fresh `docker compose up` seeds itself. Dashboard numbers are still
-static/hardcoded per-institution rather than computed from real rows —
-that's still worth moving onto the DB later.
+fresh `docker compose up` seeds itself.
+
+**Institution admin dashboard stats are real wherever a real column backs
+them (2026-09-26)** — `registeredStudents`/`accumulatedProfit` now read the
+real, per-institution `Institution.studentCount`/`revenue` columns instead
+of a hardcoded switch statement; `applicants`/`lecturers` are honestly `0`
+and the enrollment chart/recent-students list are honestly empty rather
+than fabricated, since Applicants/Lecturers/Students have no real backend
+at all yet. See `API_CONTRACT.md` §9.1-9.3 for the exact reasoning per
+field. Super admin's own dashboard (`GET /super-admin/stats`,
+`GET /super-admin/recent-institutions`) is untouched by this pass — still
+hardcoded, a natural next candidate whenever that's asked for.
 
 **Institutions §4.1/4.3/4.4 (list/create/edit, activate/deactivate,
 archive/restore) are also real now, and wired to the frontend** —
