@@ -32,6 +32,21 @@ class ProfileControllerTest {
     }
 
     @Test
+    void institutionAdminProfileSummaryReportsRealInstitutionStatusNotAHardcodedLiteral() throws Exception {
+        String token = loginAs("turon_admin", "Turon@2024");
+
+        // XYZ College is a real, active seeded institution — this must come from
+        // a live InstitutionRepository lookup, not a literal "active" string
+        // (the "My Institution" card used to hardcode "Active" regardless).
+        mockMvc.perform(get("/api/profile")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.institutionName").value("XYZ College of Technology"))
+                .andExpect(jsonPath("$.summary.institutionStatus").value("active"))
+                .andExpect(jsonPath("$.summary.menuKeysCount").isNumber());
+    }
+
+    @Test
     void passwordUpdateEndpointValidatesCurrentPassword() throws Exception {
         String token = loginAs("super_admin", "Super@2024");
 

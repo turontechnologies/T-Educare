@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.teducare.auth.AuthDirectory;
 import com.teducare.auth.AuthenticatedUserDto;
 import com.teducare.auth.UserAccountRepository;
+import com.teducare.institution.Institution;
 import com.teducare.institution.InstitutionRepository;
 
 @Service
@@ -62,6 +63,14 @@ public class ProfileService {
             summary.put("institutionName", user.institutionName() == null ? "" : user.institutionName());
             summary.put("roleId", user.roleId() == null ? "" : user.roleId());
             summary.put("menuKeysCount", user.menuKeys() == null ? 0 : user.menuKeys().size());
+            // Real institution status, not assumed — a deactivated institution can't
+            // reach login in the first place (CustomAuthenticationProvider), but the
+            // profile page shouldn't hardcode "Active" as a literal regardless.
+            summary.put("institutionStatus", user.institutionId() == null
+                    ? ""
+                    : institutionRepository.findById(user.institutionId())
+                            .map(Institution::getStatus)
+                            .orElse(""));
         }
 
         Map<String, Object> response = new LinkedHashMap<>();

@@ -576,14 +576,24 @@ routes, unlike every admin-facing resource elsewhere in this contract.
 
 `summary` shape depends on `role`: a `super_admin` gets the platform-wide
 counters above; an `institution_admin` instead gets
-`{ institutionName, roleId, menuKeysCount }`. **Real since 2026-09-26** —
-`institutionsCount` reads the exact same `InstitutionRepository.countActive()`
-query `GET /super-admin/stats` (§9.4) uses, so the two are now guaranteed
-to agree by construction rather than being two independently-hardcoded
-literals that merely happened to match. `licensed`/`linkedModules` count
-non-archived institutions with a real license/at least one linked module
-respectively; `userManagerAccounts` counts non-archived
-`institution_admin` rows.
+`{ institutionName, roleId, menuKeysCount, institutionStatus }`. **Real
+since 2026-09-26** — `institutionsCount` reads the exact same
+`InstitutionRepository.countActive()` query `GET /super-admin/stats` (§9.4)
+uses, so the two are now guaranteed to agree by construction rather than
+being two independently-hardcoded literals that merely happened to match.
+`licensed`/`linkedModules` count non-archived institutions with a real
+license/at least one linked module respectively; `userManagerAccounts`
+counts non-archived `institution_admin` rows.
+
+`institution_admin`'s `institutionStatus` (added 2026-09-26, same real-
+data pass as the notifications cleanup below) is a live
+`InstitutionRepository.findById(institutionId)` lookup, not a hardcoded
+`"active"` literal — the frontend's `/dashboard/profile` "My Institution"
+card used to show a literal `"Active"` regardless of the real row.
+`menuKeysCount` (`0` for both "genuinely unrestricted" and the degenerate
+"restricted to nothing" case — the frontend treats both as "Full access",
+matching how nav filtering already treats a null `menuKeys`) already
+existed but wasn't rendered anywhere on the frontend before this pass.
 
 `PATCH /profile/password` never returns the new password (unlike the super
 admin's `POST /user-managers/:id/reset-password`, §4.5.4, which is a

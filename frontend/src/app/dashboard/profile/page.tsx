@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, EyeOff } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -32,9 +32,22 @@ export default function InstitutionAdminProfilePage() {
     institutionLogoUrl: authUser?.institutionLogoUrl ?? "",
     role: authUser?.role ?? "institution_admin",
   };
+  const summary = data?.summary ?? {};
 
   const roleLabel =
     profile.role === "super_admin" ? "Super Admin" : "Institution Admin";
+  // menuKeysCount is 0 for both "genuinely unrestricted" (menuKeys is null
+  // server-side) and "restricted to nothing" — the latter is a degenerate
+  // case that would make the account unusable, so 0 reads as unrestricted
+  // in practice, same convention `filterNavByModules`/nav filtering already use.
+  const accessLabel =
+    (summary.menuKeysCount ?? 0) > 0
+      ? `Restricted (${summary.menuKeysCount} menu items)`
+      : "Full access";
+  const institutionStatusLabel = summary.institutionStatus
+    ? summary.institutionStatus.charAt(0).toUpperCase() +
+      summary.institutionStatus.slice(1)
+    : "—";
 
   if (isLoading && !data) {
     return (
@@ -111,7 +124,7 @@ export default function InstitutionAdminProfilePage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Access</p>
-                <p className="font-medium text-foreground">Full access</p>
+                <p className="font-medium text-foreground">{accessLabel}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Role</p>
@@ -119,19 +132,15 @@ export default function InstitutionAdminProfilePage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Status</p>
-                <p className={cn("font-medium capitalize", "text-emerald-600")}>
-                  Active
-                </p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-xs text-muted-foreground">Session</p>
-                <p className="font-medium text-foreground">Live</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-xs text-muted-foreground">Token</p>
-                <p className="inline-flex items-center gap-1.5 font-mono text-foreground">
-                  <EyeOff className="size-3.5 shrink-0 text-muted-foreground" />
-                  Encrypted in session
+                <p
+                  className={cn(
+                    "font-medium",
+                    summary.institutionStatus === "active"
+                      ? "text-emerald-600"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {institutionStatusLabel}
                 </p>
               </div>
             </div>

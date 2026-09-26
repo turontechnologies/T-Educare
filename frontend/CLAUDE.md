@@ -812,6 +812,29 @@ src="">`, which Next.js's dev overlay warns on (a needless network
   nothing frontend-specific needed here beyond `axios.ts`'s existing error
   passthrough, since the message already reads directly from
   `error.response.data.error`.
+- **`/dashboard/profile`'s "My Institution" card had two more fake fields
+  found and fixed the same pass as the notifications cleanup (2026-09-26)**
+  — asked to make sure institution admin's profile page was "correctly
+  wired to the backend." `Access` was a hardcoded `"Full access"` literal
+  regardless of the real account's `menuKeys`; `Status` was a hardcoded
+  `"Active"` literal regardless of the real institution row; `Session`
+  (`"Live"`) and `Token` (`"Encrypted in session"`) were pure decorative
+  copy with **no real concept behind them anywhere in the app** — no
+  session-management or token-introspection feature exists or was asked
+  for, so these were deleted outright rather than backed by an invented
+  field (the "real-or-honestly-empty" rule doesn't mean inventing a
+  backend just to keep a decorative row alive). `Access`/`Status` did have
+  real data available or trivially addable, so those were wired instead:
+  `Access` now reads the already-existing (just never-rendered)
+  `summary.menuKeysCount` (`0` reads as `"Full access"`, matching how nav
+  filtering already treats a null `menuKeys`; `>0` shows `"Restricted (N
+menu items)"`), and `Status` reads a new `summary.institutionStatus`
+  field (`ProfileService` now does a real `InstitutionRepository.findById`
+  lookup — see `backend/CLAUDE.md`) instead of the literal. Live-verified
+  with Playwright against both `turon_admin` (unrestricted, active
+  institution → "Full access"/"Active") and `amara_bello` (restricted role
+  → "Restricted (N menu items)") — real values differ correctly per
+  account rather than both showing the same hardcoded text.
 - **New nav pages**: most `INSTITUTION_NAV`/`SUPER_ADMIN_NAV` entries beyond
   the ones with real pages currently render `<ModulePlaceholder>`
   (`src/components/shared/module-placeholder.tsx`) — a styled "not built yet"

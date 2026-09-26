@@ -6,6 +6,11 @@ export type ProfileSummary = {
   licensed?: number;
   linkedModules?: number;
   userManagerAccounts?: number;
+  /** institution_admin only. */
+  institutionName?: string;
+  roleId?: string;
+  menuKeysCount?: number;
+  institutionStatus?: string;
   [key: string]: unknown;
 };
 
