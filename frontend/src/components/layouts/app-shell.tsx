@@ -43,9 +43,9 @@ export function AppShell({
         logoSrc={logoSrc}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <AppHeader menu={menu} onMenuClick={() => setMobileNavOpen(true)} />
-        <main className="scrollbar-brand-light min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="scrollbar-brand-light min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
           {/* Keyed by route so every page change replays a fresh, obvious
               entrance transition instead of just snapping into place. */}
           <div
