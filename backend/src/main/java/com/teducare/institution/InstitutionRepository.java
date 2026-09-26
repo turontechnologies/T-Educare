@@ -14,10 +14,12 @@ public interface InstitutionRepository extends JpaRepository<Institution, String
             and (:search is null
                  or lower(i.name) like lower(concat('%', :search, '%'))
                  or lower(i.adminUser) like lower(concat('%', :search, '%')))
+            and (:unlinkedOnly = false or i.moduleKeys is null or i.moduleKeys = '')
             order by i.createdAt desc
             """)
     Page<Institution> search(
             @Param("search") String search,
             @Param("includeArchived") boolean includeArchived,
+            @Param("unlinkedOnly") boolean unlinkedOnly,
             Pageable pageable);
 }

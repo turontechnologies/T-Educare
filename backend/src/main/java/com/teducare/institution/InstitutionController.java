@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.auth.AuthDirectory;
+import com.teducare.auth.AuthenticatedUserDto;
 
 import jakarta.validation.Valid;
 
@@ -37,9 +38,22 @@ public class InstitutionController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int perPage,
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "false") boolean includeArchived) {
-        requireSuperAdmin(authentication);
-        return institutionService.list(page, perPage, search, includeArchived);
+            @RequestParam(defaultValue = "false") boolean includeArchived,
+            @RequestParam(defaultValue = "false") boolean unlinkedOnly) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+
+        // An institution_admin calls this same endpoint (dashboard/layout.tsx,
+        // role-dialog.tsx) to resolve their own institution's live
+        // moduleKeys/name/logo — but must never see the full platform list
+        // (§1's multi-tenancy rule), so they get a single-row view instead of
+        // a 403. Everyone else needs to be a super admin.
+        if ("institution_admin".equals(caller.role())) {
+            return institutionService.listOwn(caller.institutionId());
+        }
+        if (!"super_admin".equals(caller.role())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied.");
+        }
+        return institutionService.list(page, perPage, search, includeArchived, unlinkedOnly);
     }
 
     @GetMapping("/institutions/{id}")
@@ -85,18 +99,29 @@ public class InstitutionController {
         return institutionService.restore(id);
     }
 
+    @PatchMapping("/institutions/{id}/modules")
+    public InstitutionResponse linkModules(
+            Authentication authentication,
+            @PathVariable String id,
+            @Valid @RequestBody LinkModulesRequest request) {
+        requireSuperAdmin(authentication);
+        return institutionService.linkModules(id, request.moduleKeys());
+    }
+
     /** Institutions routes are super-admin only per API_CONTRACT.md §4 — no Spring authorities exist yet (see JwtAuthenticationFilter), so this resolves the caller's real role the same way ProfileController/DashboardController resolve identity: via AuthDirectory. */
     private void requireSuperAdmin(Authentication authentication) {
+        if (!"super_admin".equals(requireCaller(authentication).role())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Super admin access required.");
+        }
+    }
+
+    private AuthenticatedUserDto requireCaller(Authentication authentication) {
         if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
         }
 
-        String role = authDirectory.find(authentication.getName())
-                .map(account -> account.user().role())
-                .orElse(null);
-
-        if (!"super_admin".equals(role)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Super admin access required.");
-        }
+        return authDirectory.find(authentication.getName())
+                .map(AuthDirectory.Account::user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required."));
     }
 }

@@ -2,6 +2,7 @@ package com.teducare.institution;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -10,6 +11,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.teducare.module.ModuleCatalog;
 
 @Service
 public class InstitutionService {
@@ -23,13 +26,14 @@ public class InstitutionService {
         this.repository = repository;
     }
 
-    public Map<String, Object> list(int page, int perPage, String search, boolean includeArchived) {
+    public Map<String, Object> list(
+            int page, int perPage, String search, boolean includeArchived, boolean unlinkedOnly) {
         int safePage = Math.max(1, page);
         int safePerPage = Math.max(1, perPage);
         String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
 
         Page<Institution> result = repository.search(
-                normalizedSearch, includeArchived, PageRequest.of(safePage - 1, safePerPage));
+                normalizedSearch, includeArchived, unlinkedOnly, PageRequest.of(safePage - 1, safePerPage));
 
         return Map.of(
                 "data", result.getContent().stream().map(InstitutionResponse::from).toList(),
@@ -37,6 +41,25 @@ public class InstitutionService {
                         "page", safePage,
                         "perPage", safePerPage,
                         "total", result.getTotalElements()));
+    }
+
+    /**
+     * Multi-tenancy-scoped view for an institution_admin caller — they may
+     * only ever see their own institution record (§1's multi-tenancy rule),
+     * never the full platform list `list()` above returns for a super admin.
+     * Shape-compatible with `list()`'s response so `dashboard/layout.tsx` and
+     * `role-dialog.tsx` (both of which resolve their own institution's live
+     * moduleKeys/name/logo from this same `GET /institutions` response) need
+     * no special-casing on the frontend.
+     */
+    public Map<String, Object> listOwn(String institutionId) {
+        List<InstitutionResponse> data = institutionId == null
+                ? List.of()
+                : repository.findById(institutionId).map(InstitutionResponse::from).map(List::of).orElseGet(List::of);
+
+        return Map.of(
+                "data", data,
+                "meta", Map.of("page", 1, "perPage", data.size(), "total", data.size()));
     }
 
     public InstitutionResponse get(String id) {
@@ -137,6 +160,29 @@ public class InstitutionService {
     public InstitutionResponse restore(String id) {
         Institution institution = requireInstitution(id);
         institution.setArchivedAt(null);
+        return InstitutionResponse.from(repository.save(institution));
+    }
+
+    /**
+     * API_CONTRACT.md §4.6.2 — saving an institution's modules also
+     * activates it (status = "active") as an explicit side effect, matching
+     * the "X is been selected and made active" copy in the "Link New
+     * Institution" dialog.
+     */
+    public InstitutionResponse linkModules(String id, List<String> moduleKeys) {
+        Institution institution = requireInstitution(id);
+        List<String> keys = moduleKeys == null ? List.of() : moduleKeys;
+
+        for (String key : keys) {
+            if (!ModuleCatalog.KEYS.contains(key)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown module key: " + key);
+            }
+        }
+
+        institution.setModuleKeys(keys.isEmpty() ? null : String.join(",", keys));
+        institution.setModulesCount(keys.size());
+        institution.setModulesLastEditedAt(Instant.now());
+        institution.setStatus("active");
         return InstitutionResponse.from(repository.save(institution));
     }
 

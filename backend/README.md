@@ -75,6 +75,8 @@ backend/
 │  │  │  ├─ common/       # GlobalExceptionHandler
 │  │  │  ├─ dashboard/    # super-admin + institution-admin dashboard stats
 │  │  │  ├─ institution/  # Institutions list/create/edit/status/archive (super admin)
+│  │  │  ├─ usermanager/  # User Manager — institution_admin accounts (super admin)
+│  │  │  ├─ module/       # Modules catalog + linking modules to an institution
 │  │  │  ├─ profile/      # GET/PATCH profile, password change
 │  │  │  ├─ upload/       # POST /uploads (Cloudinary)
 │  │  │  ├─ health/
@@ -150,6 +152,36 @@ same account as the sibling `t-coop-backend` project — credentials in
 `.env`, never in `.env.example`). Any authenticated user can call it; PNG/
 JPEG/WEBP only, 5MB max. Wired to the frontend for institution logos, User
 Manager avatars, and (as of 2026-09-24) individual profile avatars too.
+
+**§4.6 Modules is real now too, backend-only (2026-09-26)** — extends the
+existing `Institution` resource rather than a new table (`module_keys`,
+`modules_last_edited_at`, `modules_count` columns already existed on
+`dbo.institutions`, unused until now). New endpoints:
+`GET /modules` (the fixed 19-entry catalog, `module/ModuleCatalog.java` —
+must stay key-for-key in sync with `frontend/src/config/modules.ts`),
+`PATCH /institutions/:id/modules` (a full **replace** of `moduleKeys`, not
+an additive merge — whatever list is sent becomes the institution's entire
+module set; also sets `modulesCount`/`modulesLastEditedAt` and activates the
+institution, per the documented "X is been selected and made active" side
+effect; rejects an unknown key with `400`), and
+`GET /institutions?unlinkedOnly=true` (only institutions with an empty
+`moduleKeys`, for the "Select an Institution" dropdown in the "Link New
+Institution" dialog).
+
+**A real, previously-undetected bug was caught and fixed while building
+this**: `GET /institutions` was gated `super_admin`-only, but
+`dashboard/layout.tsx` (the institution_admin side) calls this exact same
+endpoint to resolve its own institution's live `moduleKeys`/name/logo —
+meaning every institution_admin session was silently getting a `403` on
+that fetch, resolving an *empty* `moduleKeys` list, which gated their whole
+nav down to only the ungated items (Dashboard, Academic Sessions, User
+Management) regardless of what modules the super admin had actually
+switched on for them. Confirmed live against `turon_admin` before fixing —
+not hypothetical. Fixed by scoping `GET /institutions` per caller instead
+of a blanket role check: a `super_admin` still gets the full paginated list;
+an `institution_admin` now gets a single-row response containing only their
+own institution (`InstitutionService.listOwn`), never the full platform
+list (§1's multi-tenancy rule) but no longer a `403` either.
 
 **§4.5 User Manager is now wired to the frontend as well (2026-09-24)** —
 `/super-admin/user-manager` calls the real endpoints directly (no more
