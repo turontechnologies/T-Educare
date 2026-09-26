@@ -35,9 +35,9 @@ class ModuleControllerTest {
         mockMvc.perform(get("/api/modules")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(19))
-                .andExpect(jsonPath("$.data[0].key").value("payment"))
-                .andExpect(jsonPath("$.data[0].label").value("Payment module"));
+                .andExpect(jsonPath("$.data.length()").value(22))
+                .andExpect(jsonPath("$.data[0].key").value("registration"))
+                .andExpect(jsonPath("$.data[0].label").value("Registration"));
     }
 
     private String loginAs(String username, String password) throws Exception {

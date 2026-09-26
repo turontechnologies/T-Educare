@@ -468,24 +468,58 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   beyond "not linked," add the check where the other layout role-redirects
   live.
 - **RBAC has a second, module-gating layer above roles**: a `NavItem` in
-  `nav.ts` can carry an optional `moduleKey` (one of the keys in
-  `src/config/modules.ts`), and `filterNavByModules()` filters a nav tree
-  down to only items whose `moduleKey` is in the current institution's
-  `Institution.moduleKeys` (set by a super admin on `/super-admin/modules` —
-  see `institution-modules-dialog.tsx`); items with no `moduleKey` are
-  ungated and always available. `dashboard/layout.tsx` and
-  `role-dialog.tsx`'s `RoleForm` both apply `filterNavByModules` **before**
-  `filterNavByAccess` — so an institution's root admin ("unrestricted") only
-  ever sees what their institution has been switched on for, and a custom
-  Role's menu-access picker can never offer a menu item the institution
-  itself doesn't have. Not every nav item has a matching module yet (e.g.
-  Academic Sessions, Programs, Announcements) — those stay ungated rather
-  than forcing a dubious mapping; only add a `moduleKey` where the
-  correspondence is genuinely clear. `turon_admin` is pinned to
-  `inst-xyz-college`, deliberately seeded with every module active, so it
-  always shows a full nav — verified during development that pointing a
-  login at a partially-linked institution (e.g. Babcock's 10-of-19 module
-  set) correctly hides Registration, Transport, and most of Academics.
+  `nav.ts` can carry an optional `moduleKey` (one of the keys in the real
+  catalog, `GET /modules` → `types/module.ts`), and `filterNavByModules()`
+  filters a nav tree down to only items whose `moduleKey` is in the current
+  institution's `Institution.moduleKeys` (set by a super admin on
+  `/super-admin/modules` — see `institution-modules-dialog.tsx`); a leaf
+  item with no `moduleKey` is ungated and always available. `dashboard
+/layout.tsx` and `role-dialog.tsx`'s `RoleForm` both apply
+  `filterNavByModules` **before** `filterNavByAccess` — so an institution's
+  root admin ("unrestricted") only ever sees what their institution has
+  been switched on for, and a custom Role's menu-access picker can never
+  offer a menu item the institution itself doesn't have.
+  **Every real page has a `moduleKey` now (2026-09-26)** — explicitly
+  requested: the assignable list on the Modules page must match the
+  institution admin's own frontend one-to-one, not a partial mapping. The
+  only exception is `dashboard` itself, always available once the
+  institution is reachable at all. This is why `filterNavByModules`'s
+  parent-survival rule had to change at the same time: `Academics` and
+  `Staff Management` are pure grouping nodes with no `moduleKey` of their
+  own, and used to always render (even with zero active children) because
+  the old rule treated "no `moduleKey`" as "always active" regardless of
+  children — harmless back when each always had at least one permanently-
+  ungated child (Session Management, Designation, etc.), but once every
+  child became individually gated, that produced an empty, pointless
+  expandable "Staff Management" shell in the sidebar with nothing under it.
+  Caught via a real, live institution-admin session during testing, not
+  hypothetically. Fixed: a childless-of-its-own-gate parent now survives
+  only if at least one child survives; a leaf with no `moduleKey` is
+  unaffected. `turon_admin` is pinned to `inst-xyz-college`, kept seeded
+  with every one of the 22 real modules active, so it always shows the
+  full nav — re-verified live after this fix (narrowing to a 2-module
+  subset correctly collapsed both group parents along with everything
+  else not in that subset, then restoring to all 22 brought the full tree
+  back, all without a page reload — see the next bullet on why "without a
+  reload" matters now).
+- **Module assignment now reaches an already-open institution_admin
+  session live, not just on next login (2026-09-26)** — explicitly
+  requested ("make these modules assignment thing... function realtime
+  down to institution admin effect"). `dashboard/layout.tsx`'s
+  `useInstitutions()` call gained `refetchInterval: 10_000`
+  (`hooks/use-institutions.ts`'s `useInstitutions` now accepts an optional
+  `refetchInterval` alongside `enabled`, defaulting to `false` — every
+  other call site, including `super-admin/layout.tsx`'s own institutions
+  fetch and the Modules dialog's `unlinkedOnly` fetch, is unaffected).
+  There's no WebSocket/SSE/push layer anywhere in this backend, and a
+  low-frequency admin config change like linking modules doesn't warrant
+  building one — 10-second polling is the right-sized fix, not
+  over-engineering a push channel for something this infrequent.
+  Live-verified end-to-end with a real open browser tab: logged in as
+  `turon_admin`, narrowed their institution's modules via the real API
+  from a second session while the first tab stayed open and un-reloaded,
+  and confirmed the sidebar updated correctly within the poll window on
+  its own.
 - **`authService.login` no longer matches against `UserManagerAccount`
   records — it's a real HTTP call now, and only the backend's 3 demo
   accounts can actually log in.** This used to be mocked entirely

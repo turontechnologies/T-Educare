@@ -26,7 +26,7 @@ class ProfileControllerTest {
         mockMvc.perform(get("/api/profile")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.profile.email").value("ada.okoye@turontech.com"))
+                .andExpect(jsonPath("$.profile.email").value("ade.adetunji@turontech.com"))
                 .andExpect(jsonPath("$.summary.institutionsCount").isNumber())
                 .andExpect(jsonPath("$.summary.userManagerAccounts").isNumber());
     }

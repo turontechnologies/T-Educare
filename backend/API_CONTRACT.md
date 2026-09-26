@@ -553,9 +553,9 @@ routes, unlike every admin-facing resource elsewhere in this contract.
 {
   "profile": {
     "id": "demo-super-admin",
-    "firstName": "Ada",
-    "lastName": "Okoye",
-    "email": "ada.okoye@turontech.com",
+    "firstName": "Adetunji",
+    "lastName": "Aderinwale",
+    "email": "ade.adetunji@turontech.com",
     "role": "super_admin",
     "institutionId": null,
     "institutionName": null,
@@ -860,17 +860,28 @@ new fields on `INSTITUTION` in the ER diagram above:
 #### 4.6.1 Module catalog
 
 ```
-GET /modules   → 200, { "data": [ { "key": "payment", "label": "Payment module" }, ... ] }
+GET /modules   → 200, { "data": [ { "key": "registration", "label": "Registration" }, ... ] }
 ```
 
-A small, fixed, server-owned list (not institution-specific) — the frontend
-currently hardcodes it at `frontend/src/config/modules.ts` (19 entries:
-Payment module, Students, Lecturer, Exams, Results, Reports, SMS
-Integration, USSD Services, Hotels, Accommodations, Registration, Faculty,
-Department, School, Courses, Transport, Referral Application, Resit
-Module, Admission). Expose it as a real endpoint so the catalog can grow
-without a frontend redeploy; keep the same `key`s if so, since they're
-referenced by every institution's `moduleKeys`.
+A small, fixed, server-owned list (not institution-specific) — a real
+endpoint (`backend/module/ModuleCatalog.java`) rather than a frontend
+constant, so the catalog can grow without a frontend redeploy. **Every
+entry corresponds to exactly one real nav item in the institution_admin
+dashboard, and every real nav item has exactly one entry here** (2026-09-26,
+explicitly requested — the assignable list must match the institution
+admin's own frontend one-to-one, not an aspirational broader catalog or a
+partial mapping): Registration, Session Management, School Management,
+Faculty Management, Department Management, Program Management, Program
+Levels, Courses Grades, Courses Management, Student Management,
+Designation, All Staff, User Management, Lecture Management, Financials,
+Results Management, Hostel Management, Transport Management, Announcement,
+Notifications, Requests, Support (22 entries). The only nav item
+deliberately excluded is `dashboard` itself — always available once the
+institution is reachable at all. Keep the same `key`s if the catalog
+changes, since they're referenced by every institution's `moduleKeys`, and
+keep `frontend/src/config/nav.ts`'s `moduleKey`s in sync in both
+directions — a mismatch either orphans an assignable module with no nav
+effect, or leaves a real page impossible to grant/revoke from this screen.
 
 #### 4.6.2 List / link / edit
 

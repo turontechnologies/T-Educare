@@ -116,10 +116,12 @@ archive/restore) are also real now, and wired to the frontend** —
 (`DemoInstitutionSeeder.java`) including the two already referenced by the
 `turon_admin`/`amara_bello` login accounts. `institutions.store.ts` no
 longer mocks this — it's hydrated from the real endpoints (see
-`frontend/CLAUDE.md`). §4.6 (Modules) and §4.7 (License Manager) remain
-unbuilt — the frontend's actions for those stay local-only (in-memory,
-reset on reload), clearly flagged in their own UI rather than pretending
-to persist. Everything else in `API_CONTRACT.md` (roles, users, academics,
+`frontend/CLAUDE.md`). §4.5 (User Manager) and §4.6 (Modules) are also
+real and wired to the frontend now (see their own sections below); only
+§4.7 (License Manager) remains unbuilt — its dialog's actions stay
+local-only (in-memory, reset on reload), clearly flagged in its own UI
+rather than pretending to persist. Everything else in `API_CONTRACT.md`
+(roles, users, academics,
 staff, students, notifications, etc.) has no backend yet — the frontend
 still mocks those via its Zustand stores.
 

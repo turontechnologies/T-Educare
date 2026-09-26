@@ -12,10 +12,67 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { NotchedComboboxField } from "@/components/shared/notched-field";
+import { INSTITUTION_NAV, type NavItem } from "@/config/nav";
 import { notifyInstitution, notifyPlatform } from "@/lib/notify";
 import { useModuleCatalog } from "@/hooks/use-modules";
 import { useInstitutions, useLinkModules } from "@/hooks/use-institutions";
 import { useInstitutionsStore } from "@/store/institutions.store";
+import type { PlatformModule } from "@/types/module";
+
+interface ModuleWithIcon extends PlatformModule {
+  icon: NavItem["icon"];
+}
+
+interface ModuleGroup {
+  /** The parent nav item's own label (e.g. "Academics") and icon — shown as a heading only when the group has more than one module, i.e. it's genuinely a set of sub-modules. */
+  label: string;
+  icon: NavItem["icon"];
+  modules: ModuleWithIcon[];
+}
+
+/**
+ * Mirrors `INSTITUTION_NAV`'s real structure — including its icons — so
+ * this dialog visually reads as the same feature set the institution
+ * admin's own sidebar shows, grouped the same way (e.g. School/Faculty/
+ * Department/Courses Management render together under an "Academics"
+ * heading, exactly like they nest under the Academics nav item there)
+ * rather than one undifferentiated flat grid. Filtered against the fetched
+ * catalog (not assumed) so a key present in nav.ts but dropped from the
+ * backend catalog (or vice versa) never renders a checkbox for something
+ * the backend would reject.
+ */
+function groupModulesByNav(catalog: PlatformModule[]): ModuleGroup[] {
+  const byKey = new Map(catalog.map((module) => [module.key, module]));
+  const withIcon = (item: NavItem): ModuleWithIcon => ({
+    ...byKey.get(item.moduleKey!)!,
+    icon: item.icon,
+  });
+  const groups: ModuleGroup[] = [];
+
+  for (const item of INSTITUTION_NAV) {
+    if (item.moduleKey && byKey.has(item.moduleKey)) {
+      groups.push({
+        label: item.label,
+        icon: item.icon,
+        modules: [withIcon(item)],
+      });
+    }
+    if (item.children) {
+      const childModules = item.children
+        .filter((child) => child.moduleKey && byKey.has(child.moduleKey))
+        .map(withIcon);
+      if (childModules.length > 0) {
+        groups.push({
+          label: item.label,
+          icon: item.icon,
+          modules: childModules,
+        });
+      }
+    }
+  }
+
+  return groups;
+}
 
 interface InstitutionModulesDialogProps {
   open: boolean;
@@ -33,7 +90,7 @@ export function InstitutionModulesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-xl gap-0 overflow-hidden p-0 sm:max-w-xl"
+        className="w-full max-w-2xl gap-0 overflow-hidden p-0 sm:max-w-2xl"
       >
         <div className="flex items-center justify-between bg-primary px-6 py-4">
           <DialogTitle className="text-base font-medium text-white">
@@ -71,6 +128,7 @@ function InstitutionModulesForm({
   const linkModules = useLinkModules();
   const { data: catalogData, isLoading: catalogLoading } = useModuleCatalog();
   const catalog = catalogData?.data ?? [];
+  const moduleGroups = groupModulesByNav(catalog);
 
   const isEditing = !!institutionId;
 
@@ -220,34 +278,60 @@ function InstitutionModulesForm({
         )}
 
         <div className="border-t border-border pt-4">
-          <p className="mb-3 text-sm font-medium text-foreground">
-            Select the modules/features to be activated for the selected
-            Institution
-          </p>
-          <div className="rounded-md border border-border">
-            <label className="flex cursor-pointer items-center gap-2.5 border-b border-border bg-muted px-3 py-2.5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-foreground">
+              Select the modules/features to be activated for the selected
+              institution
+            </p>
+            <span
+              key={moduleKeys.size}
+              className="animate-in zoom-in-95 shrink-0 rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary duration-200 ease-out"
+            >
+              {moduleKeys.size} of {catalog.length} selected
+            </span>
+          </div>
+          <div className="max-h-[42vh] overflow-y-auto rounded-md border border-border">
+            <label className="sticky top-0 z-10 flex cursor-pointer items-center gap-2.5 border-b border-border bg-muted px-3 py-2.5">
               <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
               <span className="text-sm font-medium">Select All Modules</span>
             </label>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-3 sm:grid-cols-4">
-              {catalogLoading && (
-                <p className="col-span-full text-sm text-muted-foreground">
-                  Loading modules...
-                </p>
-              )}
-              {catalog.map((module) => (
-                <label
-                  key={module.key}
-                  className="flex cursor-pointer items-center gap-2.5 text-sm"
+            {catalogLoading && (
+              <p className="p-3 text-sm text-muted-foreground">
+                Loading modules...
+              </p>
+            )}
+            <div className="divide-y divide-border">
+              {moduleGroups.map((group, index) => (
+                <div
+                  key={group.label}
+                  style={{ animationDelay: `${index * 40}ms` }}
+                  className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both p-3 duration-300 ease-out"
                 >
-                  <Checkbox
-                    checked={moduleKeys.has(module.key)}
-                    onCheckedChange={(checked) =>
-                      toggleModule(module.key, checked)
-                    }
-                  />
-                  {module.label}
-                </label>
+                  {group.modules.length > 1 && (
+                    <p className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                      <group.icon className="size-3.5" />
+                      {group.label}
+                    </p>
+                  )}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+                    {group.modules.map((module) => (
+                      <label
+                        key={module.key}
+                        className="group flex cursor-pointer items-center gap-2 text-sm"
+                      >
+                        <Checkbox
+                          className="transition-transform duration-150 ease-out data-checked:scale-110"
+                          checked={moduleKeys.has(module.key)}
+                          onCheckedChange={(checked) =>
+                            toggleModule(module.key, checked)
+                          }
+                        />
+                        <module.icon className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{module.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

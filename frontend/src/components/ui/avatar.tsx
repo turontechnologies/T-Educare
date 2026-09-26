@@ -24,10 +24,21 @@ function Avatar({
   );
 }
 
-function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
+function AvatarImage({
+  className,
+  src,
+  ...props
+}: AvatarPrimitive.Image.Props) {
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
+      // Several real API responses normalize an absent url to "" rather
+      // than omitting the field/using null (see backend AuthDirectory) —
+      // an empty string is still a "truthy enough to pass down" value, but
+      // Next.js warns on <img src=""> (a needless network request for the
+      // current page), so treat it the same as "no image" here rather than
+      // patching every call site that might receive one.
+      src={src || undefined}
       className={cn(
         "aspect-square size-full rounded-full object-cover",
         className,

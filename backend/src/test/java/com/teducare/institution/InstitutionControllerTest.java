@@ -171,7 +171,7 @@ class InstitutionControllerTest {
             mockMvc.perform(patch("/api/institutions/" + id + "/modules")
                     .header("Authorization", "Bearer " + token)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"moduleKeys\":[\"payment\",\"students\",\"exams\"]}"))
+                    .content("{\"moduleKeys\":[\"payment\",\"students\",\"results\"]}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.moduleKeys.length()").value(3))
                     .andExpect(jsonPath("$.moduleKeys[0]").value("payment"))

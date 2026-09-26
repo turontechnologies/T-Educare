@@ -44,10 +44,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   // The institution_admin's own nav is capped by their institution's real
   // moduleKeys (filterNavByModules below) — hydrate the shared store from
-  // the real backend the same way super-admin/layout.tsx does.
+  // the real backend the same way super-admin/layout.tsx does. Polled every
+  // few seconds (not just on mount/refocus) so a super admin assigning/
+  // changing this institution's modules reaches an already-open session
+  // live, without needing a fresh login — there's no push/WebSocket layer
+  // in this backend, and a low-frequency admin config change like this one
+  // doesn't warrant building one; short polling is the right-sized fix.
   const { data: institutionsData } = useInstitutions(
     { includeArchived: true, perPage: 1000 },
-    { enabled: hasHydrated && !!token && user?.role === "institution_admin" },
+    {
+      enabled: hasHydrated && !!token && user?.role === "institution_admin",
+      refetchInterval: 4_000,
+    },
   );
   useEffect(() => {
     if (institutionsData) setInstitutions(institutionsData.data);

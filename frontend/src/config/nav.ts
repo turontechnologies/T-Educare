@@ -29,11 +29,13 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   /**
-   * Key from the real module catalog (`GET /modules`, `types/module.ts`) this item requires to be activated for
-   * the institution (see `filterNavByModules`). Omit for items that aren't
-   * gated by a super-admin-toggleable module (e.g. Dashboard, User
-   * Management, or setup pages with no module counterpart yet like Academic
-   * Sessions) — those are always available once their parent is reachable.
+   * Key from the real module catalog (`GET /modules`, `types/module.ts`)
+   * this item requires to be activated for the institution (see
+   * `filterNavByModules`). Every real page has one (2026-09-26) — every
+   * super-admin-assignable module corresponds to exactly one nav item and
+   * vice versa. Omit only for `dashboard` itself, which is always available
+   * once the institution is reachable at all (a logged-in user needs
+   * somewhere to land regardless of what's been assigned).
    */
   moduleKey?: string;
   children?: NavItem[];
@@ -64,6 +66,7 @@ export const INSTITUTION_NAV: NavItem[] = [
         label: "Session Management",
         href: "/dashboard/academics/sessions",
         icon: CalendarRange,
+        moduleKey: "academic-sessions",
       },
       {
         key: "academics.schools",
@@ -91,18 +94,21 @@ export const INSTITUTION_NAV: NavItem[] = [
         label: "Program Management",
         href: "/dashboard/academics/programs",
         icon: LayoutGrid,
+        moduleKey: "programs",
       },
       {
         key: "academics.program-levels",
         label: "Program Levels",
         href: "/dashboard/academics/program-levels",
         icon: BadgeCheck,
+        moduleKey: "program-levels",
       },
       {
         key: "academics.course-grades",
         label: "Courses Grades",
         href: "/dashboard/academics/course-grades",
         icon: ClipboardCheck,
+        moduleKey: "course-grades",
       },
       {
         key: "academics.courses",
@@ -131,12 +137,14 @@ export const INSTITUTION_NAV: NavItem[] = [
         label: "Designation",
         href: "/dashboard/staff/designation",
         icon: BadgeCheck,
+        moduleKey: "staff-designation",
       },
       {
         key: "staff.all",
         label: "All Staff",
         href: "/dashboard/staff/all",
         icon: Users,
+        moduleKey: "staff-all",
       },
     ],
   },
@@ -145,6 +153,7 @@ export const INSTITUTION_NAV: NavItem[] = [
     label: "User Management",
     href: "/dashboard/user-management",
     icon: UserCog,
+    moduleKey: "user-management",
   },
   {
     key: "lectures",
@@ -186,24 +195,28 @@ export const INSTITUTION_NAV: NavItem[] = [
     label: "Announcement",
     href: "/dashboard/announcements",
     icon: Megaphone,
+    moduleKey: "announcements",
   },
   {
     key: "notifications",
     label: "Notifications",
     href: "/dashboard/notifications",
     icon: Bell,
+    moduleKey: "notifications",
   },
   {
     key: "requests",
     label: "Requests",
     href: "/dashboard/requests",
     icon: Inbox,
+    moduleKey: "requests",
   },
   {
     key: "support",
     label: "Support",
     href: "/dashboard/support",
     icon: LifeBuoy,
+    moduleKey: "support",
   },
 ];
 
@@ -256,11 +269,19 @@ export function collectAllMenuKeys(items: NavItem[]): string[] {
 
 /**
  * Filters a nav tree down to what an institution's activated modules unlock
- * (see `types/module.ts` and the super-admin Modules page). An item
+ * (see `types/module.ts` and the super-admin Modules page). A leaf item
  * with no `moduleKey` is always available — it isn't gated by a toggleable
- * module. A parent survives if it's ungated/active itself or if any child
- * survives. This runs *before* `filterNavByAccess`: it caps what exists for
- * the institution at all; role-based access then narrows that further.
+ * module (only `dashboard` itself, as of 2026-09-26 — every other real page
+ * has one). A parent (Academics, Staff Management) is a pure grouping node,
+ * not independently gated — it survives only if at least one of its
+ * children does. It must never render as an empty, pointless expandable
+ * shell just because it has no `moduleKey` of its own: that was only safe
+ * back when every parent had at least one always-ungated child (Session
+ * Management, Program Management, etc., before those also got individual
+ * moduleKeys) — confirmed as a real, live bug via a real-time institution
+ * login test, not hypothetical, once that stopped being true. This runs
+ * *before* `filterNavByAccess`: it caps what exists for the institution at
+ * all; role-based access then narrows that further.
  */
 export function filterNavByModules(
   items: NavItem[],
@@ -271,8 +292,10 @@ export function filterNavByModules(
   const walk = (list: NavItem[]): NavItem[] =>
     list.reduce<NavItem[]>((acc, item) => {
       const children = item.children ? walk(item.children) : undefined;
-      const isActive = !item.moduleKey || active.has(item.moduleKey);
-      const survives = isActive || (children && children.length > 0);
+      const ownActive = !item.moduleKey || active.has(item.moduleKey);
+      const survives = item.moduleKey
+        ? ownActive
+        : (children?.length ?? 0) > 0 || !item.children;
       if (survives) {
         acc.push(children ? { ...item, children } : item);
       }

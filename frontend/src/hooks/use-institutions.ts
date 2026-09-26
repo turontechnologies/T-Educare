@@ -15,13 +15,14 @@ const institutionsKey = (params: InstitutionsListParams) => [
 /** Fetches the full institutions list (large perPage — see institutions.store.ts for why). */
 export function useInstitutions(
   params: InstitutionsListParams = {},
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; refetchInterval?: number | false } = {},
 ) {
   return useQuery({
     queryKey: institutionsKey(params),
     queryFn: () => institutionService.list(params),
     staleTime: 30_000,
     enabled: options.enabled ?? true,
+    refetchInterval: options.refetchInterval ?? false,
   });
 }
 
