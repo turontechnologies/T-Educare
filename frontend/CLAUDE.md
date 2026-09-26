@@ -608,24 +608,38 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   for its own real-API-backed state (§ above). Every read-only consumer
   (`app-header.tsx`, `user-manager-dialog.tsx`, `role-dialog.tsx`,
   `dashboard/layout.tsx`'s own module-gating) needed **zero code changes**
-  — they already just read `state.institutions`. **License Manager
-  (`/super-admin/license-manager`) has no backend yet (§4.7 isn't
-  built)**, so its dialog (and its own Regenerate-key/Revoke confirm
-  dialogs, which bypass the form entirely) still calls
-  `state.updateInstitution(id, patch)` for `licenseType`/`licenseKey`/etc.,
-  explicitly **local-only** — it layers a patch on top of the real data via
-  an internal `localOverrides` map rather than mutating the real array
-  directly, specifically so a background refetch of real institutions
-  (e.g. the layout's query going stale) doesn't silently wipe an
-  in-progress local edit mid-session. It says so directly in the UI — an
-  amber notice or an appended confirm description — rather than showing a
-  fake "saved" toast with nothing behind it. `institutions.store.ts`
-  dropped `persist` entirely (no longer mock data to survive a refresh;
-  License Manager's own local overrides are
-  intentionally ephemeral, resetting on reload, so they never look "saved"
-  when they aren't) and dropped `createInstitution`/`archiveInstitution`/
-  `restoreInstitution` (moved to the real mutation hooks, called directly
-  from `institutions/page.tsx`/`institution-dialog.tsx`).
+  — they already just read `state.institutions`. `institutions.store.ts`
+  dropped `persist` entirely (no longer mock data to survive a refresh) and
+  dropped `createInstitution`/`archiveInstitution`/`restoreInstitution`
+  (moved to the real mutation hooks, called directly from
+  `institutions/page.tsx`/`institution-dialog.tsx`).
+- **License Manager (`/super-admin/license-manager`) is real now too,
+  wired to the backend built the same day (2026-09-26)** — the dialog now
+  calls `useSaveLicense()`/`useRegenerateLicenseKey()`/`useRevokeLicense()`
+  (`hooks/use-institutions.ts`) instead of the store's local-only
+  `updateInstitution()`, the amber "not backed by the server yet" notice is
+  gone, and the "Select Institution" picker fetches
+  `useInstitutions({ unlicensedOnly: true })` fresh from the server rather
+  than filtering the already-hydrated store client-side (same reasoning as
+  Modules' unlinkedOnly picker — it can't go stale if another admin issues
+  a license moments earlier). The frontend no longer sends
+  `licenseIssuedAt` at all — the backend now owns that field entirely
+  (set once, immutable), where the old mock code used to compute it
+  client-side. **This was License Manager's last local-only consumer, so
+  `institutions.store.ts`'s `localOverrides`/`merge()`/`updateInstitution()`
+  machinery is deleted outright, not just unused** — the store is back to
+  the same simple shape `dashboard.store.ts` uses for its own real-API-backed
+  state (`{ institutions, setInstitutions }`, nothing else). Every field on
+  `Institution` is real and server-backed now; there is no longer any
+  "local-only, resets on reload" resource left anywhere in this app.
+  End-to-end Playwright-verified against the live dev server + real
+  backend: created a real Premium license for a real unlicensed
+  institution (real institution picker, real date picker, real generated
+  key), confirmed it appears in the table, reopened it to confirm the edit
+  dialog pre-fills and locks the institution field, regenerated the key,
+  revoked it, and confirmed via both a fresh page load and a direct API
+  check that it was actually removed from the licensed table server-side —
+  zero console/HTTP errors throughout.
 - **Modules (`/super-admin/modules`) is real now too, wired to the backend
   built the same day (2026-09-26)** — `config/modules.ts`'s hardcoded
   19-entry `PLATFORM_MODULES` array is gone; the catalog now comes from a

@@ -196,8 +196,8 @@ Institutions — is reflected for that user without requiring a fresh
 login, since the backend already resolved all of this live on every
 `/auth/me` call and the frontend just wasn't asking again mid-session.
 
-**§4.7 License Manager is real now too, backend-only (2026-09-26)** — the
-same "extend `Institution`, don't add a table" pattern as Modules:
+**§4.7 License Manager is real, and wired to the frontend (2026-09-26)** —
+the same "extend `Institution`, don't add a table" pattern as Modules:
 `licenseType`/`expiringAt`/`licenseKey`/`licenseIssuedAt` all already
 existed as columns (added alongside Institutions/Modules), just with no
 endpoint to write the license-specific two of them until now (`tokenKey`
@@ -216,8 +216,11 @@ license to regenerate a key for), and `POST /institutions/:id/revoke-license`
 without archiving or otherwise touching the institution itself), plus
 `GET /institutions?unlicensedOnly=true` for the "Select Institution"
 dropdown in "Create New License" (must never offer an institution that
-already has one). Not yet wired to the frontend — `/super-admin/license-manager`
-still reads/writes `institutions.store.ts`'s local-only `updateInstitution()`.
+already has one). `/super-admin/license-manager` calls these real endpoints
+directly now — this was the app's last remaining local-only screen, so
+`institutions.store.ts`'s `localOverrides`/`updateInstitution()` machinery
+(see `frontend/CLAUDE.md`) is deleted outright, not just unused. Every
+field on every resource this backend covers is real and server-backed now.
 
 Verified end-to-end via `docker compose up -d --build` (both `sqlserver` and
 `app` services): Flyway applies all 3 migrations, the app connects to
