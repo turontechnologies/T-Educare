@@ -13,5 +13,7 @@ public record UpdateUserManagerRequest(
         String username,
         String institutionId,
         Boolean isPrimaryAdmin,
-        String avatarUrl) {
+        String avatarUrl,
+        /** Left out entirely keeps the current value (same convention as phone/avatarUrl); an explicit blank string clears it back to unrestricted. */
+        String roleId) {
 }

@@ -17,6 +17,8 @@ import com.teducare.auth.UserAccountRepository;
 import com.teducare.institution.Institution;
 import com.teducare.institution.InstitutionRepository;
 import com.teducare.notification.NotificationService;
+import com.teducare.role.Role;
+import com.teducare.role.RoleRepository;
 
 @Service
 public class UserManagerService {
@@ -28,16 +30,19 @@ public class UserManagerService {
 
     private final UserAccountRepository repository;
     private final InstitutionRepository institutionRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
     public UserManagerService(
             UserAccountRepository repository,
             InstitutionRepository institutionRepository,
+            RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
             NotificationService notificationService) {
         this.repository = repository;
         this.institutionRepository = institutionRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
     }
@@ -154,6 +159,20 @@ public class UserManagerService {
         }
         if (request.avatarUrl() != null) {
             account.setAvatarUrl(request.avatarUrl());
+        }
+        if (request.roleId() != null) {
+            if (request.roleId().isBlank()) {
+                // Explicit blank clears it back to unrestricted (root-admin) access.
+                account.setRoleId(null);
+            } else {
+                Role role = roleRepository.findByIdAndInstitutionId(request.roleId(), account.getInstitutionId())
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST, "Role not found for this account's institution."));
+                if (role.getArchivedAt() != null) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "That role has been archived.");
+                }
+                account.setRoleId(role.getId());
+            }
         }
 
         UserAccount saved = repository.save(account);

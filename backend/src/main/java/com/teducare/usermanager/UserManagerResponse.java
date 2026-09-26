@@ -18,6 +18,7 @@ public record UserManagerResponse(
         String institutionName,
         boolean isPrimaryAdmin,
         String avatarUrl,
+        String roleId,
         String status,
         Instant createdAt,
         Instant archivedAt) {
@@ -37,6 +38,7 @@ public record UserManagerResponse(
                 account.getInstitutionName(),
                 account.isPrimaryAdmin(),
                 account.getAvatarUrl(),
+                account.getRoleId(),
                 account.getStatus(),
                 account.getCreatedAt(),
                 account.getArchivedAt());

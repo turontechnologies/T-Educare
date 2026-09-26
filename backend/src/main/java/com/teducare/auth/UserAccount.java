@@ -188,6 +188,10 @@ public class UserAccount {
         return roleId;
     }
 
+    public void setRoleId(String roleId) {
+        this.roleId = roleId;
+    }
+
     public String getMenuKeys() {
         return menuKeys;
     }

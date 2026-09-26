@@ -58,7 +58,12 @@ public class DemoAccountSeeder {
                         "institution_admin",
                         "inst-xyz-college",
                         "XYZ College of Technology",
-                        "role-institution-admin",
+                        // Unrestricted root admin — represented by roleId == null, same
+                        // convention every real institution created since has followed
+                        // (see V7__roles.sql for the one-time backfill of this exact
+                        // row, since the seeder itself only ever runs against an empty
+                        // table and can't retroactively fix an already-seeded database).
+                        null,
                         null,
                         "08022223333",
                         "",

@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 
 import com.teducare.institution.Institution;
 import com.teducare.institution.InstitutionRepository;
+import com.teducare.role.Role;
+import com.teducare.role.RoleRepository;
 
 @Component
 public class AuthDirectory {
@@ -27,14 +29,17 @@ public class AuthDirectory {
 
         private final UserAccountRepository repository;
         private final InstitutionRepository institutionRepository;
+        private final RoleRepository roleRepository;
         private final PasswordEncoder passwordEncoder;
 
         public AuthDirectory(
                         UserAccountRepository repository,
                         InstitutionRepository institutionRepository,
+                        RoleRepository roleRepository,
                         PasswordEncoder passwordEncoder) {
                 this.repository = repository;
                 this.institutionRepository = institutionRepository;
+                this.roleRepository = roleRepository;
                 this.passwordEncoder = passwordEncoder;
         }
 
@@ -117,7 +122,7 @@ public class AuthDirectory {
                                                 entity.getInstitutionId(),
                                                 institutionName,
                                                 entity.getRoleId(),
-                                                splitMenuKeys(entity.getMenuKeys()),
+                                                resolveMenuKeys(entity.getRoleId()),
                                                 entity.getPhone(),
                                                 entity.getAvatarUrl(),
                                                 institutionLogoUrl),
@@ -125,7 +130,23 @@ public class AuthDirectory {
                                 entity.getArchivedAt());
         }
 
-        private static List<String> splitMenuKeys(String menuKeys) {
-                return (menuKeys == null || menuKeys.isBlank()) ? null : List.of(menuKeys.split(","));
+        /**
+         * Always resolved live against the real Role row, never a stale
+         * snapshot — the same "no denormalized copy trusted at login" rule
+         * already applied to institution name/logo above. {@code roleId ==
+         * null} is this account's unrestricted root-admin state; there is no
+         * "system role" row to look up for that case. A {@code roleId} that
+         * no longer resolves to any row (a data inconsistency, not a normal
+         * state) fails open to unrestricted rather than silently locking the
+         * account out of everything.
+         */
+        private List<String> resolveMenuKeys(String roleId) {
+                if (roleId == null || roleId.isBlank()) {
+                        return null;
+                }
+                return roleRepository.findById(roleId)
+                                .map(Role::getMenuKeys)
+                                .map(keys -> keys.isBlank() ? List.<String>of() : List.of(keys.split(",")))
+                                .orElse(null);
         }
 }
