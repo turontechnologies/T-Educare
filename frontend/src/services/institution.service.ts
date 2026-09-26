@@ -6,6 +6,8 @@ export type InstitutionsListParams = {
   perPage?: number;
   search?: string;
   includeArchived?: boolean;
+  /** Only institutions with no modules linked yet (API_CONTRACT.md §4.6.2) — for the "Link New Institution" picker. */
+  unlinkedOnly?: boolean;
 };
 
 export type InstitutionsListResponse = {
@@ -39,6 +41,7 @@ export const institutionService = {
           perPage: params.perPage,
           search: params.search || undefined,
           includeArchived: params.includeArchived,
+          unlinkedOnly: params.unlinkedOnly,
         },
       },
     );
@@ -85,6 +88,15 @@ export const institutionService = {
   async restore(id: string): Promise<Institution> {
     const { data } = await apiClient.post<Institution>(
       `/institutions/${id}/restore`,
+    );
+    return data;
+  },
+
+  /** A full replace, not an additive merge — whatever `moduleKeys` is sent becomes the institution's entire module set (API_CONTRACT.md §4.6.2). Also activates the institution server-side. */
+  async linkModules(id: string, moduleKeys: string[]): Promise<Institution> {
+    const { data } = await apiClient.patch<Institution>(
+      `/institutions/${id}/modules`,
+      { moduleKeys },
     );
     return data;
   },

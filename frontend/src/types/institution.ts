@@ -18,7 +18,7 @@ export interface Institution {
   adminUser: string;
   adminEmail: string;
   logoUrl?: string;
-  /** Keys from `src/config/modules.ts` that are activated for this institution — set via the Modules "Link New Institution" flow. Empty until first linked. */
+  /** Keys from the real module catalog (`GET /modules`, `types/module.ts`) that are activated for this institution — set via the Modules "Link New Institution" flow (`PATCH /institutions/:id/modules`). Empty until first linked. */
   moduleKeys: string[];
   /** ISO timestamp of the last Modules save for this institution, or null if never linked. Drives the "Last Edited" column on `/super-admin/modules`. */
   modulesLastEditedAt: string | null;

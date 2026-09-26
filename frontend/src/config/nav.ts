@@ -29,7 +29,7 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   /**
-   * Key from `src/config/modules.ts` this item requires to be activated for
+   * Key from the real module catalog (`GET /modules`, `types/module.ts`) this item requires to be activated for
    * the institution (see `filterNavByModules`). Omit for items that aren't
    * gated by a super-admin-toggleable module (e.g. Dashboard, User
    * Management, or setup pages with no module counterpart yet like Academic
@@ -256,7 +256,7 @@ export function collectAllMenuKeys(items: NavItem[]): string[] {
 
 /**
  * Filters a nav tree down to what an institution's activated modules unlock
- * (see `src/config/modules.ts` and the super-admin Modules page). An item
+ * (see `types/module.ts` and the super-admin Modules page). An item
  * with no `moduleKey` is always available — it isn't gated by a toggleable
  * module. A parent survives if it's ungated/active itself or if any child
  * survives. This runs *before* `filterNavByAccess`: it caps what exists for

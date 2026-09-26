@@ -77,3 +77,13 @@ export function useRestoreInstitution() {
       queryClient.invalidateQueries({ queryKey: ["institutions"] }),
   });
 }
+
+export function useLinkModules() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, moduleKeys }: { id: string; moduleKeys: string[] }) =>
+      institutionService.linkModules(id, moduleKeys),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+  });
+}

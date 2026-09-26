@@ -574,25 +574,46 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   for its own real-API-backed state (§ above). Every read-only consumer
   (`app-header.tsx`, `user-manager-dialog.tsx`, `role-dialog.tsx`,
   `dashboard/layout.tsx`'s own module-gating) needed **zero code changes**
-  — they already just read `state.institutions`. **Modules
-  (`/super-admin/modules`) and License Manager
-  (`/super-admin/license-manager`) have no backend yet (§4.6/§4.7 aren't
-  built)**, so their dialogs still call `state.updateInstitution(id, patch)`
-  for `moduleKeys`/`licenseType`/`licenseKey`/etc., but that action is now
+  — they already just read `state.institutions`. **License Manager
+  (`/super-admin/license-manager`) has no backend yet (§4.7 isn't
+  built)**, so its dialog (and its own Regenerate-key/Revoke confirm
+  dialogs, which bypass the form entirely) still calls
+  `state.updateInstitution(id, patch)` for `licenseType`/`licenseKey`/etc.,
   explicitly **local-only** — it layers a patch on top of the real data via
   an internal `localOverrides` map rather than mutating the real array
   directly, specifically so a background refetch of real institutions
   (e.g. the layout's query going stale) doesn't silently wipe an
-  in-progress local edit mid-session. Both dialogs (and the License
-  Manager page's own Regenerate-key/Revoke confirm dialogs, which bypass
-  the form entirely) now say so directly in the UI — an amber notice or an
-  appended confirm description — rather than showing a fake "saved"
-  toast with nothing behind it. `institutions.store.ts` dropped `persist`
-  entirely (no longer mock data to survive a refresh; local overrides are
+  in-progress local edit mid-session. It says so directly in the UI — an
+  amber notice or an appended confirm description — rather than showing a
+  fake "saved" toast with nothing behind it. `institutions.store.ts`
+  dropped `persist` entirely (no longer mock data to survive a refresh;
+  License Manager's own local overrides are
   intentionally ephemeral, resetting on reload, so they never look "saved"
   when they aren't) and dropped `createInstitution`/`archiveInstitution`/
   `restoreInstitution` (moved to the real mutation hooks, called directly
   from `institutions/page.tsx`/`institution-dialog.tsx`).
+- **Modules (`/super-admin/modules`) is real now too, wired to the backend
+  built the same day (2026-09-26)** — `config/modules.ts`'s hardcoded
+  19-entry `PLATFORM_MODULES` array is gone; the catalog now comes from a
+  real fetch (`services/module.service.ts` → `hooks/use-modules.ts`'s
+  `useModuleCatalog()` → `GET /modules`), per the backend's own stated
+  intent that the catalog can grow without a frontend redeploy. Saving a
+  link (`institution-modules-dialog.tsx`) now calls `useLinkModules()`
+  (`PATCH /institutions/:id/modules` — a full **replace** of `moduleKeys`,
+  not additive) instead of `useInstitutionsStore().updateInstitution()`;
+  the amber "not backed by the server yet" notice is gone since it no
+  longer applies. The "Select an Institution" picker in "Link New
+  Institution" mode now fetches `useInstitutions({ unlinkedOnly: true })`
+  fresh from the server (matching `?unlinkedOnly=true`'s own contract:
+  never show an institution that already has modules) rather than deriving
+  it client-side from the already-hydrated store, so it can't go stale if
+  another admin linked one moments ago. `/super-admin/modules` itself
+  needed **zero changes** — it already read `moduleKeys.length > 0` off
+  `useInstitutionsStore`'s real, hydrated data; only the dialog and the
+  catalog source were mocked. End-to-end Playwright-verified against the
+  live dev server + real backend: link a real unlinked institution, toggle
+  modules, save, see it appear in the linked table with the right count,
+  click its name to re-open pre-filled — zero console errors.
 - **Institution logos go through the real upload endpoint, not a data
   URL** — `institution-dialog.tsx` calls `useUploadFile()`
   (`hooks/use-upload.ts` → `services/upload.service.ts` →

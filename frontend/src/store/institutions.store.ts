@@ -30,14 +30,15 @@ interface InstitutionsState {
   setInstitutions: (institutions: Institution[]) => void;
   /**
    * Local-only patch — does NOT persist to the backend. Institutions
-   * §4.1/4.3/4.4 (core fields, status, archive/restore) are real now (see
-   * `services/institution.service.ts` / `hooks/use-institutions.ts`); §4.6
-   * (Modules) and §4.7 (License Manager) have no backend yet, so their
-   * dialogs still patch `moduleKeys`/`licenseType`/`licenseKey`/etc. here,
-   * in-memory only, layered on top of the real data via `merge()` above so
-   * a background refetch of the real list doesn't silently wipe them
-   * mid-session. Never use this for a field with a real endpoint — call
-   * the real mutation instead and let the next fetch update `institutions`.
+   * §4.1/4.3/4.4 (core fields, status, archive/restore) and §4.6 (Modules,
+   * `moduleKeys`/`modulesCount`/`modulesLastEditedAt` — see
+   * `useLinkModules()`) are both real now; only §4.7 (License Manager) has
+   * no backend yet, so its dialog still patches `licenseType`/`licenseKey`/
+   * etc. here, in-memory only, layered on top of the real data via
+   * `merge()` above so a background refetch of the real list doesn't
+   * silently wipe it mid-session. Never use this for a field with a real
+   * endpoint — call the real mutation instead and let the next fetch update
+   * `institutions`.
    */
   updateInstitution: (id: string, patch: Partial<Institution>) => void;
 }

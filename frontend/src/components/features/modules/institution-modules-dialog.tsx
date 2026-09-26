@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { NotchedComboboxField } from "@/components/shared/notched-field";
-import { PLATFORM_MODULES } from "@/config/modules";
 import { notifyInstitution, notifyPlatform } from "@/lib/notify";
+import { useModuleCatalog } from "@/hooks/use-modules";
+import { useInstitutions, useLinkModules } from "@/hooks/use-institutions";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
 interface InstitutionModulesDialogProps {
@@ -67,23 +68,22 @@ function InstitutionModulesForm({
   onDone: () => void;
 }) {
   const institutions = useInstitutionsStore((state) => state.institutions);
-  const updateInstitution = useInstitutionsStore(
-    (state) => state.updateInstitution,
-  );
+  const linkModules = useLinkModules();
+  const { data: catalogData, isLoading: catalogLoading } = useModuleCatalog();
+  const catalog = catalogData?.data ?? [];
 
   const isEditing = !!institutionId;
 
   // "Link New Institution" only ever offers institutions that haven't been
-  // linked yet — an already-linked one is edited by clicking its name in the
-  // table instead, not re-selected from here.
-  const unlinkedInstitutions = useMemo(
-    () =>
-      institutions.filter(
-        (institution) =>
-          !institution.archivedAt && institution.moduleKeys.length === 0,
-      ),
-    [institutions],
+  // linked yet — fetched fresh via the server-authoritative unlinkedOnly
+  // filter (API_CONTRACT.md §4.6.2), not derived client-side from the
+  // already-hydrated store, so it can't go stale if another admin linked one
+  // moments ago. Only needed in "add" mode.
+  const { data: unlinkedData } = useInstitutions(
+    { unlinkedOnly: true, perPage: 1000 },
+    { enabled: !institutionId },
   );
+  const unlinkedInstitutions = unlinkedData?.data ?? [];
 
   const initialInstitution = institutionId
     ? institutions.find((institution) => institution.id === institutionId)
@@ -95,7 +95,7 @@ function InstitutionModulesForm({
     new Set(initialInstitution?.moduleKeys ?? []),
   );
 
-  const allSelected = moduleKeys.size === PLATFORM_MODULES.length;
+  const allSelected = catalog.length > 0 && moduleKeys.size === catalog.length;
 
   const toggleModule = (key: string, checked: boolean) => {
     setModuleKeys((prev) => {
@@ -108,9 +108,7 @@ function InstitutionModulesForm({
 
   const toggleAll = (checked: boolean) => {
     setModuleKeys(
-      checked
-        ? new Set(PLATFORM_MODULES.map((module) => module.key))
-        : new Set(),
+      checked ? new Set(catalog.map((module) => module.key)) : new Set(),
     );
   };
 
@@ -130,40 +128,39 @@ function InstitutionModulesForm({
     setModuleKeys(new Set());
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!addedInstitution) {
       toast.error("Select and add an institution first");
       return;
     }
-    updateInstitution(addedInstitution.id, {
-      moduleKeys: Array.from(moduleKeys),
-      modulesCount: moduleKeys.size,
-      modulesLastEditedAt: new Date().toISOString(),
-      status: "active",
-    });
-    toast.success(`${addedInstitution.name}'s modules saved`);
-    notifyPlatform(
-      "Modules updated",
-      `${addedInstitution.name} now has ${moduleKeys.size} module${moduleKeys.size === 1 ? "" : "s"} active.`,
-      "/super-admin/modules",
-    );
-    notifyInstitution(
-      addedInstitution.id,
-      "Your modules were updated",
-      `Your institution now has ${moduleKeys.size} module${moduleKeys.size === 1 ? "" : "s"} active.`,
-    );
-    onDone();
+
+    try {
+      await linkModules.mutateAsync({
+        id: addedInstitution.id,
+        moduleKeys: Array.from(moduleKeys),
+      });
+      toast.success(`${addedInstitution.name}'s modules saved`);
+      notifyPlatform(
+        "Modules updated",
+        `${addedInstitution.name} now has ${moduleKeys.size} module${moduleKeys.size === 1 ? "" : "s"} active.`,
+        "/super-admin/modules",
+      );
+      notifyInstitution(
+        addedInstitution.id,
+        "Your modules were updated",
+        `Your institution now has ${moduleKeys.size} module${moduleKeys.size === 1 ? "" : "s"} active.`,
+      );
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save modules",
+      );
+    }
   };
 
   return (
     <>
       <div className="max-h-[65vh] space-y-5 overflow-y-auto p-6">
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          Module links aren&apos;t backed by the server yet — this only updates
-          what you see in this browser tab right now and resets on your next
-          page reload.
-        </div>
-
         {isEditing ? (
           <div className="rounded-md bg-secondary/5 px-3 py-2.5">
             <p className="text-sm font-medium text-secondary">
@@ -233,7 +230,12 @@ function InstitutionModulesForm({
               <span className="text-sm font-medium">Select All Modules</span>
             </label>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 p-3 sm:grid-cols-4">
-              {PLATFORM_MODULES.map((module) => (
+              {catalogLoading && (
+                <p className="col-span-full text-sm text-muted-foreground">
+                  Loading modules...
+                </p>
+              )}
+              {catalog.map((module) => (
                 <label
                   key={module.key}
                   className="flex cursor-pointer items-center gap-2.5 text-sm"
@@ -259,6 +261,7 @@ function InstitutionModulesForm({
         <Button
           type="button"
           onClick={handleSave}
+          disabled={linkModules.isPending}
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save Module
