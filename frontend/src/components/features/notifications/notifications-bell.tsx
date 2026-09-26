@@ -55,8 +55,12 @@ export function NotificationsBell() {
   // shows everything regardless of read state.
   const recent = unread.slice(0, 3);
 
+  // super_admin never mixes in local-mock data (see useMergedNotifications).
   const localUnreadCount = useMemo(
-    () => notificationsForUser(localAll, user).filter((n) => !n.read).length,
+    () =>
+      user?.role === "super_admin"
+        ? 0
+        : notificationsForUser(localAll, user).filter((n) => !n.read).length,
     [localAll, user],
   );
   const totalUnreadCount = (unreadCountData?.count ?? 0) + localUnreadCount;
@@ -77,11 +81,13 @@ export function NotificationsBell() {
 
   const handleMarkAllRead = () => {
     markAllRead.mutate();
-    localMarkManyAsRead(
-      notificationsForUser(localAll, user)
-        .filter((n) => !n.read)
-        .map((n) => n.id),
-    );
+    if (user?.role !== "super_admin") {
+      localMarkManyAsRead(
+        notificationsForUser(localAll, user)
+          .filter((n) => !n.read)
+          .map((n) => n.id),
+      );
+    }
   };
 
   return (

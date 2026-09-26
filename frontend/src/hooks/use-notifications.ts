@@ -82,6 +82,17 @@ export interface MergedNotification {
  * simply stop appearing on the local side, same one-at-a-time migration as
  * every other resource in this app — nothing else here needs to change
  * when that happens.
+ *
+ * **super_admin never merges in local data at all (2026-09-26, explicitly
+ * requested — "no more mock data for super admin, all should come from the
+ * backend")**: `notify.ts`'s `notifyPlatform` has no call sites left
+ * anywhere in the app (every action a super admin can take is already
+ * backend-real), so this would already be empty for them in practice —
+ * skipping the merge outright makes that a structural guarantee instead of
+ * an incidental one, so a future `notifyPlatform` call added for a
+ * still-mocked feature can't quietly leak mock data into a super admin's
+ * feed. An institution_admin still merges, since Students/Staff/Academic
+ * Sessions/etc. genuinely have no backend yet and still notify locally.
  */
 export function useMergedNotifications() {
   const user = useAuthStore((state) => state.user);
@@ -93,6 +104,10 @@ export function useMergedNotifications() {
       ...n,
       source: "real",
     }));
+    if (user?.role === "super_admin") {
+      return real.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }
+
     const local: MergedNotification[] = notificationsForUser(
       localAll,
       user,

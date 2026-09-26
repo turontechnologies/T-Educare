@@ -3,7 +3,16 @@
 import { useMemo, useState } from "react";
 import { Bell, BellOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/page-header";
 import { NotificationDetailsDialog } from "./notification-details-dialog";
 import { cn } from "@/lib/utils";
@@ -20,6 +29,14 @@ import {
   useMergedNotifications,
   type MergedNotification,
 } from "@/hooks/use-notifications";
+
+type ReadFilter = "all" | "unread" | "read";
+
+const READ_FILTER_OPTIONS: { label: string; value: ReadFilter }[] = [
+  { label: "All", value: "all" },
+  { label: "Unread", value: "unread" },
+  { label: "Read", value: "read" },
+];
 
 interface NotificationsListProps {
   breadcrumb: string[];
@@ -41,8 +58,23 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
   const dismissReal = useDismissNotification();
 
   const [selected, setSelected] = useState<MergedNotification | null>(null);
+  const [search, setSearch] = useState("");
+  const [readFilter, setReadFilter] = useState<ReadFilter>("all");
 
   const unread = useMemo(() => mine.filter((n) => !n.read), [mine]);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return mine.filter((notification) => {
+      if (readFilter === "unread" && notification.read) return false;
+      if (readFilter === "read" && !notification.read) return false;
+      if (!query) return true;
+      return (
+        notification.title.toLowerCase().includes(query) ||
+        notification.message.toLowerCase().includes(query)
+      );
+    });
+  }, [mine, search, readFilter]);
 
   const handleSelect = (notification: MergedNotification) => {
     if (notification.source === "real") {
@@ -55,11 +87,13 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
 
   const handleMarkAllRead = () => {
     markAllRead.mutate();
-    localMarkManyAsRead(
-      notificationsForUser(localAll, user)
-        .filter((n) => !n.read)
-        .map((n) => n.id),
-    );
+    if (user?.role !== "super_admin") {
+      localMarkManyAsRead(
+        notificationsForUser(localAll, user)
+          .filter((n) => !n.read)
+          .map((n) => n.id),
+      );
+    }
   };
 
   const handleDismiss = (notification: MergedNotification) => {
@@ -92,16 +126,56 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
       </div>
 
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
+        <CardHeader className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Filter</span>
+            <Select
+              value={readFilter}
+              onValueChange={(value) => {
+                if (value) setReadFilter(value as ReadFilter);
+              }}
+            >
+              <SelectTrigger size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {READ_FILTER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm">
+            <Label
+              htmlFor="notifications-search"
+              className="text-muted-foreground"
+            >
+              Search:
+            </Label>
+            <Input
+              id="notifications-search"
+              placeholder="Title or message…"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="h-8 w-56"
+            />
+          </div>
+        </CardHeader>
         <CardContent className="divide-y divide-border p-0">
-          {mine.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
               <BellOff className="size-8" />
               <p className="text-sm">
-                You&apos;re all caught up — no notifications yet.
+                {mine.length === 0
+                  ? "You're all caught up — no notifications yet."
+                  : "No notifications match your search/filter."}
               </p>
             </div>
           ) : (
-            mine.map((notification) => (
+            filtered.map((notification) => (
               <div
                 key={notification.id}
                 className={cn(

@@ -173,6 +173,25 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   the full `/super-admin/notifications` / `/dashboard/notifications` page,
   which still shows everything regardless of read state — that page is
   the permanent history, the dropdown is just "what's new."
+  **`super_admin` never merges in local-mock data at all, structurally
+  (2026-09-26)** — explicitly requested ("no more mock data for super
+  admin, all should come from the backend"). `notify.ts`'s `notifyPlatform`
+  already has zero call sites left anywhere in the app (every super-admin
+  action is backend-real), so this was already true in practice —
+  `useMergedNotifications` now skips the local merge outright for
+  `user.role === "super_admin"` rather than relying on that incidentally,
+  so a future `notifyPlatform` call added for some still-mocked feature
+  can't quietly leak mock data into a super admin's feed. An
+  `institution_admin` still merges, since Students/Staff/Academic
+  Sessions/etc. genuinely have no backend yet and still notify locally.
+  `NotificationsBell`/`NotificationsList`'s own "mark all read"/unread-count
+  logic mirrors the same guard.
+  **Search + filter on the full notifications page, same day** — a text
+  search over title/message and a Filter select (All/Unread/Read), both
+  client-side over the already-fetched, already-real merged list (no new
+  backend query params needed — the data source was never the concern,
+  just where the two-line JS filter runs). Confined to the full list page,
+  not the bell dropdown, which stays a compact top-3 preview.
   **Clicking a notification no longer navigates immediately (2026-09-24)**
   — it marks it read and opens `NotificationDetailsDialog` (untruncated
   title/message, since the bell dropdown's row itself is `line-clamp-2`)
