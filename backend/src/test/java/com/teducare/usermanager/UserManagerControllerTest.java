@@ -21,12 +21,76 @@ class UserManagerControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void institutionAdminCannotAccessUserManagers() throws Exception {
-        String token = loginAs("turon_admin", "Turon@2024");
+    void institutionAdminSelfServiceIsScopedToTheirOwnInstitutionOnly() throws Exception {
+        // turon_admin (XYZ College) manages his own institution's staff — this
+        // is the real "Users" tab of /dashboard/user-management
+        // (API_CONTRACT.md §6), not a separate mocked resource.
+        String xyzToken = loginAs("turon_admin", "Turon@2024");
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String username = "self_service_" + suffix;
 
-        mockMvc.perform(get("/api/user-managers")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isForbidden());
+        String listBefore = mockMvc.perform(get("/api/user-managers")
+                .header("Authorization", "Bearer " + xyzToken))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        // Never another institution's staff, even though real ones exist (amara_bello).
+        org.junit.jupiter.api.Assertions.assertFalse(listBefore.contains("amara_bello"));
+
+        // Creating staff is forced to his own institution, and can never mint
+        // another unrestricted primary admin regardless of what's requested.
+        String createResponse = mockMvc.perform(post("/api/user-managers")
+                .header("Authorization", "Bearer " + xyzToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"firstName":"Self","lastName":"Service","email":"self.service.%s@example.com",
+                         "username":"%s","password":"SelfServe@2026",
+                         "institutionId":"inst-ahmadubellouniversit-1","isPrimaryAdmin":true}
+                        """.formatted(suffix, username)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.institutionId").value("inst-xyz-college"))
+                .andExpect(jsonPath("$.isPrimaryAdmin").value(false))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String id = createResponse.split("\"id\":\"")[1].split("\"")[0];
+
+        try {
+            // He can edit his own new staff member's plain fields...
+            mockMvc.perform(patch("/api/user-managers/" + id)
+                    .header("Authorization", "Bearer " + xyzToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"phone\":\"08011110000\"}"))
+                    .andExpect(status().isOk());
+
+            // ...but never reassign their institution or grant primary-admin.
+            mockMvc.perform(patch("/api/user-managers/" + id)
+                    .header("Authorization", "Bearer " + xyzToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"isPrimaryAdmin\":true}"))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(patch("/api/user-managers/" + id)
+                    .header("Authorization", "Bearer " + xyzToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"institutionId\":\"inst-ahmadubellouniversit-1\"}"))
+                    .andExpect(status().isForbidden());
+
+            // A completely different institution's admin can't touch this
+            // account at all — refused, not merely hidden.
+            String amaraToken = loginAs("amara_bello", "Amara@2024");
+            mockMvc.perform(patch("/api/user-managers/" + id)
+                    .header("Authorization", "Bearer " + amaraToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"phone\":\"09000000000\"}"))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(post("/api/user-managers/" + id + "/archive")
+                    .header("Authorization", "Bearer " + amaraToken))
+                    .andExpect(status().isForbidden());
+        } finally {
+            mockMvc.perform(post("/api/user-managers/" + id + "/archive")
+                    .header("Authorization", "Bearer " + xyzToken));
+        }
     }
 
     @Test
