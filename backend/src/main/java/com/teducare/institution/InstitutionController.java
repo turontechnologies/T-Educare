@@ -39,7 +39,8 @@ public class InstitutionController {
             @RequestParam(defaultValue = "20") int perPage,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "false") boolean includeArchived,
-            @RequestParam(defaultValue = "false") boolean unlinkedOnly) {
+            @RequestParam(defaultValue = "false") boolean unlinkedOnly,
+            @RequestParam(defaultValue = "false") boolean unlicensedOnly) {
         AuthenticatedUserDto caller = requireCaller(authentication);
 
         // An institution_admin calls this same endpoint (dashboard/layout.tsx,
@@ -53,7 +54,7 @@ public class InstitutionController {
         if (!"super_admin".equals(caller.role())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied.");
         }
-        return institutionService.list(page, perPage, search, includeArchived, unlinkedOnly);
+        return institutionService.list(page, perPage, search, includeArchived, unlinkedOnly, unlicensedOnly);
     }
 
     @GetMapping("/institutions/{id}")
@@ -106,6 +107,27 @@ public class InstitutionController {
             @Valid @RequestBody LinkModulesRequest request) {
         requireSuperAdmin(authentication);
         return institutionService.linkModules(id, request.moduleKeys());
+    }
+
+    @PatchMapping("/institutions/{id}/license")
+    public InstitutionResponse saveLicense(
+            Authentication authentication,
+            @PathVariable String id,
+            @Valid @RequestBody LicenseRequest request) {
+        requireSuperAdmin(authentication);
+        return institutionService.saveLicense(id, request);
+    }
+
+    @PostMapping("/institutions/{id}/regenerate-license-key")
+    public Map<String, String> regenerateLicenseKey(Authentication authentication, @PathVariable String id) {
+        requireSuperAdmin(authentication);
+        return institutionService.regenerateLicenseKey(id);
+    }
+
+    @PostMapping("/institutions/{id}/revoke-license")
+    public InstitutionResponse revokeLicense(Authentication authentication, @PathVariable String id) {
+        requireSuperAdmin(authentication);
+        return institutionService.revokeLicense(id);
     }
 
     /** Institutions routes are super-admin only per API_CONTRACT.md §4 — no Spring authorities exist yet (see JwtAuthenticationFilter), so this resolves the caller's real role the same way ProfileController/DashboardController resolve identity: via AuthDirectory. */

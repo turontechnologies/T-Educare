@@ -27,13 +27,22 @@ public class InstitutionService {
     }
 
     public Map<String, Object> list(
-            int page, int perPage, String search, boolean includeArchived, boolean unlinkedOnly) {
+            int page,
+            int perPage,
+            String search,
+            boolean includeArchived,
+            boolean unlinkedOnly,
+            boolean unlicensedOnly) {
         int safePage = Math.max(1, page);
         int safePerPage = Math.max(1, perPage);
         String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
 
         Page<Institution> result = repository.search(
-                normalizedSearch, includeArchived, unlinkedOnly, PageRequest.of(safePage - 1, safePerPage));
+                normalizedSearch,
+                includeArchived,
+                unlinkedOnly,
+                unlicensedOnly,
+                PageRequest.of(safePage - 1, safePerPage));
 
         return Map.of(
                 "data", result.getContent().stream().map(InstitutionResponse::from).toList(),
@@ -183,6 +192,62 @@ public class InstitutionService {
         institution.setModulesCount(keys.size());
         institution.setModulesLastEditedAt(Instant.now());
         institution.setStatus("active");
+        return InstitutionResponse.from(repository.save(institution));
+    }
+
+    /**
+     * API_CONTRACT.md §4.7.1 — "Basic" forces expiringAt to null server-side
+     * regardless of what's sent (it's the free, never-expiring tier); any
+     * other type requires expiringAt (422 if missing). licenseIssuedAt is
+     * set to now() only the first time this institution ever gets a
+     * license — immutable afterwards, so re-editing an existing license
+     * (type/key/expiry changes) never resets its original issue date.
+     */
+    public InstitutionResponse saveLicense(String id, LicenseRequest request) {
+        Institution institution = requireInstitution(id);
+
+        String licenseType = request.licenseType();
+        if (!List.of("Basic", "Standard", "Premium").contains(licenseType)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "licenseType must be 'Basic', 'Standard', or 'Premium'.");
+        }
+
+        boolean isBasic = "Basic".equals(licenseType);
+        if (!isBasic && request.expiringAt() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY, "expiringAt is required unless licenseType is 'Basic'.");
+        }
+
+        institution.setLicenseType(licenseType);
+        institution.setExpiringAt(isBasic ? null : request.expiringAt());
+        institution.setLicenseKey(request.licenseKey());
+        if (institution.getLicenseIssuedAt() == null) {
+            institution.setLicenseIssuedAt(Instant.now());
+        }
+
+        return InstitutionResponse.from(repository.save(institution));
+    }
+
+    public Map<String, String> regenerateLicenseKey(String id) {
+        Institution institution = requireInstitution(id);
+        if (institution.getLicenseKey() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Institution has no license to regenerate a key for.");
+        }
+
+        String newKey = generateTokenKey();
+        institution.setLicenseKey(newKey);
+        repository.save(institution);
+        return Map.of("licenseKey", newKey);
+    }
+
+    /** Resets to the unlicensed defaults — does not archive or delete the institution itself. */
+    public InstitutionResponse revokeLicense(String id) {
+        Institution institution = requireInstitution(id);
+        institution.setLicenseType("Basic");
+        institution.setLicenseKey(null);
+        institution.setExpiringAt(null);
+        institution.setLicenseIssuedAt(null);
         return InstitutionResponse.from(repository.save(institution));
     }
 

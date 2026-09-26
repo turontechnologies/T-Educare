@@ -155,20 +155,21 @@ same account as the sibling `t-coop-backend` project — credentials in
 JPEG/WEBP only, 5MB max. Wired to the frontend for institution logos, User
 Manager avatars, and (as of 2026-09-24) individual profile avatars too.
 
-**§4.6 Modules is real now too, backend-only (2026-09-26)** — extends the
-existing `Institution` resource rather than a new table (`module_keys`,
+**§4.6 Modules is real, and wired to the frontend (2026-09-26)** — extends
+the existing `Institution` resource rather than a new table (`module_keys`,
 `modules_last_edited_at`, `modules_count` columns already existed on
-`dbo.institutions`, unused until now). New endpoints:
-`GET /modules` (the fixed 19-entry catalog, `module/ModuleCatalog.java` —
-must stay key-for-key in sync with `frontend/src/config/modules.ts`),
-`PATCH /institutions/:id/modules` (a full **replace** of `moduleKeys`, not
-an additive merge — whatever list is sent becomes the institution's entire
-module set; also sets `modulesCount`/`modulesLastEditedAt` and activates the
-institution, per the documented "X is been selected and made active" side
-effect; rejects an unknown key with `400`), and
-`GET /institutions?unlinkedOnly=true` (only institutions with an empty
-`moduleKeys`, for the "Select an Institution" dropdown in the "Link New
-Institution" dialog).
+`dbo.institutions`, unused until now). Endpoints: `GET /modules` (the fixed
+catalog, `module/ModuleCatalog.java` — 22 entries as of this writing, one
+per real nav item in the institution_admin dashboard, `dashboard` itself
+the sole exception; must stay key-for-key in sync with
+`frontend/src/config/nav.ts`'s `moduleKey`s), `PATCH /institutions/:id/modules`
+(a full **replace** of `moduleKeys`, not an additive merge — whatever list
+is sent becomes the institution's entire module set; also sets
+`modulesCount`/`modulesLastEditedAt` and activates the institution, per the
+documented "X is been selected and made active" side effect; rejects an
+unknown key with `400`), and `GET /institutions?unlinkedOnly=true` (only
+institutions with an empty `moduleKeys`, for the "Select an Institution"
+dropdown in the "Link New Institution" dialog).
 
 **A real, previously-undetected bug was caught and fixed while building
 this**: `GET /institutions` was gated `super_admin`-only, but
@@ -194,6 +195,29 @@ that an account edited here — or an institution renamed/relogoed via
 Institutions — is reflected for that user without requiring a fresh
 login, since the backend already resolved all of this live on every
 `/auth/me` call and the frontend just wasn't asking again mid-session.
+
+**§4.7 License Manager is real now too, backend-only (2026-09-26)** — the
+same "extend `Institution`, don't add a table" pattern as Modules:
+`licenseType`/`expiringAt`/`licenseKey`/`licenseIssuedAt` all already
+existed as columns (added alongside Institutions/Modules), just with no
+endpoint to write the license-specific two of them until now (`tokenKey`
+is a different field entirely — the institution's general API token, set
+at creation, shown read-only here and never edited). Endpoints:
+`PATCH /institutions/:id/license` (sets `licenseType`/`expiringAt`/
+`licenseKey`; `"Basic"` forces `expiringAt` to `null` server-side
+regardless of what's sent, since it's the free, never-expiring tier; any
+other type with no `expiringAt` is rejected `422`; `licenseIssuedAt` is
+set to now only the *first* time an institution ever gets a license —
+immutable afterwards, so re-editing type/key/expiry later never resets its
+original issue date), `POST /institutions/:id/regenerate-license-key`
+(`200, { "licenseKey": "<new>" }` — rejects `400` if the institution has no
+license to regenerate a key for), and `POST /institutions/:id/revoke-license`
+(resets to the unlicensed defaults — Basic, no key/expiry/issued-date —
+without archiving or otherwise touching the institution itself), plus
+`GET /institutions?unlicensedOnly=true` for the "Select Institution"
+dropdown in "Create New License" (must never offer an institution that
+already has one). Not yet wired to the frontend — `/super-admin/license-manager`
+still reads/writes `institutions.store.ts`'s local-only `updateInstitution()`.
 
 Verified end-to-end via `docker compose up -d --build` (both `sqlserver` and
 `app` services): Flyway applies all 3 migrations, the app connects to

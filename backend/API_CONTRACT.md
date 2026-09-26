@@ -26,20 +26,18 @@ conventions below and get added here as each one is built.
 
 **Auth (§3), Profile (§3.1), file uploads (§3.2), Dashboards (§9),
 Institutions §4.1/4.3/4.4, User Manager (§4.5), and Modules (§4.6) are
-implemented and live** — see `backend/README.md`'s "What's implemented"
-section for exactly what that covers (real MSSQL-backed tables via Flyway,
-not in-memory; real Cloudinary uploads, not local-only previews).
-**Institutions 4.1/4.3/4.4 and User Manager §4.5 are wired to the frontend
-too** (2026-09-24) — `institutions.store.ts`/`user-managers.store.ts` no
-longer seed mock data; both are hydrated from (or, for User Manager, call
-directly into) these real endpoints (see `frontend/CLAUDE.md`). **Modules
-(§4.6) is real on the backend as of 2026-09-26** (`GET /modules`,
-`PATCH /institutions/:id/modules`, `GET /institutions?unlinkedOnly=true`)
-but not yet wired to the frontend — `/super-admin/modules` still reads/
-writes `institutions.store.ts`'s local-only `updateInstitution()` override,
-clearly flagged in its own dialog rather than pretending to save. §4.7
-(License Manager) still has no backend at all. File uploads (§3.2) are
-wired for institution logos, User Manager avatars, and profile avatars.
+implemented, live, and wired to the frontend** — see `backend/README.md`'s
+"What's implemented" section for exactly what that covers (real
+MSSQL-backed tables via Flyway, not in-memory; real Cloudinary uploads,
+not local-only previews; `institutions.store.ts`/`user-managers.store.ts`
+no longer seed mock data). File uploads (§3.2) are wired for institution
+logos, User Manager avatars, and profile avatars. **License Manager (§4.7)
+is real on the backend as of 2026-09-26** (`PATCH /institutions/:id/license`,
+`POST /institutions/:id/regenerate-license-key`,
+`POST /institutions/:id/revoke-license`, `GET /institutions?unlicensedOnly=true`)
+but not yet wired to the frontend — `/super-admin/license-manager` still
+reads/writes `institutions.store.ts`'s local-only `updateInstitution()`
+override, clearly flagged in its own dialog rather than pretending to save.
 Everything else below (§4.7, Roles, Users, Academic Sessions, Students,
 Schools/Faculties/Departments/Programs, Staff, Notifications) is **not
 implemented yet** — this file remains what to build those *against*.

@@ -200,6 +200,107 @@ class InstitutionControllerTest {
         }
     }
 
+    @Test
+    void licenseLifecycleIssueEditRegenerateAndRevoke() throws Exception {
+        String token = loginAs("super_admin", "Super@2024");
+
+        String createResponse = mockMvc.perform(post("/api/institutions")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"name":"License Test University","institutionType":"University",
+                         "adminUser":"Test Admin","adminEmail":"admin@licensetestuniversity.edu.ng"}
+                        """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String id = createResponse.split("\"id\":\"")[1].split("\"")[0];
+
+        try {
+            // Unlicensed (licenseKey null) — must show up under unlicensedOnly.
+            mockMvc.perform(get("/api/institutions")
+                    .param("unlicensedOnly", "true")
+                    .param("search", "License Test University")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1));
+
+            // A non-Basic type with no expiringAt is rejected (API_CONTRACT.md §4.7.1).
+            mockMvc.perform(patch("/api/institutions/" + id + "/license")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"licenseType\":\"Premium\",\"licenseKey\":\"TEST-0001-0001-0001\"}"))
+                    .andExpect(status().isUnprocessableEntity());
+
+            // Issue a real Premium license.
+            mockMvc.perform(patch("/api/institutions/" + id + "/license")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {"licenseType":"Premium","expiringAt":"2027-06-30T00:00:00.000Z",
+                             "licenseKey":"TEST-0001-0001-0001"}
+                            """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.licenseType").value("Premium"))
+                    .andExpect(jsonPath("$.licenseKey").value("TEST-0001-0001-0001"))
+                    .andExpect(jsonPath("$.expiringAt").exists())
+                    .andExpect(jsonPath("$.licenseIssuedAt").exists());
+
+            // Now licensed — must disappear from unlicensedOnly.
+            mockMvc.perform(get("/api/institutions")
+                    .param("unlicensedOnly", "true")
+                    .param("search", "License Test University")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(0));
+
+            String firstGet = mockMvc.perform(get("/api/institutions/" + id)
+                    .header("Authorization", "Bearer " + token))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            String issuedAt = firstGet.split("\"licenseIssuedAt\":\"")[1].split("\"")[0];
+
+            // Re-editing (switching to Standard) must NOT reset licenseIssuedAt — it's
+            // immutable once set, per §4.7.1.
+            mockMvc.perform(patch("/api/institutions/" + id + "/license")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {"licenseType":"Standard","expiringAt":"2027-01-01T00:00:00.000Z",
+                             "licenseKey":"TEST-0002-0002-0002"}
+                            """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.licenseType").value("Standard"))
+                    .andExpect(jsonPath("$.licenseIssuedAt").value(issuedAt));
+
+            // Regenerate key — a fresh key, distinct from the current one.
+            mockMvc.perform(post("/api/institutions/" + id + "/regenerate-license-key")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.licenseKey").value(org.hamcrest.Matchers.not("TEST-0002-0002-0002")));
+
+            // Revoke — resets to Basic, no key/expiry/issued-date; institution itself untouched.
+            mockMvc.perform(post("/api/institutions/" + id + "/revoke-license")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.licenseType").value("Basic"))
+                    .andExpect(jsonPath("$.licenseKey").doesNotExist())
+                    .andExpect(jsonPath("$.expiringAt").doesNotExist())
+                    .andExpect(jsonPath("$.licenseIssuedAt").doesNotExist())
+                    .andExpect(jsonPath("$.archivedAt").doesNotExist());
+
+            // Regenerating on a now-unlicensed institution is correctly rejected.
+            mockMvc.perform(post("/api/institutions/" + id + "/regenerate-license-key")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isBadRequest());
+        } finally {
+            mockMvc.perform(post("/api/institutions/" + id + "/archive")
+                    .header("Authorization", "Bearer " + token));
+        }
+    }
+
     private String loginAs(String username, String password) throws Exception {
         String body = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
 
