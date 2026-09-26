@@ -1,11 +1,15 @@
 -- V1 already created a placeholder dbo.roles (id/name/description/created_at)
 -- long before the real Roles feature existed — same landmine as institutions
 -- (see V3) and notifications. Nothing ever wrote to it, so it's safe to drop
--- and recreate with the full shape.
+-- and recreate with the full shape. Split into GO-separated batches: T-SQL's
+-- compile-time column binding otherwise chokes on later statements in this
+-- same file referencing institution_id, a column that (from the compiler's
+-- perspective) didn't exist on the table before this script ran.
 IF OBJECT_ID(N'dbo.roles', N'U') IS NOT NULL
 BEGIN
     DROP TABLE dbo.roles;
 END;
+GO
 
 CREATE TABLE dbo.roles (
     id NVARCHAR(64) PRIMARY KEY,
@@ -22,6 +26,7 @@ CREATE TABLE dbo.roles (
 );
 
 CREATE INDEX IX_roles_institution ON dbo.roles(institution_id);
+GO
 
 -- Backfill the one real Role this app already depends on: amara_bello's
 -- "Front Desk Officer" restriction, previously only a frontend-mocked

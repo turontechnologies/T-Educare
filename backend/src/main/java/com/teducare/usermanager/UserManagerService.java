@@ -47,13 +47,15 @@ public class UserManagerService {
         this.notificationService = notificationService;
     }
 
-    public Map<String, Object> list(int page, int perPage, String search, boolean includeArchived) {
+    /** {@code scopedToInstitutionId}: null for a super_admin caller (sees every institution); a real id when an institution_admin is self-scoping to their own. */
+    public Map<String, Object> list(
+            int page, int perPage, String search, boolean includeArchived, String scopedToInstitutionId) {
         int safePage = Math.max(1, page);
         int safePerPage = Math.max(1, perPage);
         String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
 
         Page<UserAccount> result = repository.searchUserManagers(
-                normalizedSearch, includeArchived, PageRequest.of(safePage - 1, safePerPage));
+                normalizedSearch, includeArchived, scopedToInstitutionId, PageRequest.of(safePage - 1, safePerPage));
 
         return Map.of(
                 "data", result.getContent().stream().map(UserManagerResponse::from).toList(),

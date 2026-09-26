@@ -172,6 +172,14 @@ class RoleControllerTest {
                     .content("{\"name\":\"Nothing\",\"menuKeys\":[]}"))
                     .andExpect(status().isBadRequest());
 
+            // An unknown/legacy menu key (matching Modules' own "Unknown
+            // module key" precedent) is rejected, not silently stored.
+            mockMvc.perform(post("/api/roles")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"Bogus\",\"menuKeys\":[\"exams\"]}"))
+                    .andExpect(status().isBadRequest());
+
             // Duplicate name within the same institution is rejected.
             mockMvc.perform(post("/api/roles")
                     .header("Authorization", "Bearer " + token)

@@ -16,9 +16,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.auth.AuthDirectory;
+import com.teducare.auth.AuthenticatedUserDto;
 
 import jakarta.validation.Valid;
 
+/**
+ * super_admin manages every institution's User Manager accounts, unscoped.
+ * institution_admin manages only their own institution's staff — the
+ * "Users" tab of /dashboard/user-management (API_CONTRACT.md §6) is this
+ * same resource, self-scoped, not a separate one.
+ */
 @RestController
 @RequestMapping("/api")
 public class UserManagerController {
@@ -38,20 +45,34 @@ public class UserManagerController {
             @RequestParam(defaultValue = "20") int perPage,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "false") boolean includeArchived) {
-        requireSuperAdmin(authentication);
-        return userManagerService.list(page, perPage, search, includeArchived);
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        String scopedToInstitutionId = "institution_admin".equals(caller.role()) ? caller.institutionId() : null;
+        return userManagerService.list(page, perPage, search, includeArchived, scopedToInstitutionId);
     }
 
     @GetMapping("/user-managers/{id}")
     public UserManagerResponse get(Authentication authentication, @PathVariable String id) {
-        requireSuperAdmin(authentication);
-        return userManagerService.get(id);
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        UserManagerResponse account = userManagerService.get(id);
+        requireOwnInstitutionIfNotSuperAdmin(caller, account.institutionId());
+        return account;
     }
 
     @PostMapping("/user-managers")
     public ResponseEntity<UserManagerResponse> create(
             Authentication authentication, @Valid @RequestBody CreateUserManagerRequest request) {
-        requireSuperAdmin(authentication);
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        if ("institution_admin".equals(caller.role())) {
+            // Self-service staff creation is scoped to the caller's own
+            // institution and can never mint another unrestricted root
+            // admin for it — that stays a super_admin-only action.
+            request = new CreateUserManagerRequest(
+                    request.firstName(), request.otherName(), request.lastName(), request.gender(),
+                    request.email(), request.phone(), request.username(), request.password(),
+                    caller.institutionId(), false, request.avatarUrl());
+        } else {
+            requireSuperAdmin(caller);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(userManagerService.create(request));
     }
 
@@ -60,7 +81,19 @@ public class UserManagerController {
             Authentication authentication,
             @PathVariable String id,
             @Valid @RequestBody UpdateUserManagerRequest request) {
-        requireSuperAdmin(authentication);
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        UserManagerResponse existing = userManagerService.get(id);
+        requireOwnInstitutionIfNotSuperAdmin(caller, existing.institutionId());
+
+        if ("institution_admin".equals(caller.role())) {
+            // A staff member's institution assignment and primary-admin
+            // status are platform-level decisions, not self-service ones —
+            // only roleId (and the plain HR fields) are theirs to change.
+            if (request.institutionId() != null || request.isPrimaryAdmin() != null) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "Only a super admin can reassign an institution or primary-admin status.");
+            }
+        }
         return userManagerService.update(id, request);
     }
 
@@ -69,40 +102,59 @@ public class UserManagerController {
             Authentication authentication,
             @PathVariable String id,
             @Valid @RequestBody UserManagerStatusRequest request) {
-        requireSuperAdmin(authentication);
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        requireOwnInstitutionIfNotSuperAdmin(caller, userManagerService.get(id).institutionId());
         return userManagerService.updateStatus(id, request.status());
     }
 
     @PostMapping("/user-managers/{id}/reset-password")
     public ResetPasswordResponse resetPassword(Authentication authentication, @PathVariable String id) {
-        requireSuperAdmin(authentication);
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        requireOwnInstitutionIfNotSuperAdmin(caller, userManagerService.get(id).institutionId());
         return new ResetPasswordResponse(userManagerService.resetPassword(id));
     }
 
     @PostMapping("/user-managers/{id}/archive")
     public UserManagerResponse archive(Authentication authentication, @PathVariable String id) {
-        requireSuperAdmin(authentication);
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        requireOwnInstitutionIfNotSuperAdmin(caller, userManagerService.get(id).institutionId());
         return userManagerService.archive(id);
     }
 
     @PostMapping("/user-managers/{id}/restore")
     public UserManagerResponse restore(Authentication authentication, @PathVariable String id) {
-        requireSuperAdmin(authentication);
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        requireOwnInstitutionIfNotSuperAdmin(caller, userManagerService.get(id).institutionId());
         return userManagerService.restore(id);
     }
 
-    /** Same manual guard as InstitutionController — see its own note on why (no Spring authorities set up yet). */
-    private void requireSuperAdmin(Authentication authentication) {
+    private AuthenticatedUserDto requireCaller(Authentication authentication) {
         if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
         }
+        AuthenticatedUserDto caller = authDirectory.find(authentication.getName())
+                .map(AuthDirectory.Account::user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required."));
 
-        String role = authDirectory.find(authentication.getName())
-                .map(account -> account.user().role())
-                .orElse(null);
+        if (!"super_admin".equals(caller.role()) && !"institution_admin".equals(caller.role())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied.");
+        }
+        return caller;
+    }
 
-        if (!"super_admin".equals(role)) {
+    private void requireSuperAdmin(AuthenticatedUserDto caller) {
+        if (!"super_admin".equals(caller.role())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Super admin access required.");
+        }
+    }
+
+    /** An institution_admin may only ever act on their own institution's accounts — never leaked as 403 vs 404, just refused. */
+    private void requireOwnInstitutionIfNotSuperAdmin(AuthenticatedUserDto caller, String targetInstitutionId) {
+        if ("super_admin".equals(caller.role())) {
+            return;
+        }
+        if (!caller.institutionId().equals(targetInstitutionId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied.");
         }
     }
 }

@@ -25,8 +25,9 @@ conventions below and get added here as each one is built.
 ## Status
 
 **Auth (§3), Profile (§3.1), file uploads (§3.2), Dashboards (§9),
-Institutions §4.1/4.3/4.4, User Manager (§4.5), Modules (§4.6), and
-License Manager (§4.7) are all implemented, live, and wired to the
+Institutions §4.1/4.3/4.4, User Manager (§4.5), Modules (§4.6), License
+Manager (§4.7), and Roles (§5, folded into §4.5 rather than a separate
+§6 — see its own note) are all implemented, live, and wired to the
 frontend** — see `backend/README.md`'s "What's implemented" section for
 exactly what that covers (real MSSQL-backed tables via Flyway, not
 in-memory; real Cloudinary uploads, not local-only previews;
@@ -38,12 +39,12 @@ real and server-backed** — as of §4.7 (2026-09-26) there is no longer any
 **Notifications (§10) are also real now (2026-09-26)** — every action on
 Institutions/User Manager/Modules/License Manager creates one server-side,
 at the same point that action's success response is returned; the
-frontend bell/full-page feed reads the real `GET /notifications` endpoint,
-merged client-side with whatever's still locally-generated for domains
-below that have no backend yet (Students, Staff, Academic Sessions, etc.)
-— see `frontend/CLAUDE.md`. Everything else below (Roles, Users, Academic
-Sessions, Students, Schools/Faculties/Departments/Programs, Staff) is
-**not implemented yet** — this file remains what to build those *against*.
+frontend bell/full-page feed reads the real `GET /notifications` endpoint
+directly, no client-side merge with anything local anymore (that merge
+was removed the same day, for both roles — see `frontend/CLAUDE.md`).
+Everything else below (Academic Sessions, Students, Schools/Faculties/
+Departments/Programs, Staff) is **not implemented yet** — this file
+remains what to build those *against*.
 
 ## Deployment
 
@@ -801,7 +802,7 @@ Role-gated the same way Institutions is
 |--------|--------------------------|------------------------------------------------|-------|
 | GET    | `/user-managers`         | —                                              | list, supports pagination + `?search=` (matches username, email, or institution name) + `?includeArchived=true` (default `false` — see 4.5.5) |
 | POST   | `/user-managers`         | see 4.5.2                                      | `status` defaults `"active"` |
-| PATCH  | `/user-managers/:id`     | any subset of `UserManagerAccount` fields       | for editing |
+| PATCH  | `/user-managers/:id`     | any subset of `UserManagerAccount` fields, plus `roleId` | for editing; `roleId` left out keeps the current assignment, `""` clears to unrestricted, any other value must be a real, same-institution, non-archived `Role.id` (§5) — `400` otherwise |
 
 `UserManagerAccount` response shape — see the ER diagram above. Never
 returns `passwordHash`.
@@ -1048,38 +1049,92 @@ intact and can get a new license record anytime via 4.7.1.
 
 ## 5. Roles — institution admin, scoped to their own institution
 
-All routes require `role: "institution_admin"`; results are implicitly
-scoped to the caller's `institutionId`.
+**Implemented (2026-09-26)** — `backend/src/main/java/com/teducare/role/`,
+real `dbo.roles` table. All routes require `role: "institution_admin"`;
+results are implicitly scoped to the caller's `institutionId`, resolved
+server-side from the JWT, never a path/query parameter — a request can only
+ever act on "my own institution's roles" (attempting to touch another
+institution's role, even by guessing its real id, gets a `404`, same
+not-found-not-403 convention used for notifications' cross-tenant guard).
 
-| Method | Path          | Body                                                    | Notes |
-|--------|---------------|----------------------------------------------------------|-------|
-| GET    | `/roles`      | —                                                        | includes the seeded system role |
-| POST   | `/roles`      | `{ name, description, menuKeys: string[] }`               | `isSystem` always `false` for created roles |
-| PATCH  | `/roles/:id`  | `{ name?, description?, menuKeys? }`                       | `403` if the target role `isSystem: true` |
-| DELETE | `/roles/:id`  | —                                                        | `403` if `isSystem: true`; `409` if any user is still assigned it |
+| Method | Path                  | Body                                          | Notes |
+|--------|-----------------------|------------------------------------------------|-------|
+| GET    | `/roles`              | —                                              | this institution's real roles (active + archived) |
+| POST   | `/roles`              | `{ name, description?, menuKeys: string[] }`   | `409` on a duplicate name within the institution; `400` if `menuKeys` is empty or contains a key `ModuleCatalog`/`"dashboard"` doesn't recognize (mirrors Modules' own "Unknown module key" rule, §4.6.1) |
+| PATCH  | `/roles/:id`          | `{ name?, description?, menuKeys? }`           | partial update, same convention as every other resource here |
+| POST   | `/roles/:id/archive`  | —                                              | soft-delete, restorable — **not** a `DELETE`, matching every other resource's own archive convention rather than this section's original `DELETE`/409-if-assigned draft (see below) |
+| POST   | `/roles/:id/restore`  | —                                              | |
 
-`menuKeys` must be validated server-side against the known key set (mirror
-`frontend/src/config/nav.ts`'s `INSTITUTION_NAV` keys) — reject unknown keys
-rather than silently storing them.
+**Two deliberate departures from this section's original pre-backend
+draft**, both decided while actually building it against the real
+`UserAccount`/Institution schema already in place:
 
-## 6. Users (staff) — institution admin, scoped to their own institution
+1. **No materialized "system role" row, and no `isSystem` field at all.**
+   The draft imagined `GET /roles` always including a seeded system role.
+   In the real schema, "unrestricted root admin" is simply
+   `UserAccount.roleId IS NULL` — every institution's primary admin created
+   through `POST /user-managers` already gets this for free, with nothing
+   to seed, migrate, or protect-from-edit. A `Role` row here is therefore
+   *always* a real, named restriction; there is no row to represent "no
+   restriction," since inventing one to satisfy a UI list would be exactly
+   the kind of fabricated-for-display data this whole backend has been
+   built to avoid everywhere else.
+2. **Archive, not delete-with-409.** Every other resource in this API
+   (Institutions, User Manager, Notifications) treats "Delete" in the UI as
+   a soft archive, restorable, never a true `DELETE`. Roles follows the
+   same convention instead of the draft's harder "`409` if any user still
+   has it" rule: archiving a role in use doesn't retroactively strip access
+   from accounts still assigned to it (their menu keys keep resolving from
+   that same row, since the lookup-by-id used for login isn't filtered by
+   `archivedAt` — only the *assignable* list a fresh assignment would pick
+   from is), and reassigning them to something else remains a separate,
+   explicit action.
 
-| Method | Path          | Body                                        | Notes |
-|--------|---------------|-----------------------------------------------|-------|
-| GET    | `/users`      | —                                            | staff within the caller's institution |
-| POST   | `/users`      | `{ name, email, roleId }`                     | `status` defaults `"active"`; this is what provisions a real login for that staff member (send them a credential/invite — mechanism is up to the backend) |
-| PATCH  | `/users/:id`  | `{ name?, email?, roleId?, status? }`          | |
-| DELETE | `/users/:id`  | —                                            | |
+## 6. Users (staff) — folded into User Manager (§4.5), not a separate resource
+
+**Implemented (2026-09-26)**, as an extension of `/user-managers` rather
+than the new `/users` resource this section originally sketched.
+`ManagedUser` (a role-restricted staff login) and `UserManagerAccount` (the
+super-admin-managed login row `institution_admin` logins already
+authenticate against, §3's own note) turned out to be **the exact same
+real row** — every login for an institution, whether its unrestricted
+primary admin or a role-restricted staff member, is a `UserAccount` with
+`role = "institution_admin"`, distinguished only by `roleId`. Building a
+second, parallel `/users` CRUD over what's already a real, working
+resource would have duplicated it rather than extended it — the same
+"extend the existing entity" call made for User Manager itself back when
+it was first built.
+
+Concretely: `PATCH /user-managers/:id` (§4.5.1) now also accepts an
+optional `roleId` — left out entirely keeps the account's current
+assignment, an explicit blank string (`""`) clears it back to unrestricted,
+any other value must be a real, same-institution `Role.id` (`400` if it
+belongs to a different institution, doesn't exist, or is archived). This
+stays gated the same way the rest of `/user-managers` already is
+(`super_admin` only) — an institution_admin *managing* their own staff's
+role assignments from `/dashboard/user-management` (rather than a
+super_admin doing it from `/super-admin/user-manager`) is real, additional
+scope nobody has asked for yet, flagged here rather than silently decided
+either way.
+
+**The one thing that matters most about this whole section — verified
+live, not just asserted**: whatever `menuKeys` a Role grants is resolved
+**live** at every point `AuthenticatedUserDto` gets built (`/auth/login`,
+`GET /auth/me`, `/profile`) — never a snapshot copied onto the account at
+assignment time. Assign a role: the very next request that account makes
+(no re-login needed) reflects it. Edit that role's `menuKeys` later:
+everyone currently assigned it picks up the change on their next request
+too. This is the same "always live, never a stale denormalized copy" rule
+already applied to institution name/logo in `AuthDirectory` — see
+`backend/CLAUDE.md`.
 
 ```mermaid
 flowchart LR
-    A[Staff signs in] --> B{role assigned?}
-    B -- "system role (root admin)" --> C[menuKeys = null]
-    B -- "custom role" --> D[load Role.menuKeys]
+    A[Account makes any authenticated request] --> B{roleId set?}
+    B -- "null (root admin)" --> C[menuKeys omitted from response]
+    B -- "real Role id" --> D[Look up that Role's menuKeys live]
     C --> E[Frontend renders full sidebar]
     D --> F[Frontend renders only those menu items]
-    E --> G[Every dashboard route reachable]
-    F --> H[Only routes behind an allowed key reachable]
 ```
 
 ---

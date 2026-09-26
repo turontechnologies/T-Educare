@@ -20,6 +20,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, String
             select u from UserAccount u
             where u.role = 'institution_admin'
             and (:includeArchived = true or u.archivedAt is null)
+            and (:institutionId is null or u.institutionId = :institutionId)
             and (:search is null
                  or lower(u.username) like lower(concat('%', :search, '%'))
                  or lower(u.email) like lower(concat('%', :search, '%'))
@@ -29,6 +30,7 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, String
     Page<UserAccount> searchUserManagers(
             @Param("search") String search,
             @Param("includeArchived") boolean includeArchived,
+            @Param("institutionId") String institutionId,
             Pageable pageable);
 
     /** Real count for the super admin profile summary (API_CONTRACT.md §3.1) — never hardcoded. */
