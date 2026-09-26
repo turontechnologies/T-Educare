@@ -29,6 +29,8 @@ export type UserManagerFormPayload = {
   institutionId: string;
   isPrimaryAdmin: boolean;
   avatarUrl?: string;
+  /** Omit to leave unchanged; "" clears back to unrestricted; otherwise a real Role.id (see hooks/use-roles.ts). */
+  roleId?: string;
 };
 
 export const userManagerService = {

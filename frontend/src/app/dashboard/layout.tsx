@@ -12,7 +12,6 @@ import { useInstitutions } from "@/hooks/use-institutions";
 import { useMe } from "@/hooks/use-login";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
-import { useRbacStore } from "@/store/rbac.store";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -20,7 +19,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
-  const roles = useRbacStore((state) => state.roles);
   const institutions = useInstitutionsStore((state) => state.institutions);
   const setInstitutions = useInstitutionsStore(
     (state) => state.setInstitutions,
@@ -71,11 +69,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       liveInstitution?.moduleKeys ?? [],
     );
 
-    const role = roles.find((r) => r.id === user?.roleId);
-    const allowedKeys =
-      !user?.roleId || role?.isSystem ? null : (role?.menuKeys ?? []);
-    return filterNavByAccess(moduleScopedNav, allowedKeys);
-  }, [liveInstitution, roles, user?.roleId]);
+    // The backend resolves this live from the real Role behind roleId (see
+    // AuthDirectory) — never a client-side lookup. Absent means unrestricted.
+    return filterNavByAccess(moduleScopedNav, user?.menuKeys ?? null);
+  }, [liveInstitution, user?.menuKeys]);
 
   if (!token || user?.role !== "institution_admin") {
     // Either still hydrating (AppSplash covers this) or unauthenticated/wrong

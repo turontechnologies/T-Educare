@@ -12,7 +12,8 @@ public record CreateUserManagerRequest(
         String phone,
         @NotBlank(message = "Username is required.") String username,
         @NotBlank(message = "Password is required.") String password,
-        @NotBlank(message = "Institution is required.") String institutionId,
+        /** Not @NotBlank: an institution_admin caller's value here is always overridden server-side (UserManagerController), so it may legitimately arrive blank; a super_admin caller's blank value is rejected explicitly in the controller instead. */
+        String institutionId,
         boolean isPrimaryAdmin,
         String avatarUrl) {
 }

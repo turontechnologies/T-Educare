@@ -14,10 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { filterNavByModules, INSTITUTION_NAV } from "@/config/nav";
+import { useCreateRole, useUpdateRole } from "@/hooks/use-roles";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
-import { useRbacStore } from "@/store/rbac.store";
-import type { Role } from "@/types/rbac";
+import type { Role } from "@/types/role";
 import { MenuAccessTree } from "./menu-access-tree";
 
 interface RoleFormValues {
@@ -54,8 +54,8 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 }
 
 function RoleForm({ role, onDone }: { role?: Role; onDone: () => void }) {
-  const createRole = useRbacStore((state) => state.createRole);
-  const updateRole = useRbacStore((state) => state.updateRole);
+  const createRole = useCreateRole();
+  const updateRole = useUpdateRole();
   const authUser = useAuthStore((state) => state.user);
   const institutions = useInstitutionsStore((state) => state.institutions);
 
@@ -75,19 +75,28 @@ function RoleForm({ role, onDone }: { role?: Role; onDone: () => void }) {
     },
   });
 
-  const onSubmit = (values: RoleFormValues) => {
+  const onSubmit = async (values: RoleFormValues) => {
     if (menuKeys.length === 0) {
       toast.error("Grant access to at least one menu item");
       return;
     }
-    if (role) {
-      updateRole(role.id, { ...values, menuKeys });
-      toast.success(`${values.name} updated`);
-    } else {
-      createRole({ ...values, menuKeys });
-      toast.success(`${values.name} role created`);
+    try {
+      if (role) {
+        await updateRole.mutateAsync({
+          id: role.id,
+          payload: { ...values, menuKeys },
+        });
+        toast.success(`${values.name} updated`);
+      } else {
+        await createRole.mutateAsync({ ...values, menuKeys });
+        toast.success(`${values.name} role created`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save role",
+      );
     }
-    onDone();
   };
 
   return (
@@ -131,7 +140,11 @@ function RoleForm({ role, onDone }: { role?: Role; onDone: () => void }) {
         <Button
           type="submit"
           form="role-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createRole.isPending ||
+            updateRole.isPending
+          }
           className="rounded-full"
         >
           {role ? "Save changes" : "Create role"}

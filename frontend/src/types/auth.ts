@@ -13,8 +13,16 @@ export interface AuthenticatedUser {
   institutionLogoUrl?: string;
   /** institution_admin only — links to the real record in `useInstitutionsStore`, whose `moduleKeys` cap which menu items this user's institution can access at all (see `filterNavByModules`). */
   institutionId?: string;
-  /** institution_admin only — the Role (src/store/rbac.store.ts) governing their menu access. Absent or a system role means unrestricted. */
+  /** institution_admin only — the real Role (hooks/use-roles.ts) governing their menu access. Absent means unrestricted (the institution's own root admin). */
   roleId?: string;
+  /**
+   * Resolved live by the backend from the real Role behind `roleId` — never
+   * a value to look up client-side. Absent (not `[]`) means unrestricted;
+   * `filterNavByAccess` treats a missing array the same as `null`. Refreshed
+   * on every login/`/auth/me` poll, so editing a Role's menu keys reaches an
+   * already-open session without a re-login.
+   */
+  menuKeys?: string[];
 }
 
 export interface LoginRequest {

@@ -17,6 +17,8 @@ export interface UserManagerAccount {
   institutionName: string;
   isPrimaryAdmin: boolean;
   avatarUrl?: string;
+  /** Real Role.id (see types/role.ts) this account is restricted to — absent/null means unrestricted (the institution's own root admin behaves this way by default). */
+  roleId?: string | null;
   status: UserManagerStatus;
   createdAt: string;
   /** Soft-delete — archived accounts are hidden from the main list but never destroyed. ISO timestamp, or null if active. */

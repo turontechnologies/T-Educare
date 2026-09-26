@@ -72,6 +72,9 @@ public class UserManagerController {
                     caller.institutionId(), false, request.avatarUrl());
         } else {
             requireSuperAdmin(caller);
+            if (request.institutionId() == null || request.institutionId().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Institution is required.");
+            }
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(userManagerService.create(request));
     }

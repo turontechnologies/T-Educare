@@ -259,14 +259,6 @@ export const SUPER_ADMIN_NAV: NavItem[] = [
   },
 ];
 
-/** Flat list of every key (parents + leaves) in a nav tree — used to seed the "full access" role. */
-export function collectAllMenuKeys(items: NavItem[]): string[] {
-  return items.flatMap((item) => [
-    item.key,
-    ...(item.children ? collectAllMenuKeys(item.children) : []),
-  ]);
-}
-
 /**
  * Filters a nav tree down to what an institution's activated modules unlock
  * (see `types/module.ts` and the super-admin Modules page). A leaf item
