@@ -11,8 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { NotchedField } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import type { ProgramLevel } from "@/types/program-level";
 
@@ -69,7 +67,6 @@ function ProgramLevelForm({
   programLevel?: ProgramLevel;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
   const createProgramLevel = useProgramLevelsStore(
     (state) => state.createProgramLevel,
@@ -105,25 +102,9 @@ function ProgramLevelForm({
     if (programLevel) {
       updateProgramLevel(programLevel.id, payload);
       toast.success(`${levelCode} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Program level updated",
-          `Level ${levelCode} was updated.`,
-          "/dashboard/academics/program-levels",
-        );
-      }
     } else {
       const created = createProgramLevel(payload);
       toast.success(`${created.levelCode} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New program level added",
-          `Level ${created.levelCode} was added to your institution's academic structure.`,
-          "/dashboard/academics/program-levels",
-        );
-      }
     }
     onDone();
   };

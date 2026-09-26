@@ -17,17 +17,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { NotificationDetailsDialog } from "./notification-details-dialog";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
-import { useAuthStore } from "@/store/auth.store";
-import {
-  notificationsForUser,
-  useNotificationsStore,
-} from "@/store/notifications.store";
 import {
   useDismissNotification,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
-  useMergedNotifications,
-  type MergedNotification,
+  useNotificationsFeed,
+  type NotificationItem,
 } from "@/hooks/use-notifications";
 
 type ReadFilter = "all" | "unread" | "read";
@@ -42,22 +37,14 @@ interface NotificationsListProps {
   breadcrumb: string[];
 }
 
-/** Full notifications feed — shared by `/super-admin/notifications` and `/dashboard/notifications`; the real/local merge happens once, in `useMergedNotifications`. */
+/** Full notifications feed — shared by `/super-admin/notifications` and `/dashboard/notifications`; entirely backend-real, see `useNotificationsFeed`. */
 export function NotificationsList({ breadcrumb }: NotificationsListProps) {
-  const user = useAuthStore((state) => state.user);
-  const localAll = useNotificationsStore((state) => state.notifications);
-  const localMarkAsRead = useNotificationsStore((state) => state.markAsRead);
-  const localMarkManyAsRead = useNotificationsStore(
-    (state) => state.markManyAsRead,
-  );
-  const localDismiss = useNotificationsStore((state) => state.dismiss);
-
-  const { notifications: mine } = useMergedNotifications();
+  const { notifications: mine } = useNotificationsFeed();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
   const dismissReal = useDismissNotification();
 
-  const [selected, setSelected] = useState<MergedNotification | null>(null);
+  const [selected, setSelected] = useState<NotificationItem | null>(null);
   const [search, setSearch] = useState("");
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
 
@@ -76,32 +63,17 @@ export function NotificationsList({ breadcrumb }: NotificationsListProps) {
     });
   }, [mine, search, readFilter]);
 
-  const handleSelect = (notification: MergedNotification) => {
-    if (notification.source === "real") {
-      markRead.mutate(notification.id);
-    } else {
-      localMarkAsRead(notification.id);
-    }
+  const handleSelect = (notification: NotificationItem) => {
+    markRead.mutate(notification.id);
     setSelected(notification);
   };
 
   const handleMarkAllRead = () => {
     markAllRead.mutate();
-    if (user?.role !== "super_admin") {
-      localMarkManyAsRead(
-        notificationsForUser(localAll, user)
-          .filter((n) => !n.read)
-          .map((n) => n.id),
-      );
-    }
   };
 
-  const handleDismiss = (notification: MergedNotification) => {
-    if (notification.source === "real") {
-      dismissReal.mutate(notification.id);
-    } else {
-      localDismiss(notification.id);
-    }
+  const handleDismiss = (notification: NotificationItem) => {
+    dismissReal.mutate(notification.id);
   };
 
   return (

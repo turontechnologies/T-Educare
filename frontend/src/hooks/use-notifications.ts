@@ -5,11 +5,6 @@ import {
   notificationService,
   type NotificationsListParams,
 } from "@/services/notification.service";
-import { useAuthStore } from "@/store/auth.store";
-import {
-  notificationsForUser,
-  useNotificationsStore,
-} from "@/store/notifications.store";
 
 const NOTIFICATIONS_KEY = "notifications";
 
@@ -62,68 +57,35 @@ export function useDismissNotification() {
   });
 }
 
-/** Same shape either way, once each side has already been filtered to "mine" — `source` says which action (real API call vs. local store action) reading/dismissing it should use. */
-export interface MergedNotification {
+export type NotificationItem = {
   id: string;
   title: string;
   message: string;
   href?: string;
   createdAt: string;
   read: boolean;
-  source: "real" | "local";
-}
+};
 
 /**
- * Combines the real, backend-generated feed (Institutions/User Manager/
- * Modules/License Manager — API_CONTRACT.md §10) with whatever's still
- * local-only in `notifications.store.ts` (Students/Staff/Academics/etc. —
- * still fully mocked, no backend yet). Every domain that gets a real
- * backend later drops its `notify.ts` call sites and its notifications
- * simply stop appearing on the local side, same one-at-a-time migration as
- * every other resource in this app — nothing else here needs to change
- * when that happens.
- *
- * **super_admin never merges in local data at all (2026-09-26, explicitly
- * requested — "no more mock data for super admin, all should come from the
- * backend")**: `notify.ts`'s `notifyPlatform` has no call sites left
- * anywhere in the app (every action a super admin can take is already
- * backend-real), so this would already be empty for them in practice —
- * skipping the merge outright makes that a structural guarantee instead of
- * an incidental one, so a future `notifyPlatform` call added for a
- * still-mocked feature can't quietly leak mock data into a super admin's
- * feed. An institution_admin still merges, since Students/Staff/Academic
- * Sessions/etc. genuinely have no backend yet and still notify locally.
+ * The full notifications feed for the current caller — entirely backend-real
+ * (Institutions/User Manager/Modules/License Manager, API_CONTRACT.md §10),
+ * already scoped server-side to what that caller can see (platform-wide for
+ * super_admin, institution + personal for institution_admin). No local/mock
+ * data on either side (2026-09-26, explicitly requested — "no mock or
+ * hardcoded data for notifications, for either role"): a domain that still
+ * has no backend of its own (Students/Staff/Academic Sessions/etc.) simply
+ * produces no notifications yet, rather than a fabricated local one.
  */
-export function useMergedNotifications() {
-  const user = useAuthStore((state) => state.user);
-  const { data: realData, isLoading } = useNotifications({ perPage: 100 });
-  const localAll = useNotificationsStore((state) => state.notifications);
+export function useNotificationsFeed() {
+  const { data, isLoading } = useNotifications({ perPage: 100 });
 
-  const notifications = useMemo<MergedNotification[]>(() => {
-    const real: MergedNotification[] = (realData?.data ?? []).map((n) => ({
-      ...n,
-      source: "real",
-    }));
-    if (user?.role === "super_admin") {
-      return real.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    }
-
-    const local: MergedNotification[] = notificationsForUser(
-      localAll,
-      user,
-    ).map((n) => ({
-      id: n.id,
-      title: n.title,
-      message: n.message,
-      href: n.href,
-      createdAt: n.createdAt,
-      read: n.read,
-      source: "local",
-    }));
-    return [...real, ...local].sort((a, b) =>
-      b.createdAt.localeCompare(a.createdAt),
-    );
-  }, [realData, localAll, user]);
+  const notifications = useMemo<NotificationItem[]>(
+    () =>
+      [...(data?.data ?? [])].sort((a, b) =>
+        b.createdAt.localeCompare(a.createdAt),
+      ),
+    [data],
+  );
 
   return { notifications, isLoading };
 }

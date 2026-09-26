@@ -38,8 +38,6 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { DepartmentDialog } from "@/components/features/academics/department-dialog";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -100,7 +98,6 @@ function DepartmentTable({
 }: {
   onEdit: (department: Department) => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const departments = useDepartmentsStore((state) => state.departments);
   const archiveDepartment = useDepartmentsStore(
     (state) => state.archiveDepartment,
@@ -353,14 +350,6 @@ function DepartmentTable({
           if (!pendingArchive) return;
           archiveDepartment(pendingArchive.id);
           toast.success(`${pendingArchive.name} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Department deleted",
-              `${pendingArchive.name} was removed from the active list.`,
-              "/dashboard/academics/departments",
-            );
-          }
         }}
       />
     </>

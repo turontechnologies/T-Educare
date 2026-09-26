@@ -38,8 +38,6 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProgramLevelDialog } from "@/components/features/academics/program-level-dialog";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import type { ProgramLevel } from "@/types/program-level";
 
@@ -94,7 +92,6 @@ function ProgramLevelTable({
 }: {
   onEdit: (level: ProgramLevel) => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
   const archiveProgramLevel = useProgramLevelsStore(
     (state) => state.archiveProgramLevel,
@@ -331,14 +328,6 @@ function ProgramLevelTable({
           if (!pendingArchive) return;
           archiveProgramLevel(pendingArchive.id);
           toast.success(`${pendingArchive.levelCode} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Program level deleted",
-              `Level ${pendingArchive.levelCode} was removed from the active list.`,
-              "/dashboard/academics/program-levels",
-            );
-          }
         }}
       />
     </>

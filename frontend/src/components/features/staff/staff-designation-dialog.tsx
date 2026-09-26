@@ -15,8 +15,6 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useStaffStore } from "@/store/staff.store";
 import type {
   StaffCategory,
@@ -81,7 +79,6 @@ function DesignationForm({
   designation?: StaffDesignation;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const designations = useStaffStore((state) => state.designations);
   const createDesignation = useStaffStore((state) => state.createDesignation);
   const updateDesignation = useStaffStore((state) => state.updateDesignation);
@@ -119,25 +116,9 @@ function DesignationForm({
     if (designation) {
       updateDesignation(designation.id, payload);
       toast.success(`${name} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Designation updated",
-          `${name}'s record was updated.`,
-          "/dashboard/staff/designation",
-        );
-      }
     } else {
       const created = createDesignation(payload);
       toast.success(`${created.name} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New designation added",
-          `${created.name} was added to your institution's staff designations.`,
-          "/dashboard/staff/designation",
-        );
-      }
     }
     onDone();
   };

@@ -11,8 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { NotchedField } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useCourseGradesStore } from "@/store/course-grades.store";
 import type { CourseGrade } from "@/types/course-grade";
 
@@ -72,7 +70,6 @@ function CourseGradeForm({
   courseGrade?: CourseGrade;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const courseGrades = useCourseGradesStore((state) => state.courseGrades);
   const createCourseGrade = useCourseGradesStore(
     (state) => state.createCourseGrade,
@@ -122,25 +119,9 @@ function CourseGradeForm({
     if (courseGrade) {
       updateCourseGrade(courseGrade.id, payload);
       toast.success(`${code} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Grade updated",
-          `Grade ${code} was updated.`,
-          "/dashboard/academics/course-grades",
-        );
-      }
     } else {
       const created = createCourseGrade(payload);
       toast.success(`${created.code} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New grade added",
-          `Grade ${created.code} was added to your institution's grading scale.`,
-          "/dashboard/academics/course-grades",
-        );
-      }
     }
     onDone();
   };

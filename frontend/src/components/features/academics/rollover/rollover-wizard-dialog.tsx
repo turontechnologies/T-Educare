@@ -18,9 +18,7 @@ import {
   ROLLOVER_DECISION_BADGE_CLASS,
   ROLLOVER_DECISION_LABELS,
 } from "@/lib/rollover";
-import { notifyInstitution } from "@/lib/notify";
 import { useAcademicsStore } from "@/store/academics.store";
-import { useAuthStore } from "@/store/auth.store";
 import { useRolloverStore } from "@/store/rollover.store";
 import { useStudentsStore } from "@/store/students.store";
 import { RolloverReviewTable } from "./rollover-review-table";
@@ -84,7 +82,6 @@ function RolloverWizard({
   sourceSessionId: string;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const sessions = useAcademicsStore((state) => state.sessions);
   const students = useStudentsStore((state) => state.students);
   const createDraft = useRolloverStore((state) => state.createDraft);
@@ -178,14 +175,6 @@ function RolloverWizard({
   const handleConfirm = () => {
     if (!draftId) return;
     confirmRollover(draftId);
-    if (authUser?.institutionId) {
-      notifyInstitution(
-        authUser.institutionId,
-        "Session rollover completed",
-        `${record?.entries.length ?? 0} students were rolled over from ${sessionName(sourceId)} to ${sessionName(destinationId)}.`,
-        "/dashboard/academics/sessions",
-      );
-    }
     setStep(5);
   };
 

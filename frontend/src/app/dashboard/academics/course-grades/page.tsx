@@ -39,8 +39,6 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { CourseGradeDialog } from "@/components/features/academics/course-grade-dialog";
 import { NotchedField } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useCourseGradesStore } from "@/store/course-grades.store";
 import type { CourseGrade } from "@/types/course-grade";
 
@@ -92,7 +90,6 @@ export default function CourseGradesPage() {
 }
 
 function MaxGradePointForm() {
-  const authUser = useAuthStore((state) => state.user);
   const maxGradePoint = useCourseGradesStore((state) => state.maxGradePoint);
   const setMaxGradePoint = useCourseGradesStore(
     (state) => state.setMaxGradePoint,
@@ -107,14 +104,6 @@ function MaxGradePointForm() {
     }
     setMaxGradePoint(parsed);
     toast.success(`Max grade point set to ${parsed}`);
-    if (authUser?.institutionId) {
-      notifyInstitution(
-        authUser.institutionId,
-        "Grading scale updated",
-        `The max grade point was set to ${parsed}.`,
-        "/dashboard/academics/course-grades",
-      );
-    }
   };
 
   return (
@@ -143,7 +132,6 @@ function CourseGradeTable({
 }: {
   onEdit: (grade: CourseGrade) => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const courseGrades = useCourseGradesStore((state) => state.courseGrades);
   const archiveCourseGrade = useCourseGradesStore(
     (state) => state.archiveCourseGrade,
@@ -387,14 +375,6 @@ function CourseGradeTable({
           if (!pendingArchive) return;
           archiveCourseGrade(pendingArchive.id);
           toast.success(`${pendingArchive.code} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Grade deleted",
-              `Grade ${pendingArchive.code} was removed from the active list.`,
-              "/dashboard/academics/course-grades",
-            );
-          }
         }}
       />
     </>

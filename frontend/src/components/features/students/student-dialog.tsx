@@ -17,11 +17,9 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { readFileAsDataUrl } from "@/lib/files";
-import { notifyInstitution } from "@/lib/notify";
 import { fullName } from "@/lib/students";
 import { cn } from "@/lib/utils";
 import { useAcademicsStore } from "@/store/academics.store";
-import { useAuthStore } from "@/store/auth.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import { useStudentsStore } from "@/store/students.store";
 import {
@@ -165,7 +163,6 @@ function StudentForm({
   student?: Student;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const students = useStudentsStore((state) => state.students);
   const createStudent = useStudentsStore((state) => state.createStudent);
   const updateStudent = useStudentsStore((state) => state.updateStudent);
@@ -297,14 +294,6 @@ function StudentForm({
     if (student) {
       updateStudent(student.id, payload);
       toast.success(`${fullName(payload)} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Student record updated",
-          `${fullName(payload)}'s record was updated.`,
-          "/dashboard/students",
-        );
-      }
     } else {
       const created = createStudent({
         ...payload,
@@ -314,14 +303,6 @@ function StudentForm({
         holdForReview: false,
       });
       toast.success(`${fullName(created)} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New student enrolled",
-          `${fullName(created)} (${created.matricNo}) was added to ${created.currentLevel}.`,
-          "/dashboard/students",
-        );
-      }
     }
     onDone();
   };

@@ -44,10 +44,8 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { StudentDetailsDialog } from "@/components/features/students/student-details-dialog";
 import { StudentDialog } from "@/components/features/students/student-dialog";
-import { notifyInstitution } from "@/lib/notify";
 import { fullName } from "@/lib/students";
 import { useAcademicsStore } from "@/store/academics.store";
-import { useAuthStore } from "@/store/auth.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import { useStudentsStore } from "@/store/students.store";
 import type { Student } from "@/types/student";
@@ -154,7 +152,6 @@ export default function StudentManagementPage() {
 }
 
 function ImportExportButtons() {
-  const authUser = useAuthStore((state) => state.user);
   const students = useStudentsStore((state) => state.students);
   const createStudent = useStudentsStore((state) => state.createStudent);
   const sessions = useAcademicsStore((state) => state.sessions);
@@ -250,14 +247,6 @@ function ImportExportButtons() {
     toast.success(
       `${imported} students imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
     );
-    if (authUser?.institutionId && imported > 0) {
-      notifyInstitution(
-        authUser.institutionId,
-        "Students imported",
-        `${imported} students were imported via CSV.`,
-        "/dashboard/students",
-      );
-    }
   };
 
   return (
@@ -300,7 +289,6 @@ function StudentTable({
   onEdit: (student: Student) => void;
   onView: (student: Student) => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const students = useStudentsStore((state) => state.students);
   const archiveStudent = useStudentsStore((state) => state.archiveStudent);
   const restoreStudent = useStudentsStore((state) => state.restoreStudent);
@@ -633,14 +621,6 @@ function StudentTable({
           if (!pendingArchive) return;
           archiveStudent(pendingArchive.id);
           toast.success(`${fullName(pendingArchive)} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Student record deleted",
-              `${fullName(pendingArchive)} (${pendingArchive.matricNo}) was removed from the active list.`,
-              "/dashboard/students",
-            );
-          }
         }}
       />
 
@@ -654,14 +634,6 @@ function StudentTable({
         onConfirm={() => {
           selected.forEach((id) => archiveStudent(id));
           toast.success(`${selected.size} students deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Students deleted",
-              `${selected.size} student records were removed from the active list.`,
-              "/dashboard/students",
-            );
-          }
           setSelected(new Set());
         }}
       />

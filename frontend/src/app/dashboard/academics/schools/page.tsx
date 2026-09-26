@@ -38,8 +38,6 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { SchoolDialog } from "@/components/features/academics/school-dialog";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { School } from "@/types/school";
 
@@ -92,7 +90,6 @@ export default function SchoolManagementPage() {
 }
 
 function SchoolTable({ onEdit }: { onEdit: (school: School) => void }) {
-  const authUser = useAuthStore((state) => state.user);
   const schools = useSchoolsStore((state) => state.schools);
   const archiveSchool = useSchoolsStore((state) => state.archiveSchool);
   const restoreSchool = useSchoolsStore((state) => state.restoreSchool);
@@ -323,14 +320,6 @@ function SchoolTable({ onEdit }: { onEdit: (school: School) => void }) {
           if (!pendingArchive) return;
           archiveSchool(pendingArchive.id);
           toast.success(`${pendingArchive.name} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "School deleted",
-              `${pendingArchive.name} was removed from the active list.`,
-              "/dashboard/academics/schools",
-            );
-          }
         }}
       />
     </>

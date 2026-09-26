@@ -16,8 +16,6 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -91,7 +89,6 @@ function DepartmentForm({
   department?: Department;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const departments = useDepartmentsStore((state) => state.departments);
   const createDepartment = useDepartmentsStore(
     (state) => state.createDepartment,
@@ -142,25 +139,9 @@ function DepartmentForm({
     if (department) {
       updateDepartment(department.id, payload);
       toast.success(`${name} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Department updated",
-          `${name}'s record was updated.`,
-          "/dashboard/academics/departments",
-        );
-      }
     } else {
       const created = createDepartment(payload);
       toast.success(`${created.name} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New department added",
-          `${created.name} was added to your institution's academic structure.`,
-          "/dashboard/academics/departments",
-        );
-      }
     }
     onDone();
   };

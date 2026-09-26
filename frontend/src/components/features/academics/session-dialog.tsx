@@ -16,9 +16,7 @@ import {
   NotchedDateField,
   NotchedField,
 } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
 import { useAcademicsStore } from "@/store/academics.store";
-import { useAuthStore } from "@/store/auth.store";
 import type { AcademicSession } from "@/types/academics";
 
 interface SessionFormValues {
@@ -73,7 +71,6 @@ function SessionForm({
   session?: AcademicSession;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const sessions = useAcademicsStore((state) => state.sessions);
   const createSession = useAcademicsStore((state) => state.createSession);
   const updateSession = useAcademicsStore((state) => state.updateSession);
@@ -156,14 +153,6 @@ function SessionForm({
       toast.success("First and Second Semester created automatically");
     }
 
-    if (authUser?.institutionId) {
-      notifyInstitution(
-        authUser.institutionId,
-        "New academic session added",
-        `${name} was added to your institution's calendar.`,
-        "/dashboard/academics/sessions",
-      );
-    }
     onDone();
   };
 

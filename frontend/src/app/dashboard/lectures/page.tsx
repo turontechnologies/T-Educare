@@ -42,9 +42,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { LecturerDetailsDialog } from "@/components/features/lectures/lecturer-details-dialog";
 import { LecturerDialog } from "@/components/features/lectures/lecturer-dialog";
-import { notifyInstitution } from "@/lib/notify";
 import { fullName } from "@/lib/lecturers";
-import { useAuthStore } from "@/store/auth.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useLecturersStore } from "@/store/lecturers.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -152,7 +150,6 @@ export default function LectureManagementPage() {
 }
 
 function ImportExportButtons() {
-  const authUser = useAuthStore((state) => state.user);
   const lecturers = useLecturersStore((state) => state.lecturers);
   const createLecturer = useLecturersStore((state) => state.createLecturer);
   const schools = useSchoolsStore((state) => state.schools);
@@ -219,14 +216,6 @@ function ImportExportButtons() {
     toast.success(
       `${imported} lecturers imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
     );
-    if (authUser?.institutionId && imported > 0) {
-      notifyInstitution(
-        authUser.institutionId,
-        "Lecturers imported",
-        `${imported} lecturers were imported via CSV.`,
-        "/dashboard/lectures",
-      );
-    }
   };
 
   return (
@@ -269,7 +258,6 @@ function LecturerTable({
   onEdit: (lecturer: Lecturer) => void;
   onView: (lecturer: Lecturer) => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const lecturers = useLecturersStore((state) => state.lecturers);
   const archiveLecturer = useLecturersStore((state) => state.archiveLecturer);
   const restoreLecturer = useLecturersStore((state) => state.restoreLecturer);
@@ -593,14 +581,6 @@ function LecturerTable({
           if (!pendingArchive) return;
           archiveLecturer(pendingArchive.id);
           toast.success(`${fullName(pendingArchive)} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Lecturer record deleted",
-              `${fullName(pendingArchive)} (${pendingArchive.username}) was removed from the active list.`,
-              "/dashboard/lectures",
-            );
-          }
         }}
       />
 
@@ -614,14 +594,6 @@ function LecturerTable({
         onConfirm={() => {
           selected.forEach((id) => archiveLecturer(id));
           toast.success(`${selected.size} lecturers deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Lecturers deleted",
-              `${selected.size} lecturer records were removed from the active list.`,
-              "/dashboard/lectures",
-            );
-          }
           setSelected(new Set());
         }}
       />

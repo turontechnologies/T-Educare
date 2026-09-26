@@ -38,8 +38,6 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { FacultyDialog } from "@/components/features/academics/faculty-dialog";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Faculty } from "@/types/faculty";
@@ -93,7 +91,6 @@ export default function FacultyManagementPage() {
 }
 
 function FacultyTable({ onEdit }: { onEdit: (faculty: Faculty) => void }) {
-  const authUser = useAuthStore((state) => state.user);
   const faculties = useFacultiesStore((state) => state.faculties);
   const archiveFaculty = useFacultiesStore((state) => state.archiveFaculty);
   const restoreFaculty = useFacultiesStore((state) => state.restoreFaculty);
@@ -329,14 +326,6 @@ function FacultyTable({ onEdit }: { onEdit: (faculty: Faculty) => void }) {
           if (!pendingArchive) return;
           archiveFaculty(pendingArchive.id);
           toast.success(`${pendingArchive.name} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Faculty deleted",
-              `${pendingArchive.name} was removed from the active list.`,
-              "/dashboard/academics/faculties",
-            );
-          }
         }}
       />
     </>

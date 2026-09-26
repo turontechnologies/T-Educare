@@ -49,9 +49,7 @@ import { SemesterDialog } from "@/components/features/academics/semester-dialog"
 import { SessionDetailsDialog } from "@/components/features/academics/session-details-dialog";
 import { SessionDialog } from "@/components/features/academics/session-dialog";
 import { cn } from "@/lib/utils";
-import { notifyInstitution } from "@/lib/notify";
 import { useAcademicsStore } from "@/store/academics.store";
-import { useAuthStore } from "@/store/auth.store";
 import { useRolloverStore } from "@/store/rollover.store";
 import type {
   AcademicPeriodStatus,
@@ -251,7 +249,6 @@ function SessionTable({
   onStartRollover: (session: AcademicSession) => void;
   onViewRollover: (session: AcademicSession) => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const sessions = useAcademicsStore((state) => state.sessions);
   const archiveSession = useAcademicsStore((state) => state.archiveSession);
   const restoreSession = useAcademicsStore((state) => state.restoreSession);
@@ -438,14 +435,6 @@ function SessionTable({
                                   toast.success(
                                     `${session.session} set as the current session`,
                                   );
-                                  if (authUser?.institutionId) {
-                                    notifyInstitution(
-                                      authUser.institutionId,
-                                      "Current session changed",
-                                      `${session.session} is now the current academic session.`,
-                                      "/dashboard/academics/sessions",
-                                    );
-                                  }
                                 }}
                               >
                                 <CalendarCheck2 className="size-3.5" />
@@ -605,14 +594,6 @@ function SessionTable({
           if (!pendingClose) return;
           closeSession(pendingClose.id);
           toast.success(`${pendingClose.session} closed`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Session closed",
-              `${pendingClose.session} has been closed and is ready for rollover.`,
-              "/dashboard/academics/sessions",
-            );
-          }
         }}
       />
     </>
@@ -626,7 +607,6 @@ function SemesterTable({
   onEdit: (semester: AcademicSemester) => void;
   initialSearch?: string;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const semesters = useAcademicsStore((state) => state.semesters);
   const sessions = useAcademicsStore((state) => state.sessions);
   const archiveSemester = useAcademicsStore((state) => state.archiveSemester);
@@ -812,14 +792,6 @@ function SemesterTable({
                                 toast.success(
                                   `${semester.name} set as the current semester`,
                                 );
-                                if (authUser?.institutionId) {
-                                  notifyInstitution(
-                                    authUser.institutionId,
-                                    "Current semester changed",
-                                    `${semester.name} is now the current semester.`,
-                                    "/dashboard/academics/sessions",
-                                  );
-                                }
                               }}
                             >
                               <CalendarCheck2 className="size-3.5" />

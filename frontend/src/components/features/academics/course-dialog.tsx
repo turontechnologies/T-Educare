@@ -15,8 +15,6 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -75,7 +73,6 @@ function CourseForm({
   course?: Course;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const courses = useCoursesStore((state) => state.courses);
   const createCourse = useCoursesStore((state) => state.createCourse);
   const updateCourse = useCoursesStore((state) => state.updateCourse);
@@ -122,25 +119,9 @@ function CourseForm({
     if (course) {
       updateCourse(course.id, payload);
       toast.success(`${payload.name} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Course updated",
-          `${payload.name}'s record was updated.`,
-          "/dashboard/academics/courses",
-        );
-      }
     } else {
       const created = createCourse(payload);
       toast.success(`${created.name} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New course added",
-          `${created.name} (${created.code}) was added to your institution's course catalogue.`,
-          "/dashboard/academics/courses",
-        );
-      }
     }
     onDone();
   };

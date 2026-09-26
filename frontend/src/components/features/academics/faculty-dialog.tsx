@@ -16,8 +16,6 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Faculty } from "@/types/faculty";
@@ -90,7 +88,6 @@ function FacultyForm({
   faculty?: Faculty;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const faculties = useFacultiesStore((state) => state.faculties);
   const createFaculty = useFacultiesStore((state) => state.createFaculty);
   const updateFaculty = useFacultiesStore((state) => state.updateFaculty);
@@ -131,25 +128,9 @@ function FacultyForm({
     if (faculty) {
       updateFaculty(faculty.id, payload);
       toast.success(`${name} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Faculty updated",
-          `${name}'s record was updated.`,
-          "/dashboard/academics/faculties",
-        );
-      }
     } else {
       const created = createFaculty(payload);
       toast.success(`${created.name} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New faculty added",
-          `${created.name} was added to your institution's academic structure.`,
-          "/dashboard/academics/faculties",
-        );
-      }
     }
     onDone();
   };

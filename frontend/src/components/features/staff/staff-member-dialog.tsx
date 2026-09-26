@@ -17,10 +17,8 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { readFileAsDataUrl } from "@/lib/files";
-import { notifyInstitution } from "@/lib/notify";
 import { fullName } from "@/lib/staff-members";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/store/auth.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useStaffStore } from "@/store/staff.store";
 import { useStaffMembersStore } from "@/store/staff-members.store";
@@ -112,7 +110,6 @@ function StaffMemberForm({
   staffMember?: StaffMember;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const staffMembers = useStaffMembersStore((state) => state.staffMembers);
   const createStaffMember = useStaffMembersStore(
     (state) => state.createStaffMember,
@@ -223,25 +220,9 @@ function StaffMemberForm({
     if (staffMember) {
       updateStaffMember(staffMember.id, payload);
       toast.success(`${fullName(payload)} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Staff record updated",
-          `${fullName(payload)}'s record was updated.`,
-          "/dashboard/staff/all",
-        );
-      }
     } else {
       const created = createStaffMember(payload);
       toast.success(`${fullName(created)} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New staff added",
-          `${fullName(created)} (${created.staffId}) was added as ${created.designation}.`,
-          "/dashboard/staff/all",
-        );
-      }
     }
     onDone();
   };

@@ -40,8 +40,6 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { CourseDialog } from "@/components/features/academics/course-dialog";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -120,7 +118,6 @@ export default function CoursesManagementPage() {
 }
 
 function ImportExportButtons() {
-  const authUser = useAuthStore((state) => state.user);
   const courses = useCoursesStore((state) => state.courses);
   const createCourse = useCoursesStore((state) => state.createCourse);
   const departments = useDepartmentsStore((state) => state.departments);
@@ -174,14 +171,6 @@ function ImportExportButtons() {
     toast.success(
       `${imported} courses imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
     );
-    if (authUser?.institutionId && imported > 0) {
-      notifyInstitution(
-        authUser.institutionId,
-        "Courses imported",
-        `${imported} courses were imported via CSV.`,
-        "/dashboard/academics/courses",
-      );
-    }
   };
 
   return (
@@ -218,7 +207,6 @@ function ImportExportButtons() {
 }
 
 function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
-  const authUser = useAuthStore((state) => state.user);
   const courses = useCoursesStore((state) => state.courses);
   const archiveCourse = useCoursesStore((state) => state.archiveCourse);
   const restoreCourse = useCoursesStore((state) => state.restoreCourse);
@@ -462,14 +450,6 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
           if (!pendingArchive) return;
           archiveCourse(pendingArchive.id);
           toast.success(`${pendingArchive.name} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Course deleted",
-              `${pendingArchive.name} (${pendingArchive.code}) was removed from the active list.`,
-              "/dashboard/academics/courses",
-            );
-          }
         }}
       />
     </>

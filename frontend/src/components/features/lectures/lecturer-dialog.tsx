@@ -15,9 +15,7 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
 import { fullName } from "@/lib/lecturers";
-import { useAuthStore } from "@/store/auth.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useLecturersStore } from "@/store/lecturers.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -115,7 +113,6 @@ function LecturerForm({
   lecturer?: Lecturer;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const lecturers = useLecturersStore((state) => state.lecturers);
   const createLecturer = useLecturersStore((state) => state.createLecturer);
   const updateLecturer = useLecturersStore((state) => state.updateLecturer);
@@ -193,25 +190,9 @@ function LecturerForm({
     if (lecturer) {
       updateLecturer(lecturer.id, payload);
       toast.success(`${fullName(payload)} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Lecturer record updated",
-          `${fullName(payload)}'s record was updated.`,
-          "/dashboard/lectures",
-        );
-      }
     } else {
       const created = createLecturer(payload);
       toast.success(`${fullName(created)} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New lecturer added",
-          `${fullName(created)} (${created.username}) was added as ${created.position}.`,
-          "/dashboard/lectures",
-        );
-      }
     }
     onDone();
   };

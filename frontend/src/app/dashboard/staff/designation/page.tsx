@@ -38,8 +38,6 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { StaffDesignationDialog } from "@/components/features/staff/staff-designation-dialog";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useStaffStore } from "@/store/staff.store";
 import type { StaffDesignation } from "@/types/staff-designation";
 
@@ -98,7 +96,6 @@ function DesignationTable({
 }: {
   onEdit: (designation: StaffDesignation) => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const designations = useStaffStore((state) => state.designations);
   const archiveDesignation = useStaffStore((state) => state.archiveDesignation);
   const restoreDesignation = useStaffStore((state) => state.restoreDesignation);
@@ -336,14 +333,6 @@ function DesignationTable({
           if (!pendingArchive) return;
           archiveDesignation(pendingArchive.id);
           toast.success(`${pendingArchive.name} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Designation deleted",
-              `${pendingArchive.name} was removed from the active list.`,
-              "/dashboard/staff/designation",
-            );
-          }
         }}
       />
     </>

@@ -39,8 +39,6 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProgramDialog } from "@/components/features/academics/program-dialog";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useProgramsStore } from "@/store/programs.store";
@@ -95,7 +93,6 @@ export default function ProgramManagementPage() {
 }
 
 function ProgramTable({ onEdit }: { onEdit: (program: Program) => void }) {
-  const authUser = useAuthStore((state) => state.user);
   const programs = useProgramsStore((state) => state.programs);
   const archiveProgram = useProgramsStore((state) => state.archiveProgram);
   const restoreProgram = useProgramsStore((state) => state.restoreProgram);
@@ -346,14 +343,6 @@ function ProgramTable({ onEdit }: { onEdit: (program: Program) => void }) {
           if (!pendingArchive) return;
           archiveProgram(pendingArchive.id);
           toast.success(`${pendingArchive.name} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Program deleted",
-              `${pendingArchive.name} was removed from the active list.`,
-              "/dashboard/academics/programs",
-            );
-          }
         }}
       />
     </>

@@ -15,8 +15,6 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
-import { useAuthStore } from "@/store/auth.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useProgramsStore } from "@/store/programs.store";
@@ -79,7 +77,6 @@ function ProgramForm({
   program?: Program;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const programs = useProgramsStore((state) => state.programs);
   const createProgram = useProgramsStore((state) => state.createProgram);
   const updateProgram = useProgramsStore((state) => state.updateProgram);
@@ -128,25 +125,9 @@ function ProgramForm({
     if (program) {
       updateProgram(program.id, payload);
       toast.success(`${name} updated`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "Program updated",
-          `${name}'s record was updated.`,
-          "/dashboard/academics/programs",
-        );
-      }
     } else {
       const created = createProgram(payload);
       toast.success(`${created.name} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New program added",
-          `${created.name} was added to your institution's academic structure.`,
-          "/dashboard/academics/programs",
-        );
-      }
     }
     onDone();
   };

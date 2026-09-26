@@ -42,9 +42,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { StaffMemberDialog } from "@/components/features/staff/staff-member-dialog";
-import { notifyInstitution } from "@/lib/notify";
 import { fullName } from "@/lib/staff-members";
-import { useAuthStore } from "@/store/auth.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useStaffStore } from "@/store/staff.store";
 import { useStaffMembersStore } from "@/store/staff-members.store";
@@ -137,7 +135,6 @@ export default function AllStaffPage() {
 }
 
 function ImportExportButtons() {
-  const authUser = useAuthStore((state) => state.user);
   const staffMembers = useStaffMembersStore((state) => state.staffMembers);
   const createStaffMember = useStaffMembersStore(
     (state) => state.createStaffMember,
@@ -215,14 +212,6 @@ function ImportExportButtons() {
     toast.success(
       `${imported} staff imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
     );
-    if (authUser?.institutionId && imported > 0) {
-      notifyInstitution(
-        authUser.institutionId,
-        "Staff imported",
-        `${imported} staff were imported via CSV.`,
-        "/dashboard/staff/all",
-      );
-    }
   };
 
   return (
@@ -259,7 +248,6 @@ function ImportExportButtons() {
 }
 
 function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
-  const authUser = useAuthStore((state) => state.user);
   const staffMembers = useStaffMembersStore((state) => state.staffMembers);
   const archiveStaffMember = useStaffMembersStore(
     (state) => state.archiveStaffMember,
@@ -594,14 +582,6 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
           if (!pendingArchive) return;
           archiveStaffMember(pendingArchive.id);
           toast.success(`${fullName(pendingArchive)} deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Staff record deleted",
-              `${fullName(pendingArchive)} (${pendingArchive.staffId}) was removed from the active list.`,
-              "/dashboard/staff/all",
-            );
-          }
         }}
       />
 
@@ -615,14 +595,6 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
         onConfirm={() => {
           selected.forEach((id) => archiveStaffMember(id));
           toast.success(`${selected.size} staff deleted`);
-          if (authUser?.institutionId) {
-            notifyInstitution(
-              authUser.institutionId,
-              "Staff deleted",
-              `${selected.size} staff records were removed from the active list.`,
-              "/dashboard/staff/all",
-            );
-          }
           setSelected(new Set());
         }}
       />

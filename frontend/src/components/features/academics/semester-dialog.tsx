@@ -16,9 +16,7 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
-import { notifyInstitution } from "@/lib/notify";
 import { useAcademicsStore } from "@/store/academics.store";
-import { useAuthStore } from "@/store/auth.store";
 import type { AcademicSemester } from "@/types/academics";
 
 interface SemesterFormValues {
@@ -74,7 +72,6 @@ function SemesterForm({
   semester?: AcademicSemester;
   onDone: () => void;
 }) {
-  const authUser = useAuthStore((state) => state.user);
   const sessions = useAcademicsStore((state) => state.sessions);
   const createSemester = useAcademicsStore((state) => state.createSemester);
   const updateSemester = useAcademicsStore((state) => state.updateSemester);
@@ -121,14 +118,6 @@ function SemesterForm({
     } else {
       createSemester(payload);
       toast.success(`${values.name} added`);
-      if (authUser?.institutionId) {
-        notifyInstitution(
-          authUser.institutionId,
-          "New semester added",
-          `${values.name} was added to your institution's calendar.`,
-          "/dashboard/academics/sessions",
-        );
-      }
     }
     onDone();
   };

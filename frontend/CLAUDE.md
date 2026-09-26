@@ -157,32 +157,34 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   logo) must be visible both to the super admin later and to that
   account/institution's own login session — `URL.createObjectURL` cannot
   do that, `readFileAsDataUrl` can and does (verified in development).
-- **In-app notifications are real and automated, not a static bell icon —
-  and as of 2026-09-26, the ones for real backend actions are genuinely
-  server-generated, not client-side mocked.** `src/lib/notify.ts` still
-  exports `notifyPlatform`/`notifyInstitution`/`notifyUser`, but they're
-  now **only called from domains with no backend yet** (Students, Staff,
-  Academic Sessions, etc.) — Institutions/User Manager/Modules/License
-  Manager's own call sites were removed entirely, since
-  `InstitutionService`/`UserManagerService` now create the equivalent
+- **In-app notifications are 100% backend-real for both roles, with zero
+  client-side mock/local machinery left at all (2026-09-26).** There used
+  to be a local Zustand store (`notifications.store.ts`) plus
+  `lib/notify.ts` (`notifyPlatform`/`notifyInstitution`/`notifyUser`)
+  feeding notifications for domains that had no backend yet (Students,
+  Staff, Lectures, Academic Sessions and its sub-resources), merged
+  client-side with the real feed. The user explicitly asked for **no mock
+  or hardcoded data in notifications, for either role** — so instead of
+  keeping that merge for `institution_admin` (super_admin already had no
+  local merge, see below), all of it was removed: `lib/notify.ts`,
+  `store/notifications.store.ts`, and `types/notification.ts` are deleted
+  files, their ~47 `notifyInstitution(...)` call sites (and the
+  now-unused `authUser` declarations/imports left behind by removing them)
+  were stripped from all 26 Students/Staff/Lectures/Academics files that
+  had them, and `hooks/use-notifications.ts`'s `useMergedNotifications`
+  was replaced by a much simpler `useNotificationsFeed` that just reads
+  `services/notification.service.ts`'s real `GET /notifications` (already
+  scoped to the caller server-side — platform-wide for super_admin,
+  institution + personal for institution_admin — no client-side filtering
+  needed) and sorts by `createdAt`. **The practical effect**: a domain
+  with no real backend (Students/Staff/Academic Sessions/etc.) now simply
+  produces zero notifications instead of a fabricated local one — same
+  "real or honestly empty, never fabricated" principle as the dashboards
+  (see below). When a domain like this gets a real backend later, add its
   notification server-side at the same success point (API_CONTRACT.md
-  §10, `backend/CLAUDE.md`). When adding a new mutating action to a domain
-  that **already has a real backend**, add the notification there, in the
-  Java service — not here. Only add a frontend `notify*` call for a domain
-  that's still fully mocked.
-  **Two feeds, merged client-side** (`hooks/use-notifications.ts`'s
-  `useMergedNotifications`) — `services/notification.service.ts` calls the
-  real `GET /notifications` (already scoped to the caller server-side, no
-  client-side filtering needed for these), merged with whatever's still in
-  `notifications.store.ts` for the still-mocked domains, filtered through
-  the same `notificationsForUser()` as before. Both `NotificationsBell` and
-  `NotificationsList` read this single merged list; each item is tagged
-  `source: "real" | "local"` so marking-read/dismiss calls the right
-  action (a real mutation hook vs. the local store's own). As each mocked
-  domain gets a real backend later, move its `notify.ts` call site into
-  that service the same way Institutions'/User Manager's just moved — the
-  merge logic itself needs no changes when that happens, its local-side
-  notifications just stop appearing.
+  §10, `backend/CLAUDE.md`), the same way Institutions/User Manager/
+  Modules/License Manager already do — there is no frontend notify path
+  left to wire up anymore.
   **The bell dropdown is an unread queue, not a history (2026-09-26)** —
   explicitly requested: shows only the top 3 _unread_ notifications
   (`unread.slice(0, 3)`, not the 8 most recent regardless of read state
@@ -190,32 +192,18 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   the full `/super-admin/notifications` / `/dashboard/notifications` page,
   which still shows everything regardless of read state — that page is
   the permanent history, the dropdown is just "what's new."
-  **`super_admin` never merges in local-mock data at all, structurally
-  (2026-09-26)** — explicitly requested ("no more mock data for super
-  admin, all should come from the backend"). `notify.ts`'s `notifyPlatform`
-  already has zero call sites left anywhere in the app (every super-admin
-  action is backend-real), so this was already true in practice —
-  `useMergedNotifications` now skips the local merge outright for
-  `user.role === "super_admin"` rather than relying on that incidentally,
-  so a future `notifyPlatform` call added for some still-mocked feature
-  can't quietly leak mock data into a super admin's feed. An
-  `institution_admin` still merges, since Students/Staff/Academic
-  Sessions/etc. genuinely have no backend yet and still notify locally.
-  `NotificationsBell`/`NotificationsList`'s own "mark all read"/unread-count
-  logic mirrors the same guard.
   **Search + filter on the full notifications page, same day** — a text
   search over title/message and a Filter select (All/Unread/Read), both
-  client-side over the already-fetched, already-real merged list (no new
-  backend query params needed — the data source was never the concern,
-  just where the two-line JS filter runs). Confined to the full list page,
-  not the bell dropdown, which stays a compact top-3 preview.
+  client-side over the already-fetched, already-real list (no new backend
+  query params needed — the data source was never the concern, just where
+  the two-line JS filter runs). Confined to the full list page, not the
+  bell dropdown, which stays a compact top-3 preview.
   **Clicking a notification no longer navigates immediately (2026-09-24)**
   — it marks it read and opens `NotificationDetailsDialog` (untruncated
   title/message, since the bell dropdown's row itself is `line-clamp-2`)
   with an explicit "Take me there" button that navigates `href` and closes
   the dialog; a notification with no `href` just shows details with no
-  such button. Every `href` used anywhere (`notify.ts` call sites and the
-  backend's own service methods alike) stays within the recipient's own
+  such button. Every `href` used anywhere stays within the recipient's own
   role area — a `platform`-scope notification's `href` always starts with
   `/super-admin`, an `institution`/`user`-scope one always with
   `/dashboard` — verified via a full-codebase grep for cross-contamination
