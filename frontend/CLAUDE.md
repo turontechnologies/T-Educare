@@ -224,6 +224,24 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   dropdown/list, never nested inside `DropdownMenuContent` — that unmounts
   on close, which would tear the dialog down before it could show if it
   were nested there instead.
+- **Both dashboards' stat cards now show real numbers with zero frontend
+  code changes (2026-09-26)** — `dashboard.service.ts`/`use-dashboard.ts`
+  already called the real `GET /dashboard/stats`/`GET /super-admin/stats`/
+  etc. routes (Dashboards were wired to the backend earlier in this
+  project); only the backend itself was hardcoding the numbers behind
+  them, so fixing that alone was enough — see `backend/CLAUDE.md`.
+  **`EnrollmentChart`/`RecentStudentsCard` did need a real frontend fix,
+  though** — both used to assume there was always at least placeholder
+  data to render (a day/week/month chart, four named fake students); now
+  that the backend honestly returns `{"data": []}` for both (Students has
+  no real backend, so there's nothing real to show), an empty response
+  used to render as a blank, broken-looking chart and an empty card with
+  a dead "View All" button beneath nothing. Both now show a proper empty
+  state ("No enrollment data yet" / "No students registered yet") —
+  matching the same icon + centered-text pattern already used by
+  `NotificationsList`'s own empty state — and `RecentStudentsCard`'s "View
+  All" button — previously wired to nothing — now navigates to
+  `/dashboard/students`.
 - **Session Rollover is append-only and must never be confused with editing
   a student's level in place.** `src/types/student.ts`
   (`Student.academicHistory: StudentAcademicRecord[]`) and

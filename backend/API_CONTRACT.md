@@ -566,22 +566,24 @@ routes, unlike every admin-facing resource elsewhere in this contract.
     "menuKeys": []
   },
   "summary": {
-    "institutionsCount": 27,
-    "licensed": 18,
-    "linkedModules": 14,
-    "userManagerAccounts": 23
+    "institutionsCount": 6,
+    "licensed": 1,
+    "linkedModules": 3,
+    "userManagerAccounts": 7
   }
 }
 ```
 
 `summary` shape depends on `role`: a `super_admin` gets the platform-wide
 counters above; an `institution_admin` instead gets
-`{ institutionName, roleId, menuKeysCount }`. **The super admin's `summary`
-numbers here are currently a separate hardcoded block, not derived from
-`GET /super-admin/stats` (§9.4)** — both happen to agree on institution
-count (27) today, but they're two independent literals, not one shared
-source of truth; wiring both from the same real query is a follow-up once
-institutions move off the mock store.
+`{ institutionName, roleId, menuKeysCount }`. **Real since 2026-09-26** —
+`institutionsCount` reads the exact same `InstitutionRepository.countActive()`
+query `GET /super-admin/stats` (§9.4) uses, so the two are now guaranteed
+to agree by construction rather than being two independently-hardcoded
+literals that merely happened to match. `licensed`/`linkedModules` count
+non-archived institutions with a real license/at least one linked module
+respectively; `userManagerAccounts` counts non-archived
+`institution_admin` rows.
 
 `PATCH /profile/password` never returns the new password (unlike the super
 admin's `POST /user-managers/:id/reset-password`, §4.5.4, which is a
@@ -1482,16 +1484,22 @@ Don't merge the two lists; they're deliberately separate.
 
 **Implemented** (`backend/src/main/java/com/teducare/dashboard/`), against
 the same MSSQL-backed `AuthDirectory` accounts as Auth/Profile above.
-**As of 2026-09-26, the institution admin dashboard's numbers are real
-wherever a real column exists to read them from, and honestly zero/empty
-where none does yet** — `registeredStudents`/`accumulatedProfit` read the
-real, per-institution `Institution.studentCount`/`revenue` columns (real
-since the Institutions build, just never read by this endpoint before);
+**As of 2026-09-26, both dashboards' numbers are real wherever a real
+column/resource exists to read them from, and honestly zero/empty where
+none does yet — nothing on either dashboard is hardcoded anymore.**
+Institution admin: `registeredStudents`/`accumulatedProfit` read the real,
+per-institution `Institution.studentCount`/`revenue` columns (real since
+the Institutions build, just never read by this endpoint before);
 `applicants`/`lecturers` are `0` and the enrollment chart/recent-students
 list are empty, not fabricated, since Applicants/Lecturers/Students have
-no real backend at all yet — see §9.1-9.3. Both dashboards
+no real backend at all yet — see §9.1-9.3. Super admin:
+`institutionsCount`/`totalStudents`/`totalRevenue` (§9.4) and the recent-
+institutions list (§9.5) are now real platform-wide aggregates/queries
+over every non-archived institution, and guaranteed consistent with
+`GET /profile`'s own super-admin `summary` (§3.1), which reads the exact
+same underlying queries. Both dashboards
 (`frontend/src/app/dashboard/page.tsx` and
-`frontend/src/app/super-admin/page.tsx`) now call these routes instead of
+`frontend/src/app/super-admin/page.tsx`) already called these routes instead of
 reading `frontend/src/store/dashboard.store.ts` directly; `institutions.store.ts`
 still backs the "Recent Added Institutions" table's underlying data model,
 but is superseded for that one table by `GET /super-admin/recent-institutions`
@@ -1558,38 +1566,33 @@ pre-format it server-side.
 
 A precomputed summary so the client doesn't have to page through every
 institution just to sum three numbers (it can still cross-check against
-`GET /institutions` — see §4 — but shouldn't have to).
+`GET /institutions` — see §4 — but shouldn't have to). **Real since
+2026-09-26** — a live aggregate over every non-archived institution
+(`institutionsCount` = count, `totalStudents`/`totalRevenue` = sums of
+`studentCount`/`revenue`), not a hardcoded seed-sized number. Guaranteed
+consistent with `GET /profile`'s own `summary.institutionsCount` (§3.1),
+since both now read the exact same `InstitutionRepository.countActive()`
+query rather than two independently-hardcoded numbers that could never
+actually agree.
 
 ```json
-{ "institutionsCount": 27, "totalStudents": 5622, "totalRevenue": 1528600 }
+{ "institutionsCount": 6, "totalStudents": 287, "totalRevenue": 330300 }
 ```
-
-(The frontend's mock seed currently has 27 institutions, for a realistic
-pagination/search demo — see `institutions.store.ts`. Numbers above match
-that seed; a real backend obviously computes them from actual rows and
-should exclude archived institutions from the count, same as §4.4.)
 
 ### 9.5 Super admin — `GET /super-admin/recent-institutions?limit=5`
 
-**This superseded the original plan of reusing `GET /institutions` (§4)
-sorted client-side** — that still works once §4 exists, but this dashboard
-got its own dedicated, purpose-built route instead so it doesn't have to
-wait on the full Institutions CRUD resource:
+**Real since 2026-09-26** — reuses `InstitutionRepository`'s own
+`search()` query (§4.1), unfiltered and limited, ordered by `createdAt`
+descending. Newest `createdAt` first, capped at `limit`.
 
 ```json
 {
   "data": [
-    { "id": "inst-landmark", "name": "Landmark University", "modulesCount": 7,
-      "createdAt": "2026-03-03T14:32:00.000Z", "status": "active" }
+    { "id": "inst-6b34f008-...", "name": "sams_university", "modulesCount": 19,
+      "createdAt": "2026-09-26T09:01:53.471237100Z", "status": "active" }
   ]
 }
 ```
-
-Newest `createdAt` first, capped at `limit`. Once `GET /institutions`
-exists for real, either keep this as a small purpose-built projection of
-it, or drop it and have the frontend call `GET /institutions?limit=5` —
-whichever a real implementation finds cleaner; the frontend only cares
-about the response shape above, not which route produces it.
 
 ```mermaid
 sequenceDiagram

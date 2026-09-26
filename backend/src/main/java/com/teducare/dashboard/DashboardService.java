@@ -1,7 +1,9 @@
 package com.teducare.dashboard;
 
+import java.time.Instant;
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.teducare.institution.Institution;
@@ -16,8 +18,12 @@ public class DashboardService {
         this.institutionRepository = institutionRepository;
     }
 
+    /** Real, platform-wide aggregates over every active institution — never hardcoded. */
     public SuperAdminStatsResponse superAdminStats() {
-        return new SuperAdminStatsResponse(27, 5622, 1528600);
+        return new SuperAdminStatsResponse(
+                institutionRepository.countActive(),
+                institutionRepository.sumActiveStudentCount(),
+                institutionRepository.sumActiveRevenue());
     }
 
     /**
@@ -53,19 +59,18 @@ public class DashboardService {
         return new DashboardRecentStudentsResponse(List.of());
     }
 
+    /** Real institutions, newest first — reuses the same search() query Institutions §4.1 already exercises, just unfiltered and limited. */
     public DashboardRecentInstitutionsResponse recentInstitutions(int limit) {
         int safeLimit = Math.max(1, limit);
-        List<RecentInstitution> institutions = List.of(
-                new RecentInstitution("inst-landmark", "Landmark University", 7, "2026-03-03T14:32:00.000Z", "active"),
-                new RecentInstitution("inst-rivers", "Rivers State University", 0, "2026-03-03T11:13:00.000Z",
-                        "active"),
-                new RecentInstitution("inst-benin", "University of Benin", 0, "2026-03-03T09:15:00.000Z", "active"),
-                new RecentInstitution("inst-afebabalola", "Afe Babalola University", 7, "2026-03-03T08:07:00.000Z",
-                        "active"),
-                new RecentInstitution("inst-redeemer", "Redeemer's University", 6, "2026-03-03T10:21:00.000Z",
-                        "inactive"));
+        List<RecentInstitution> institutions = institutionRepository
+                .search(null, false, false, false, PageRequest.of(0, safeLimit))
+                .getContent()
+                .stream()
+                .map(i -> new RecentInstitution(
+                        i.getId(), i.getName(), i.getModulesCount(), i.getCreatedAt(), i.getStatus()))
+                .toList();
 
-        return new DashboardRecentInstitutionsResponse(institutions.stream().limit(safeLimit).toList());
+        return new DashboardRecentInstitutionsResponse(institutions);
     }
 
     public record DashboardStatsResponse(
@@ -96,6 +101,6 @@ public class DashboardService {
     public record RecentStudent(String id, String name, String registeredAt) {
     }
 
-    public record RecentInstitution(String id, String name, long modulesCount, String createdAt, String status) {
+    public record RecentInstitution(String id, String name, long modulesCount, Instant createdAt, String status) {
     }
 }

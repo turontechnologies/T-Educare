@@ -11,16 +11,26 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.auth.AuthDirectory;
 import com.teducare.auth.AuthenticatedUserDto;
+import com.teducare.auth.UserAccountRepository;
+import com.teducare.institution.InstitutionRepository;
 
 @Service
 public class ProfileService {
 
     private final AuthDirectory authDirectory;
     private final PasswordEncoder passwordEncoder;
+    private final InstitutionRepository institutionRepository;
+    private final UserAccountRepository userAccountRepository;
 
-    public ProfileService(AuthDirectory authDirectory, PasswordEncoder passwordEncoder) {
+    public ProfileService(
+            AuthDirectory authDirectory,
+            PasswordEncoder passwordEncoder,
+            InstitutionRepository institutionRepository,
+            UserAccountRepository userAccountRepository) {
         this.authDirectory = authDirectory;
         this.passwordEncoder = passwordEncoder;
+        this.institutionRepository = institutionRepository;
+        this.userAccountRepository = userAccountRepository;
     }
 
     public Map<String, Object> getProfile(String username) {
@@ -43,10 +53,11 @@ public class ProfileService {
 
         Map<String, Object> summary = new LinkedHashMap<>();
         if ("super_admin".equalsIgnoreCase(user.role())) {
-            summary.put("institutionsCount", 27L);
-            summary.put("licensed", 18L);
-            summary.put("linkedModules", 14L);
-            summary.put("userManagerAccounts", 23L);
+            // Real, platform-wide counts — never hardcoded (API_CONTRACT.md §3.1).
+            summary.put("institutionsCount", institutionRepository.countActive());
+            summary.put("licensed", institutionRepository.countLicensed());
+            summary.put("linkedModules", institutionRepository.countLinkedModules());
+            summary.put("userManagerAccounts", userAccountRepository.countActiveUserManagers());
         } else {
             summary.put("institutionName", user.institutionName() == null ? "" : user.institutionName());
             summary.put("roleId", user.roleId() == null ? "" : user.roleId());

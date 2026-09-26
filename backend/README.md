@@ -107,16 +107,25 @@ password/profile updates — no more in-memory map). `auth/DemoAccountSeeder.jav
 inserts the 3 demo accounts once on first boot if the table is empty, so a
 fresh `docker compose up` seeds itself.
 
-**Institution admin dashboard stats are real wherever a real column backs
-them (2026-09-26)** — `registeredStudents`/`accumulatedProfit` now read the
-real, per-institution `Institution.studentCount`/`revenue` columns instead
-of a hardcoded switch statement; `applicants`/`lecturers` are honestly `0`
-and the enrollment chart/recent-students list are honestly empty rather
-than fabricated, since Applicants/Lecturers/Students have no real backend
-at all yet. See `API_CONTRACT.md` §9.1-9.3 for the exact reasoning per
-field. Super admin's own dashboard (`GET /super-admin/stats`,
-`GET /super-admin/recent-institutions`) is untouched by this pass — still
-hardcoded, a natural next candidate whenever that's asked for.
+**Both dashboards' stats are real wherever a real column/resource backs
+them (2026-09-26) — nothing on either is hardcoded anymore.** Institution
+admin: `registeredStudents`/`accumulatedProfit` now read the real,
+per-institution `Institution.studentCount`/`revenue` columns instead of a
+hardcoded switch statement; `applicants`/`lecturers` are honestly `0` and
+the enrollment chart/recent-students list are honestly empty rather than
+fabricated, since Applicants/Lecturers/Students have no real backend at
+all yet. Super admin: `GET /super-admin/stats` now aggregates real,
+non-archived institutions (count + sum of `studentCount`/`revenue`)
+instead of three literal numbers, and `GET /super-admin/recent-institutions`
+reuses `InstitutionRepository`'s own `search()` query instead of five
+hand-written fake institutions. **`GET /profile`'s super-admin `summary`
+was quietly hardcoded too** (`institutionsCount`/`licensed`/
+`linkedModules`/`userManagerAccounts` — a separate literal block that
+merely happened to agree with the dashboard's own hardcoded number) —
+fixed at the same time, now reading the exact same `InstitutionRepository`/
+`UserAccountRepository` aggregate queries as the dashboard, so the two can
+never silently disagree again. See `API_CONTRACT.md` §9.1-9.5 and §3.1 for
+the exact reasoning per field.
 
 **Institutions §4.1/4.3/4.4 (list/create/edit, activate/deactivate,
 archive/restore) are also real now, and wired to the frontend** —

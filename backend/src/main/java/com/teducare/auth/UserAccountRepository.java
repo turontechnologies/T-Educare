@@ -30,4 +30,8 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, String
             @Param("search") String search,
             @Param("includeArchived") boolean includeArchived,
             Pageable pageable);
+
+    /** Real count for the super admin profile summary (API_CONTRACT.md §3.1) — never hardcoded. */
+    @Query("select count(u) from UserAccount u where u.role = 'institution_admin' and u.archivedAt is null")
+    long countActiveUserManagers();
 }
