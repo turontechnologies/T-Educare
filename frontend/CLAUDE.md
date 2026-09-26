@@ -42,7 +42,24 @@ next-themes, sonner.
   `react-hook-form` + `@hookform/resolvers/zod`.
 - **Auth**: `useAuthStore` holds the bearer token; `src/lib/axios.ts`
   attaches it to every request and force-logs-out on a 401 (except from the
-  login call itself).
+  login call itself). **The in-app logout (`app-sidebar.tsx`'s
+  `handleLogout`) also clears the TanStack `QueryClient` via
+  `queryClient.clear()` (2026-09-26) — this is load-bearing, not
+  defensive.** The `QueryClient` is a singleton (`query-provider.tsx`) that
+  outlives client-side navigation, and several query keys don't vary
+  per-account (e.g. the institutions list fetch is keyed the same way
+  regardless of _which_ institution_admin is asking) — without clearing it
+  on logout, the next person to log in in that same tab could see the
+  previous account's cached data, protected by its own `staleTime` from
+  ever refetching. **Confirmed live, not hypothetical**: logging out of
+  `turon_admin` (unrestricted, full nav) and into `amara_bello` (a
+  restricted role) kept showing `turon_admin`'s full 25-item nav under
+  `amara_bello`'s own name, even after settling — fixed by the
+  `queryClient.clear()` call. The axios interceptor's own 401-triggered
+  force-logout doesn't need the same fix — it does a hard
+  `window.location.href` reload, which already rebuilds the `QueryClient`
+  from scratch via a fresh page load; only the SPA-level, `router.replace`-based
+  logout needed it.
 - **Toasts**: `sonner`'s `toast()`, rendered via the `<Toaster />` mounted
   once in `src/app/layout.tsx`.
 - **Theming**: `next-themes` `ThemeProvider` (`attribute="class"`), also

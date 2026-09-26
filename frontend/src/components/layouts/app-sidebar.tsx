@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import type { NavItem } from "@/config/nav";
@@ -156,19 +157,30 @@ export function SidebarContent({
 }: SidebarContentProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const logout = useAuthStore((state) => state.logout);
   const activeKey = findActiveKey(menu, pathname);
 
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-    } catch {
-      // Keep the UX resilient even if the API is temporarily unavailable.
-    } finally {
-      logout();
-      toast.success("You've been signed out");
-      router.replace("/login");
-    }
+  const handleLogout = () => {
+    // The backend has no server-side session/token store to revoke from
+    // (JWTs simply expire on their own) — this call is a formality, never
+    // worth blocking the visible logout on a network round-trip for.
+    authService.logout().catch(() => {});
+
+    logout();
+    // The TanStack QueryClient is a singleton that outlives this navigation
+    // — without clearing it, every cached query (institutions, notifications,
+    // profile, dashboard stats, ...) survives into the next login. Since
+    // several query keys don't vary per-account (e.g. the institutions list
+    // fetch), the next person to log in in this same tab could see a flash
+    // of — or, worse, a `staleTime`-protected persistent view of — the
+    // previous account's data until an unrelated refetch happens to occur.
+    // Confirmed live: logging out of an unrestricted account and into a
+    // restricted one kept showing the first account's full nav. Clearing
+    // here guarantees every post-login fetch starts genuinely fresh.
+    queryClient.clear();
+    toast.success("You've been signed out");
+    router.replace("/login");
   };
 
   return (
