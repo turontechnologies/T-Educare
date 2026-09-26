@@ -40,11 +40,12 @@ class NotificationControllerTest {
                 .getContentAsString();
         String institutionId = createResponse.split("\"id\":\"")[1].split("\"")[0];
 
+        String userManagerId = null;
         try {
             String suffix = String.valueOf(System.currentTimeMillis());
             String username = "notif_admin_" + suffix;
             String email = "notif.admin." + suffix + "@example.com";
-            mockMvc.perform(post("/api/user-managers")
+            String userManagerResponse = mockMvc.perform(post("/api/user-managers")
                     .header("Authorization", "Bearer " + superToken)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
@@ -52,7 +53,11 @@ class NotificationControllerTest {
                              "username":"%s","password":"NotifP@ss1",
                              "institutionId":"%s","isPrimaryAdmin":true}
                             """.formatted(email, username, institutionId)))
-                    .andExpect(status().isCreated());
+                    .andExpect(status().isCreated())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            userManagerId = userManagerResponse.split("\"id\":\"")[1].split("\"")[0];
 
             // super_admin's own feed gets the platform-scope notifications for both actions.
             String superFeed = mockMvc.perform(get("/api/notifications")
@@ -91,6 +96,15 @@ class NotificationControllerTest {
             assertFalse(outsiderFeed.contains("Notification Test University"));
             assertFalse(outsiderFeed.contains("A new admin was assigned"));
         } finally {
+            // The institution's own archive doesn't cascade-archive its User
+            // Manager accounts — leaving this out left a permanent, ever-growing
+            // "notif_admin_<timestamp>" account behind on every test run (found
+            // live: the user spotted a real accumulation of these in the User
+            // Manager list and had them manually cleaned up).
+            if (userManagerId != null) {
+                mockMvc.perform(post("/api/user-managers/" + userManagerId + "/archive")
+                        .header("Authorization", "Bearer " + superToken));
+            }
             mockMvc.perform(post("/api/institutions/" + institutionId + "/archive")
                     .header("Authorization", "Bearer " + superToken));
         }
