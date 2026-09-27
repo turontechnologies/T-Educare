@@ -128,10 +128,36 @@ class RoleControllerTest {
                 .content("{\"name\":\"Hijacked\"}"))
                 .andExpect(status().isNotFound());
 
-        // super_admin has no institution of their own — forbidden outright.
+        // Mutating a role always requires a real institution of one's own —
+        // a super_admin can view (see below) but never create/edit/archive.
         String superToken = loginAs("super_admin", "Super@2024");
-        mockMvc.perform(get("/api/roles").header("Authorization", "Bearer " + superToken))
+        mockMvc.perform(post("/api/roles")
+                .header("Authorization", "Bearer " + superToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"X\",\"menuKeys\":[\"dashboard\"]}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void superAdminCanViewButNotBlindlyListAnyInstitutionsRealRoles() throws Exception {
+        String superToken = loginAs("super_admin", "Super@2024");
+
+        // No institutionId at all — refused, not defaulted to "everything"
+        // or "nothing", so a caller can't accidentally get an empty list
+        // and mistake it for "this institution really has no roles".
+        mockMvc.perform(get("/api/roles").header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isBadRequest());
+
+        // With one, sees the same real row an institution_admin caller
+        // would — this is what backs the super admin's own User Manager
+        // role picker, for exactly the case where an institution's only
+        // admin is themselves too restricted to reach
+        // /dashboard/user-management and fix their own over-restriction.
+        mockMvc.perform(get("/api/roles")
+                .param("institutionId", "inst-ahmadubellouniversit-1")
+                .header("Authorization", "Bearer " + superToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("role-front-desk"));
     }
 
     @Test

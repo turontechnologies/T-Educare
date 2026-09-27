@@ -126,6 +126,13 @@ export function NotchedSelectField({
         value={value === "" ? null : value}
         onValueChange={(next) => onValueChange(next ?? "")}
         disabled={disabled}
+        // Without this, <Select.Value> has no way to resolve the selected
+        // value back to its label and silently falls back to displaying
+        // the raw value string — invisible for every option list so far
+        // (Gender, License Type, etc. all happen to have value === label),
+        // but a real bug for any option list where they differ (Roles: a
+        // role's id vs. its real name).
+        items={options}
       >
         <SelectTrigger className="h-11 w-full justify-between rounded-md border-secondary/40 bg-transparent px-3.5 text-base font-normal outline-none focus-visible:border-secondary focus-visible:ring-secondary/30 data-placeholder:text-muted-foreground">
           <SelectValue placeholder={placeholder} />

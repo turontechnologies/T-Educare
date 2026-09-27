@@ -28,7 +28,7 @@ interface RoleFormValues {
 interface RoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Present when editing an existing (non-system) role. */
+  /** Present when editing an existing role. */
   role?: Role;
 }
 

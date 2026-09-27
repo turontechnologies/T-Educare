@@ -1059,7 +1059,7 @@ not-found-not-403 convention used for notifications' cross-tenant guard).
 
 | Method | Path                  | Body                                          | Notes |
 |--------|-----------------------|------------------------------------------------|-------|
-| GET    | `/roles`              | —                                              | this institution's real roles (active + archived) |
+| GET    | `/roles`              | —                                              | this institution's real roles (active + archived); a `super_admin` caller must instead pass `?institutionId=` explicitly (`400` without it) to *view* — never mutate — a specific institution's roles (added 2026-09-27, see below) |
 | POST   | `/roles`              | `{ name, description?, menuKeys: string[] }`   | `409` on a duplicate name within the institution; `400` if `menuKeys` is empty or contains a key `ModuleCatalog`/`"dashboard"` doesn't recognize (mirrors Modules' own "Unknown module key" rule, §4.6.1) |
 | PATCH  | `/roles/:id`          | `{ name?, description?, menuKeys? }`           | partial update, same convention as every other resource here |
 | POST   | `/roles/:id/archive`  | —                                              | soft-delete, restorable — **not** a `DELETE`, matching every other resource's own archive convention rather than this section's original `DELETE`/409-if-assigned draft (see below) |
@@ -1089,6 +1089,8 @@ draft**, both decided while actually building it against the real
    `archivedAt` — only the *assignable* list a fresh assignment would pick
    from is), and reassigning them to something else remains a separate,
    explicit action.
+
+**`super_admin` view extension (2026-09-27), added after a real, live gap**: an institution can end up with its *only* admin account restricted below "User Management" itself — nobody self-service-side can then fix that account's own over-restriction. `GET /roles?institutionId=<id>` lets a `super_admin` view (never create/edit/archive — those stay institution_admin-only) any institution's real roles, so their own User Manager screen can offer a working Role picker regardless of which institution is selected. Backs `PATCH /user-managers/:id`'s existing `roleId` field (§4.5.1) — no new mutation path, just a second real place to reach it from when the affected institution's own admin can't.
 
 ## 6. Users (staff) — folded into User Manager (§4.5), not a separate resource
 

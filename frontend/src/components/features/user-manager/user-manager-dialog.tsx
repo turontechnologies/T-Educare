@@ -24,6 +24,7 @@ import {
   useCreateUserManager,
   useUpdateUserManager,
 } from "@/hooks/use-user-managers";
+import { useRoles } from "@/hooks/use-roles";
 import { useUploadFile } from "@/hooks/use-upload";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import type {
@@ -110,6 +111,10 @@ function UserManagerForm({
   const [institutionId, setInstitutionId] = useState(
     account?.institutionId ?? "",
   );
+  const [roleId, setRoleId] = useState(account?.roleId ?? "");
+  const { data: roles = [] } = useRoles(institutionId, {
+    enabled: !!institutionId,
+  });
   const [isPrimaryAdmin, setIsPrimaryAdmin] = useState(
     account?.isPrimaryAdmin ?? false,
   );
@@ -192,11 +197,12 @@ function UserManagerForm({
             institutionId,
             isPrimaryAdmin,
             avatarUrl,
+            roleId,
           },
         });
         toast.success(`${values.firstName} ${values.lastName} updated`);
       } else {
-        await createUserManager.mutateAsync({
+        const created = await createUserManager.mutateAsync({
           firstName: values.firstName,
           otherName: values.otherName,
           lastName: values.lastName,
@@ -209,6 +215,12 @@ function UserManagerForm({
           isPrimaryAdmin,
           avatarUrl,
         });
+        if (roleId) {
+          await updateUserManager.mutateAsync({
+            id: created.id,
+            payload: { roleId },
+          });
+        }
         toast.success(`${values.firstName} ${values.lastName} added`);
       }
       onDone();
@@ -370,7 +382,12 @@ function UserManagerForm({
             label="Assign to University"
             labelClassName="bg-popover"
             value={institutionId}
-            onValueChange={setInstitutionId}
+            onValueChange={(value) => {
+              setInstitutionId(value);
+              // A role belongs to one institution — a previously-picked one
+              // is meaningless (or invalid) once the institution changes.
+              setRoleId("");
+            }}
             options={activeInstitutions.map((institution) => ({
               label: institution.name,
               value: institution.id,
@@ -378,6 +395,23 @@ function UserManagerForm({
             placeholder="Select institution"
             searchPlaceholder="Search institutions…"
             emptyText="No institution found."
+          />
+
+          <NotchedSelectField
+            label="Role"
+            labelClassName="bg-popover"
+            value={roleId}
+            onValueChange={(value) => setRoleId(value ?? "")}
+            disabled={!institutionId}
+            options={[
+              { label: "Full access (no role)", value: "" },
+              ...roles
+                .filter((role) => !role.archivedAt)
+                .map((role) => ({ label: role.name, value: role.id })),
+            ]}
+            placeholder={
+              institutionId ? "Select a role" : "Pick an institution first"
+            }
           />
 
           <div className="flex items-center gap-2.5">

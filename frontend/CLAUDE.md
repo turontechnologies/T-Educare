@@ -517,20 +517,46 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   inline in a sidebar component, and give it a stable `key` (RBAC roles
   reference these keys — never reuse or rename one already referenced by a
   `Role.menuKeys`).
-- **RBAC**: `src/store/rbac.store.ts` holds custom `Role`s (name + which
-  `nav.ts` keys they grant, via `menuKeys`) and `ManagedUser`s (staff, each
-  assigned a `roleId`), persisted client-side. The institution's root admin
-  uses the seeded system role (`ROOT_ADMIN_ROLE_ID`, unrestricted); every
-  other institution user goes through `/dashboard/user-management` — create a
-  `Role` with the menu items it should see, then assign staff to it.
-  `filterNavByAccess()` (`src/config/nav.ts`) turns a role's `menuKeys` into
-  the actual filtered tree a given user's sidebar renders — this is computed
-  reactively in `dashboard/layout.tsx` from the live store, so an edit to a
-  role takes effect immediately (next login re-resolves `roleId` too, see
-  `authService.login`). Never gate a page's _content_ by role inline; gate it
-  by not putting it in the user's menu, and if a page needs real protection
-  beyond "not linked," add the check where the other layout role-redirects
-  live.
+- **RBAC is real backend now (2026-09-27)** — `store/rbac.store.ts` and
+  `types/rbac.ts` are deleted files; real `Role`s live in the backend's own
+  `dbo.roles` table, institution-scoped (`hooks/use-roles.ts` →
+  `services/role.service.ts` → `GET/POST/PATCH /roles`,
+  `POST /roles/:id/archive`/`restore` — API_CONTRACT.md §5). There is no
+  seeded "system role" row at all — the institution's root admin is simply
+  `UserAccount.roleId === null` (unrestricted), same as any other real
+  institution's primary admin; only a genuine restriction is ever a real
+  `Role` row. `/dashboard/user-management`'s Roles tab creates/edits/deletes
+  these for real; its Users tab is the **same real `/user-managers`
+  resource** used by `/super-admin/user-manager` (`hooks/use-user-managers.ts`),
+  just self-scoped — an institution_admin caller only ever sees/manages
+  their own institution's staff (backend-enforced, not a frontend filter),
+  and `PATCH /user-managers/:id`'s `roleId` field is how a role gets
+  assigned. **The menu-access resolution itself moved server-side**:
+  `AuthenticatedUser.menuKeys` (types/auth.ts) arrives already-resolved on
+  every login/`/auth/me` response — `dashboard/layout.tsx` just does
+  `filterNavByAccess(moduleScopedNav, user?.menuKeys ?? null)` directly,
+  no client-side Role lookup at all anymore. Editing a Role's `menuKeys`,
+  or assigning/clearing one on an account, reaches that account's sidebar
+  on its **very next request** (no re-login needed) — verified live: created
+  a real role through the actual UI, reloaded the page (survived — proving
+  it's real backend data, not local state), and confirmed a different,
+  already-restricted real account (`amara_bello`) renders exactly her real
+  role's 3 menu items and nothing else. Never gate a page's _content_ by
+  role inline; gate it by not putting it in the user's menu, and if a page
+  needs real protection beyond "not linked," add the check where the other
+  layout role-redirects live.
+  **Real bug found and fixed while wiring this**: `NEXT_PUBLIC_API_URL` in
+  `.env.local` pointed at `http://localhost:8081/api` — on this machine,
+  bare `localhost` intermittently resolves to `::1` first and hangs
+  (confirmed via repeated Playwright login failures, `net::ERR_ABORTED`,
+  while `curl` to the same port over `127.0.0.1` succeeded instantly every
+  time). Changed to `http://127.0.0.1:8081/api`; Next.js picked it up on
+  its own env-file watcher, no restart needed. Worth trying this swap first
+  if local dev ever shows a request silently hanging or aborting with no
+  server-side log line to match — it may not be the app at all.
+- **A real gap surfaced immediately after the above shipped, reported live: an institution can have an admin who is themselves too restricted to fix their own over-restriction.** `amara_bello` is Ahmadu Bello University's _only_ account, and her real Role caps her to 3 menu items — "User Management" isn't one of them, so she can never reach `/dashboard/user-management` to reassign her own Role, and no other admin exists for that institution either. Closed this by extending `GET /roles` to also accept `?institutionId=` for a **super_admin** caller (view-only — creating/editing/archiving a Role stays institution_admin self-service, a super_admin has no institution of their own to scope a mutation to), and adding a real Role picker to the super admin's own `user-manager-dialog.tsx`, sourced from whichever institution is currently selected in that same form (clears on institution change, since a Role belongs to exactly one). This is the same real `/user-managers` `roleId` field from the bullet above — nothing new to persist, just a second real place to set it from.
+  **A second, more general real bug found while verifying this — not specific to Roles at all**: `NotchedSelectField` (`components/shared/notched-field.tsx`) never passed an `items` prop to base-ui's `Select.Root`, so `<Select.Value>` had no way to resolve a selected value back to its label and silently fell back to displaying the **raw value string**. Invisible in every existing usage (Gender, License Type, etc.) purely by coincidence — their `value` and `label` happen to be identical strings ("Female" is both the value and the label) — so the fallback's wrong behavior looked correct. Roles was the first consumer where they genuinely differ (`"role-abc123"` vs. "Front Desk Officer"), which is what exposed it. Fixed at the shared component level (`items={options}` on `Select`, matching the exact `{label, value}[]` shape base-ui documents for this prop) rather than patching around it per call site — this was a latent defect in every `NotchedSelectField` in the app, not something introduced by Roles.
+  **A real, live data incident happened during this same investigation, worth being honest about rather than glossing over**: at some point while iterating on the (initially broken) Select fix, `amara_bello`'s real `roleId` was cleared to `null` in the live database — traced to a stray/leftover Playwright script in a shared scratch directory, not a line of committed application code, but the exact mechanism was never conclusively identified. Caught it by checking her live `/api/user-managers/:id` response before declaring the picker done, restored her real `roleId` back to `role-front-desk` via a direct API call, and re-verified her login's `menuKeys` matched exactly what it was before. **Lesson**: when testing against a live, shared database (not a disposable test-only institution), re-check the specific real record's state immediately before and after each verification pass — don't assume a read-only-looking test script had no side effects, especially across several iterations of a fix.
 - **RBAC has a second, module-gating layer above roles**: a `NavItem` in
   `nav.ts` can carry an optional `moduleKey` (one of the keys in the real
   catalog, `GET /modules` → `types/module.ts`), and `filterNavByModules()`
@@ -629,7 +655,7 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `dashboard/layout.tsx` (see the Institutions bullet further down for the
   full read/write architecture, including how Modules/License Manager's
   own still-unbuilt backend stays local-only on top of the real rows).
-  Every other store in `src/store/` — `rbac.store.ts`, `academics.store.ts`,
+  Every other store in `src/store/` — `academics.store.ts`,
   `staff.store.ts`, `students.store.ts`, `schools.store.ts`,
   `faculties.store.ts`, `departments.store.ts`, `programs.store.ts`,
   `program-levels.store.ts`, `course-grades.store.ts`, `courses.store.ts`,

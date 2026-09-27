@@ -7,10 +7,20 @@ export type RoleFormPayload = {
   menuKeys: string[];
 };
 
-/** Always "my own institution's roles" — scoped server-side from the caller, never an institutionId passed here (API_CONTRACT.md §5). */
 export const roleService = {
-  async list(): Promise<Role[]> {
-    const { data } = await apiClient.get<Role[]>("/roles");
+  /**
+   * For an institution_admin caller, always "my own institution's roles" —
+   * scoped server-side, `institutionId` is ignored/not needed. A
+   * super_admin caller has no institution of their own, so must pass one
+   * explicitly to *view* that institution's real roles (e.g. to populate a
+   * role picker in the super admin's own User Manager dialog) — mutating a
+   * role stays institution_admin self-service only either way
+   * (API_CONTRACT.md §5).
+   */
+  async list(institutionId?: string): Promise<Role[]> {
+    const { data } = await apiClient.get<Role[]>("/roles", {
+      params: institutionId ? { institutionId } : undefined,
+    });
     return data;
   },
 
