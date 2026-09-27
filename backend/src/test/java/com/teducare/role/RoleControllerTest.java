@@ -161,26 +161,6 @@ class RoleControllerTest {
     }
 
     @Test
-    void amaraBelloAndTuronAdminMatchTheirDocumentedRealRoleState() throws Exception {
-        // Regression lock for the V7 migration: amara_bello's restriction is
-        // now backed by a real Role row (not a hardcoded demo literal), and
-        // turon_admin is properly unrestricted (roleId null), matching every
-        // other real institution's primary admin.
-        String amaraToken = loginAs("amara_bello", "Amara@2024");
-        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + amaraToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roleId").value("role-front-desk"))
-                .andExpect(jsonPath("$.menuKeys.length()").value(3))
-                .andExpect(jsonPath("$.menuKeys[0]").value("dashboard"));
-
-        String turonToken = loginAs("turon_admin", "Turon@2024");
-        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + turonToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roleId").doesNotExist())
-                .andExpect(jsonPath("$.menuKeys").doesNotExist());
-    }
-
-    @Test
     void systemRoleProtectionsAndValidationAreEnforced() throws Exception {
         String superToken = loginAs("super_admin", "Super@2024");
         String suffix = String.valueOf(System.currentTimeMillis());

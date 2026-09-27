@@ -42,9 +42,10 @@ at the same point that action's success response is returned; the
 frontend bell/full-page feed reads the real `GET /notifications` endpoint
 directly, no client-side merge with anything local anymore (that merge
 was removed the same day, for both roles — see `frontend/CLAUDE.md`).
-Everything else below (Academic Sessions, Students, Schools/Faculties/
-Departments/Programs, Staff) is **not implemented yet** — this file
-remains what to build those *against*.
+Academic Sessions & Semesters (§7/§7.1) are also real now (2026-09-27).
+Everything else below (Students, Session Rollover, Schools/Faculties/
+Departments/Programs/Program Levels/Course Grades/Courses, Staff) is
+**not implemented yet** — this file remains what to build those *against*.
 
 ## Deployment
 
@@ -1142,6 +1143,16 @@ flowchart LR
 ---
 
 ## 7. Academic Sessions & Semesters — institution admin
+
+**Implemented (2026-09-27)** — `backend/src/main/java/com/teducare/academics/`,
+real `dbo.academic_sessions`/`dbo.academic_semesters` tables. Deliberately
+scoped to just this section (§7/§7.1) — Students (§7.2), Session Rollover
+(§7.3), and Schools/Faculties/Departments/Programs/Program Levels/Course
+Grades/Courses (§7.4–§7.10) are each their own separate nav item and
+remain frontend-mocked, not built as part of this pass. 33/33 backend
+tests passing, including full lifecycle (create, duplicate-name/date-range
+rejection, current-session/semester promotion and hand-off, close,
+archive/restore) and cross-institution isolation.
 
 Results are implicitly scoped to the caller's own `institutionId` — same
 multi-tenancy rule as everywhere else in this contract (§1). Built on the
