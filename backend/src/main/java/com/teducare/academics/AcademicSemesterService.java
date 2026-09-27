@@ -51,6 +51,13 @@ public class AcademicSemesterService {
     public AcademicSemesterResponse update(String institutionId, String id, UpdateAcademicSemesterRequest request) {
         AcademicSemester semester = requireOwnSemester(institutionId, id);
 
+        if (isPresent(request.sessionId()) && !request.sessionId().equals(semester.getSessionId())) {
+            // Reuses the session guard so a semester can never be reassigned
+            // to another institution's session, even by guessing a real id.
+            sessionService.requireOwnSession(institutionId, request.sessionId());
+            semester.setSessionId(request.sessionId());
+        }
+
         Instant newFrom = request.from() != null ? request.from() : semester.getFrom();
         Instant newTo = request.to() != null ? request.to() : semester.getTo();
         validateDateRange(newFrom, newTo);

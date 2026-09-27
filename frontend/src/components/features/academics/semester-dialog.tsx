@@ -16,6 +16,10 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import {
+  useCreateAcademicSemester,
+  useUpdateAcademicSemester,
+} from "@/hooks/use-academic-semesters";
 import { useAcademicsStore } from "@/store/academics.store";
 import type { AcademicSemester } from "@/types/academics";
 
@@ -73,8 +77,8 @@ function SemesterForm({
   onDone: () => void;
 }) {
   const sessions = useAcademicsStore((state) => state.sessions);
-  const createSemester = useAcademicsStore((state) => state.createSemester);
-  const updateSemester = useAcademicsStore((state) => state.updateSemester);
+  const createSemester = useCreateAcademicSemester();
+  const updateSemester = useUpdateAcademicSemester();
 
   const activeSessions = useMemo(
     () => sessions.filter((s) => !s.archivedAt),
@@ -94,7 +98,7 @@ function SemesterForm({
     },
   });
 
-  const onSubmit = (values: SemesterFormValues) => {
+  const onSubmit = async (values: SemesterFormValues) => {
     if (!sessionId) {
       toast.error("Select a session");
       return;
@@ -112,14 +116,20 @@ function SemesterForm({
       to: new Date(to).toISOString(),
     };
 
-    if (semester) {
-      updateSemester(semester.id, payload);
-      toast.success(`${values.name} updated`);
-    } else {
-      createSemester(payload);
-      toast.success(`${values.name} added`);
+    try {
+      if (semester) {
+        await updateSemester.mutateAsync({ id: semester.id, payload });
+        toast.success(`${values.name} updated`);
+      } else {
+        await createSemester.mutateAsync(payload);
+        toast.success(`${values.name} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save semester",
+      );
     }
-    onDone();
   };
 
   return (
@@ -179,7 +189,11 @@ function SemesterForm({
         <Button
           type="submit"
           form="semester-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createSemester.isPending ||
+            updateSemester.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save

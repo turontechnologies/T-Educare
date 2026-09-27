@@ -49,6 +49,18 @@ import { SemesterDialog } from "@/components/features/academics/semester-dialog"
 import { SessionDetailsDialog } from "@/components/features/academics/session-details-dialog";
 import { SessionDialog } from "@/components/features/academics/session-dialog";
 import { cn } from "@/lib/utils";
+import {
+  useArchiveAcademicSession,
+  useCloseAcademicSession,
+  useRestoreAcademicSession,
+  useSetCurrentAcademicSession,
+} from "@/hooks/use-academic-sessions";
+import {
+  useArchiveAcademicSemester,
+  useCloseAcademicSemester,
+  useRestoreAcademicSemester,
+  useSetCurrentAcademicSemester,
+} from "@/hooks/use-academic-semesters";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useRolloverStore } from "@/store/rollover.store";
 import type {
@@ -250,12 +262,10 @@ function SessionTable({
   onViewRollover: (session: AcademicSession) => void;
 }) {
   const sessions = useAcademicsStore((state) => state.sessions);
-  const archiveSession = useAcademicsStore((state) => state.archiveSession);
-  const restoreSession = useAcademicsStore((state) => state.restoreSession);
-  const setCurrentSession = useAcademicsStore(
-    (state) => state.setCurrentSession,
-  );
-  const closeSession = useAcademicsStore((state) => state.closeSession);
+  const archiveSession = useArchiveAcademicSession();
+  const restoreSession = useRestoreAcademicSession();
+  const setCurrentSession = useSetCurrentAcademicSession();
+  const closeSession = useCloseAcademicSession();
   const rolloverRecords = useRolloverStore((state) => state.records);
 
   const [view, setView] = useState<"active" | "archived">("active");
@@ -430,11 +440,21 @@ function SessionTable({
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => {
-                                  setCurrentSession(session.id);
-                                  toast.success(
-                                    `${session.session} set as the current session`,
-                                  );
+                                onClick={async () => {
+                                  try {
+                                    await setCurrentSession.mutateAsync(
+                                      session.id,
+                                    );
+                                    toast.success(
+                                      `${session.session} set as the current session`,
+                                    );
+                                  } catch (error) {
+                                    toast.error(
+                                      error instanceof Error
+                                        ? error.message
+                                        : "Failed to set current session",
+                                    );
+                                  }
                                 }}
                               >
                                 <CalendarCheck2 className="size-3.5" />
@@ -505,9 +525,17 @@ function SessionTable({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreSession(session.id);
-                          toast.success(`${session.session} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreSession.mutateAsync(session.id);
+                            toast.success(`${session.session} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore session",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -577,10 +605,18 @@ function SessionTable({
         description={`Are you sure you want to delete ${pendingArchive?.session}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveSession(pendingArchive.id);
-          toast.success(`${pendingArchive.session} deleted`);
+          try {
+            await archiveSession.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.session} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete session",
+            );
+          }
         }}
       />
 
@@ -590,10 +626,18 @@ function SessionTable({
         title="Close this session?"
         description={`Are you sure you want to close ${pendingClose?.session}? It will be marked completed and made eligible for rollover into the next session.`}
         confirmLabel="Close Session"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingClose) return;
-          closeSession(pendingClose.id);
-          toast.success(`${pendingClose.session} closed`);
+          try {
+            await closeSession.mutateAsync(pendingClose.id);
+            toast.success(`${pendingClose.session} closed`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to close session",
+            );
+          }
         }}
       />
     </>
@@ -609,12 +653,10 @@ function SemesterTable({
 }) {
   const semesters = useAcademicsStore((state) => state.semesters);
   const sessions = useAcademicsStore((state) => state.sessions);
-  const archiveSemester = useAcademicsStore((state) => state.archiveSemester);
-  const restoreSemester = useAcademicsStore((state) => state.restoreSemester);
-  const setCurrentSemester = useAcademicsStore(
-    (state) => state.setCurrentSemester,
-  );
-  const closeSemester = useAcademicsStore((state) => state.closeSemester);
+  const archiveSemester = useArchiveAcademicSemester();
+  const restoreSemester = useRestoreAcademicSemester();
+  const setCurrentSemester = useSetCurrentAcademicSemester();
+  const closeSemester = useCloseAcademicSemester();
 
   const [view, setView] = useState<"active" | "archived">("active");
   const [search, setSearch] = useState(initialSearch ?? "");
@@ -787,11 +829,21 @@ function SemesterTable({
                           </DropdownMenuItem>
                           {semester.status === "upcoming" && (
                             <DropdownMenuItem
-                              onClick={() => {
-                                setCurrentSemester(semester.id);
-                                toast.success(
-                                  `${semester.name} set as the current semester`,
-                                );
+                              onClick={async () => {
+                                try {
+                                  await setCurrentSemester.mutateAsync(
+                                    semester.id,
+                                  );
+                                  toast.success(
+                                    `${semester.name} set as the current semester`,
+                                  );
+                                } catch (error) {
+                                  toast.error(
+                                    error instanceof Error
+                                      ? error.message
+                                      : "Failed to set current semester",
+                                  );
+                                }
                               }}
                             >
                               <CalendarCheck2 className="size-3.5" />
@@ -819,9 +871,17 @@ function SemesterTable({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreSemester(semester.id);
-                          toast.success(`${semester.name} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreSemester.mutateAsync(semester.id);
+                            toast.success(`${semester.name} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore semester",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -891,10 +951,18 @@ function SemesterTable({
         description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveSemester(pendingArchive.id);
-          toast.success(`${pendingArchive.name} deleted`);
+          try {
+            await archiveSemester.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.name} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete semester",
+            );
+          }
         }}
       />
 
@@ -904,10 +972,18 @@ function SemesterTable({
         title="Close this semester?"
         description={`Are you sure you want to close ${pendingClose?.name}? It will be marked completed.`}
         confirmLabel="Close Semester"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingClose) return;
-          closeSemester(pendingClose.id);
-          toast.success(`${pendingClose.name} closed`);
+          try {
+            await closeSemester.mutateAsync(pendingClose.id);
+            toast.success(`${pendingClose.name} closed`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to close semester",
+            );
+          }
         }}
       />
     </>

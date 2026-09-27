@@ -639,37 +639,56 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   password of, or deactivating an account there **does** now affect
   `/login` immediately — the caveat above only describes the
   now-closed gap between those two builds.
-- **Auth, Dashboard, Profile, and Institutions are wired to a real backend
-  now — everything else below is still mocked.** `backend/` is a real
-  Spring Boot app, MSSQL-backed via Flyway (not in-memory) — see
-  `backend/API_CONTRACT.md`'s Status line for exactly which sections are
-  live. `auth.service.ts`, `dashboard.service.ts`, `profile.service.ts`,
-  and `institution.service.ts` all call it via `apiClient`
-  (`src/lib/axios.ts`) rather than reading a Zustand store. **The three
-  demo logins are server-defined, not frontend-defined** — `super_admin`/
-  `Super@2024`, `turon_admin`/`Turon@2024` (XYZ College, unrestricted),
-  `amara_bello`/`Amara@2024` (Ahmadu Bello University, restricted "Front
-  Desk Officer" role) — the credentials aren't in this frontend's source at
-  all anymore. `institutions.store.ts` is no longer seeded mock data either
-  — it's hydrated from the real backend by `super-admin/layout.tsx` and
-  `dashboard/layout.tsx` (see the Institutions bullet further down for the
-  full read/write architecture, including how Modules/License Manager's
-  own still-unbuilt backend stays local-only on top of the real rows).
-  Every other store in `src/store/` — `academics.store.ts`,
-  `staff.store.ts`, `students.store.ts`, `schools.store.ts`,
-  `faculties.store.ts`, `departments.store.ts`, `programs.store.ts`,
-  `program-levels.store.ts`, `course-grades.store.ts`, `courses.store.ts`,
-  `staff-members.store.ts`, `lecturers.store.ts`, `rollover.store.ts` — is
-  still a `persist`-backed Zustand store standing in for a real API that
-  doesn't exist yet, seeded with demo data, exactly as before. When wiring
-  a new page to data that has no real backend section yet, keep following
-  that same pattern — a small typed Zustand store with seed data — rather
-  than reaching for a real
+- **Auth, Dashboard, Profile, Institutions, Roles, User Manager, and Academic
+  Sessions & Semesters are wired to a real backend now — everything else
+  below is still mocked.** `backend/` is a real Spring Boot app, MSSQL-backed
+  via Flyway (not in-memory) — see `backend/API_CONTRACT.md`'s Status line
+  for exactly which sections are live. `auth.service.ts`, `dashboard.service.ts`,
+  `profile.service.ts`, `institution.service.ts`, `role.service.ts`,
+  `academic-session.service.ts`, and `academic-semester.service.ts` all call
+  it via `apiClient` (`src/lib/axios.ts`) rather than reading a Zustand store.
+  **The three demo logins are server-defined, not frontend-defined** —
+  `super_admin`/`Super@2024`, `turon_admin`/`Turon@2024` (XYZ College,
+  unrestricted), `amara_bello`/`Amara@2024` (Ahmadu Bello University,
+  restricted "Front Desk Officer" role) — the credentials aren't in this
+  frontend's source at all anymore. `institutions.store.ts` is no longer
+  seeded mock data either — it's hydrated from the real backend by
+  `super-admin/layout.tsx` and `dashboard/layout.tsx` (see the Institutions
+  bullet further down for the full read/write architecture, including how
+  Modules/License Manager's own still-unbuilt backend stays local-only on
+  top of the real rows). `academics.store.ts` is the same hydration-only
+  shape (`{sessions, semesters, setSessions, setSemesters}`, no `persist`,
+  no seed data, no mutation actions) — `dashboard/layout.tsx` fetches both
+  via `useAcademicSessions`/`useAcademicSemesters` (`staleTime`-based, no
+  `refetchInterval`, since only the current institution_admin themselves
+  ever changes this data, unlike Institutions' moduleKeys) and hydrates the
+  store from a `useEffect`; `session-dialog.tsx`/`semester-dialog.tsx` and
+  every kebab-menu action (archive/restore/set-current/close, both tables)
+  call the real mutation hooks in `hooks/use-academic-session(s/semester)s.ts`
+  directly. Every other store in `src/store/` — `staff.store.ts`,
+  `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
+  `departments.store.ts`, `programs.store.ts`, `program-levels.store.ts`,
+  `course-grades.store.ts`, `courses.store.ts`, `staff-members.store.ts`,
+  `lecturers.store.ts`, `rollover.store.ts` — is still a `persist`-backed
+  Zustand store standing in for a real API that doesn't exist yet, seeded
+  with demo data, exactly as before. When wiring a new page to data that has
+  no real backend section yet, keep following that same pattern — a small
+  typed Zustand store with seed data — rather than reaching for a real
   fetch call prematurely. Because `persist` only rehydrates in the browser,
   any component reading one of these stores **must** be a Client Component
   using the store's hook (`useXStore((s) => s.thing)`) — never
   `useXStore.getState()` in a Server Component, which would silently always
   show the seed data and never a user's changes.
+- **`NotchedDateField` is a `Popover`+`Calendar` trigger button, not a native
+  `<input>` — no `name` attribute to `page.fill()` against.** Worth knowing
+  for any Playwright script touching a date field (Academic Sessions'
+  from/to dates, License Manager's expiry date, etc.): scope to the field by
+  its `Label` text (`div.relative:has(label:text-is("From"))`), click the
+  `[data-slot="popover-trigger"]` inside it, then click the day button
+  inside the portaled `[data-slot="popover-content"]` matched by its
+  `data-day` attribute (`date.toLocaleDateString()` format, e.g.
+  `"9/28/2026"`) — pick dates within the currently-displayed month unless
+  you also automate the prev/next-month nav buttons.
 - **Bump `version` whenever you change a persisted store's shape.** Every
   `persist(...)` config in `src/store/` has an explicit version number and
   a `migrate: () => (<fresh seed/empty state>)` — every persisted store in

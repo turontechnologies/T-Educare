@@ -16,6 +16,12 @@ import {
   NotchedDateField,
   NotchedField,
 } from "@/components/shared/notched-field";
+import {
+  useCreateAcademicSession,
+  useSetCurrentAcademicSession,
+  useUpdateAcademicSession,
+} from "@/hooks/use-academic-sessions";
+import { useCreateAcademicSemester } from "@/hooks/use-academic-semesters";
 import { useAcademicsStore } from "@/store/academics.store";
 import type { AcademicSession } from "@/types/academics";
 
@@ -72,12 +78,10 @@ function SessionForm({
   onDone: () => void;
 }) {
   const sessions = useAcademicsStore((state) => state.sessions);
-  const createSession = useAcademicsStore((state) => state.createSession);
-  const updateSession = useAcademicsStore((state) => state.updateSession);
-  const setCurrentSession = useAcademicsStore(
-    (state) => state.setCurrentSession,
-  );
-  const createSemester = useAcademicsStore((state) => state.createSemester);
+  const createSession = useCreateAcademicSession();
+  const updateSession = useUpdateAcademicSession();
+  const setCurrentSession = useSetCurrentAcademicSession();
+  const createSemester = useCreateAcademicSemester();
 
   const [from, setFrom] = useState(
     session?.from ? session.from.slice(0, 10) : "",
@@ -90,8 +94,11 @@ function SessionForm({
     defaultValues: { session: session?.session ?? "" },
   });
 
-  const onSubmit = (values: SessionFormValues) => {
+  const onSubmit = async (values: SessionFormValues) => {
     const name = values.session.trim();
+    // Instant client-side pre-check for a snappy error — the real backend
+    // independently re-validates this too (409), since this store's data
+    // could theoretically be a moment stale.
     const duplicate = sessions.some(
       (s) =>
         s.id !== session?.id &&
@@ -117,43 +124,49 @@ function SessionForm({
       to: new Date(to).toISOString(),
     };
 
-    if (session) {
-      updateSession(session.id, payload);
-      toast.success(`${name} updated`);
+    try {
+      if (session) {
+        await updateSession.mutateAsync({ id: session.id, payload });
+        toast.success(`${name} updated`);
+        onDone();
+        return;
+      }
+
+      const created = await createSession.mutateAsync(payload);
+      toast.success(`${name} added`);
+
+      if (makeCurrent) {
+        await setCurrentSession.mutateAsync(created.id);
+        toast.success(`${name} set as the current session`);
+      }
+
+      if (autoCreateSemesters) {
+        const start = new Date(from).getTime();
+        const end = new Date(to).getTime();
+        const midpoint = new Date(start + (end - start) / 2);
+        await createSemester.mutateAsync({
+          sessionId: created.id,
+          name: "First Semester",
+          description: `First semester of the ${name} academic session.`,
+          from: created.from,
+          to: midpoint.toISOString(),
+        });
+        await createSemester.mutateAsync({
+          sessionId: created.id,
+          name: "Second Semester",
+          description: `Second semester of the ${name} academic session.`,
+          from: midpoint.toISOString(),
+          to: created.to,
+        });
+        toast.success("First and Second Semester created automatically");
+      }
+
       onDone();
-      return;
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save session",
+      );
     }
-
-    const created = createSession(payload);
-    toast.success(`${name} added`);
-
-    if (makeCurrent) {
-      setCurrentSession(created.id);
-      toast.success(`${name} set as the current session`);
-    }
-
-    if (autoCreateSemesters) {
-      const start = new Date(from).getTime();
-      const end = new Date(to).getTime();
-      const midpoint = new Date(start + (end - start) / 2);
-      createSemester({
-        sessionId: created.id,
-        name: "First Semester",
-        description: `First semester of the ${name} academic session.`,
-        from: created.from,
-        to: midpoint.toISOString(),
-      });
-      createSemester({
-        sessionId: created.id,
-        name: "Second Semester",
-        description: `Second semester of the ${name} academic session.`,
-        from: midpoint.toISOString(),
-        to: created.to,
-      });
-      toast.success("First and Second Semester created automatically");
-    }
-
-    onDone();
   };
 
   return (
@@ -214,7 +227,11 @@ function SessionForm({
         <Button
           type="submit"
           form="session-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createSession.isPending ||
+            updateSession.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save

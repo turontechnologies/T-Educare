@@ -90,6 +90,10 @@ public class AcademicSemester {
         return sessionId;
     }
 
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+
     public String getName() {
         return name;
     }

@@ -121,6 +121,21 @@ class AcademicSessionControllerTest {
                     .andReturn().getResponse().getContentAsString();
             String secondSemesterId = secondSemesterResponse.split("\"id\":\"")[1].split("\"")[0];
 
+            // Reassigning an existing semester to a different real session
+            // (still within the same institution) is allowed via PATCH.
+            mockMvc.perform(patch("/api/academic-semesters/" + semesterId)
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"sessionId\":\"" + firstSessionId + "\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sessionId").value(firstSessionId));
+            // Restore it before the rest of this test relies on it belonging to secondSessionId.
+            mockMvc.perform(patch("/api/academic-semesters/" + semesterId)
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"sessionId\":\"" + secondSessionId + "\"}"))
+                    .andExpect(status().isOk());
+
             // A session belonging to a different institution is rejected as a sessionId.
             mockMvc.perform(post("/api/academic-semesters")
                     .header("Authorization", "Bearer " + token)

@@ -8,8 +8,11 @@ import {
   filterNavByModules,
   INSTITUTION_NAV,
 } from "@/config/nav";
+import { useAcademicSemesters } from "@/hooks/use-academic-semesters";
+import { useAcademicSessions } from "@/hooks/use-academic-sessions";
 import { useInstitutions } from "@/hooks/use-institutions";
 import { useMe } from "@/hooks/use-login";
+import { useAcademicsStore } from "@/store/academics.store";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
@@ -58,6 +61,25 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (institutionsData) setInstitutions(institutionsData.data);
   }, [institutionsData, setInstitutions]);
+
+  // Academic Sessions/Semesters (API_CONTRACT.md §7/§7.1) — real backend now.
+  // No polling needed here: unlike Institutions' moduleKeys, only this same
+  // institution_admin session itself ever changes these, so a normal
+  // fetch-on-mount/focus is enough.
+  const setSessions = useAcademicsStore((state) => state.setSessions);
+  const setSemesters = useAcademicsStore((state) => state.setSemesters);
+  const { data: sessionsData } = useAcademicSessions(true, {
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  const { data: semestersData } = useAcademicSemesters(true, {
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (sessionsData) setSessions(sessionsData);
+  }, [sessionsData, setSessions]);
+  useEffect(() => {
+    if (semestersData) setSemesters(semestersData);
+  }, [semestersData, setSemesters]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,
