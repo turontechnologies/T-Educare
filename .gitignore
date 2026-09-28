@@ -9,6 +9,7 @@ node_modules/
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
+.claude/settings.json
 *.tsbuildinfo
 
 # Agent instruction files (not shared via the repo)
