@@ -16,6 +16,7 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import { useCreateSchool, useUpdateSchool } from "@/hooks/use-schools";
 import { useSchoolsStore } from "@/store/schools.store";
 import { useStaffStore } from "@/store/staff.store";
 import type { School } from "@/types/school";
@@ -88,8 +89,8 @@ function SchoolForm({
   onDone: () => void;
 }) {
   const schools = useSchoolsStore((state) => state.schools);
-  const createSchool = useSchoolsStore((state) => state.createSchool);
-  const updateSchool = useSchoolsStore((state) => state.updateSchool);
+  const createSchool = useCreateSchool();
+  const updateSchool = useUpdateSchool();
   const designations = useStaffStore((state) => state.designations);
 
   const [headName, setHeadName] = useState(school?.headName ?? "");
@@ -101,7 +102,7 @@ function SchoolForm({
     },
   });
 
-  const onSubmit = (values: SchoolFormValues) => {
+  const onSubmit = async (values: SchoolFormValues) => {
     if (!headName || !designation) {
       toast.error("Select a school head and designation");
       return;
@@ -120,14 +121,20 @@ function SchoolForm({
 
     const payload = { name, headName, designation };
 
-    if (school) {
-      updateSchool(school.id, payload);
-      toast.success(`${name} updated`);
-    } else {
-      const created = createSchool(payload);
-      toast.success(`${created.name} added`);
+    try {
+      if (school) {
+        await updateSchool.mutateAsync({ id: school.id, payload });
+        toast.success(`${name} updated`);
+      } else {
+        const created = await createSchool.mutateAsync(payload);
+        toast.success(`${created.name} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save school",
+      );
     }
-    onDone();
   };
 
   return (
@@ -173,7 +180,11 @@ function SchoolForm({
         <Button
           type="submit"
           form="school-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createSchool.isPending ||
+            updateSchool.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save

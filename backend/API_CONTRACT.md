@@ -43,9 +43,8 @@ frontend bell/full-page feed reads the real `GET /notifications` endpoint
 directly, no client-side merge with anything local anymore (that merge
 was removed the same day, for both roles — see `frontend/CLAUDE.md`).
 Academic Sessions & Semesters (§7/§7.1) are also real now (2026-09-27).
-Schools (§7.4) are also real now (2026-09-28), backend-only (not yet
-wired to the frontend — `schools.store.ts` is still the frontend-mocked
-seed data until the frontend wiring is explicitly requested).
+Schools (§7.4) are also real now and wired to the frontend (2026-09-28) —
+`schools.store.ts` is hydration-only, no more seed data.
 Everything else below (Students, Session Rollover, Faculties/Departments/
 Programs/Program Levels/Course Grades/Courses, Staff) is
 **not implemented yet** — this file remains what to build those *against*.
@@ -1383,8 +1382,8 @@ side-effect-free.
 
 ### 7.4 Schools — institution admin
 
-**Implemented (2026-09-28)** — `backend/src/main/java/com/teducare/school/`,
-backend-only (not yet wired to the frontend). The academic unit sitting
+**Implemented (2026-09-28)**, wired to the frontend the same day —
+`backend/src/main/java/com/teducare/school/`. The academic unit sitting
 above faculties/departments (`School.name`, e.g. "School of Engineering")
 — a small, standalone admin table on the same locked pattern as
 everywhere else in this contract (§1), and the FK target for

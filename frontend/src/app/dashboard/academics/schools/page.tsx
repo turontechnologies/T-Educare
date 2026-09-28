@@ -38,6 +38,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { SchoolDialog } from "@/components/features/academics/school-dialog";
+import { useArchiveSchool, useRestoreSchool } from "@/hooks/use-schools";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { School } from "@/types/school";
 
@@ -91,8 +92,8 @@ export default function SchoolManagementPage() {
 
 function SchoolTable({ onEdit }: { onEdit: (school: School) => void }) {
   const schools = useSchoolsStore((state) => state.schools);
-  const archiveSchool = useSchoolsStore((state) => state.archiveSchool);
-  const restoreSchool = useSchoolsStore((state) => state.restoreSchool);
+  const archiveSchool = useArchiveSchool();
+  const restoreSchool = useRestoreSchool();
 
   const [view, setView] = useState<"active" | "archived">("active");
   const [search, setSearch] = useState("");
@@ -244,9 +245,17 @@ function SchoolTable({ onEdit }: { onEdit: (school: School) => void }) {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreSchool(school.id);
-                          toast.success(`${school.name} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreSchool.mutateAsync(school.id);
+                            toast.success(`${school.name} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore school",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -316,10 +325,18 @@ function SchoolTable({ onEdit }: { onEdit: (school: School) => void }) {
         description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveSchool(pendingArchive.id);
-          toast.success(`${pendingArchive.name} deleted`);
+          try {
+            await archiveSchool.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.name} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete school",
+            );
+          }
         }}
       />
     </>

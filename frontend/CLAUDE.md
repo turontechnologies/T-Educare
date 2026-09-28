@@ -639,14 +639,15 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   password of, or deactivating an account there **does** now affect
   `/login` immediately — the caveat above only describes the
   now-closed gap between those two builds.
-- **Auth, Dashboard, Profile, Institutions, Roles, User Manager, and Academic
-  Sessions & Semesters are wired to a real backend now — everything else
-  below is still mocked.** `backend/` is a real Spring Boot app, MSSQL-backed
-  via Flyway (not in-memory) — see `backend/API_CONTRACT.md`'s Status line
-  for exactly which sections are live. `auth.service.ts`, `dashboard.service.ts`,
-  `profile.service.ts`, `institution.service.ts`, `role.service.ts`,
-  `academic-session.service.ts`, and `academic-semester.service.ts` all call
-  it via `apiClient` (`src/lib/axios.ts`) rather than reading a Zustand store.
+- **Auth, Dashboard, Profile, Institutions, Roles, User Manager, Academic
+  Sessions & Semesters, and Schools are wired to a real backend now —
+  everything else below is still mocked.** `backend/` is a real Spring Boot
+  app, MSSQL-backed via Flyway (not in-memory) — see
+  `backend/API_CONTRACT.md`'s Status line for exactly which sections are
+  live. `auth.service.ts`, `dashboard.service.ts`, `profile.service.ts`,
+  `institution.service.ts`, `role.service.ts`, `academic-session.service.ts`,
+  `academic-semester.service.ts`, and `school.service.ts` all call it via
+  `apiClient` (`src/lib/axios.ts`) rather than reading a Zustand store.
   **The three demo logins are server-defined, not frontend-defined** —
   `super_admin`/`Super@2024`, `turon_admin`/`Turon@2024` (XYZ College,
   unrestricted), `amara_bello`/`Amara@2024` (Ahmadu Bello University,
@@ -665,20 +666,40 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   store from a `useEffect`; `session-dialog.tsx`/`semester-dialog.tsx` and
   every kebab-menu action (archive/restore/set-current/close, both tables)
   call the real mutation hooks in `hooks/use-academic-session(s/semester)s.ts`
-  directly. Every other store in `src/store/` — `staff.store.ts`,
-  `students.store.ts`, `schools.store.ts`, `faculties.store.ts`,
-  `departments.store.ts`, `programs.store.ts`, `program-levels.store.ts`,
-  `course-grades.store.ts`, `courses.store.ts`, `staff-members.store.ts`,
-  `lecturers.store.ts`, `rollover.store.ts` — is still a `persist`-backed
-  Zustand store standing in for a real API that doesn't exist yet, seeded
-  with demo data, exactly as before. When wiring a new page to data that has
-  no real backend section yet, keep following that same pattern — a small
-  typed Zustand store with seed data — rather than reaching for a real
-  fetch call prematurely. Because `persist` only rehydrates in the browser,
-  any component reading one of these stores **must** be a Client Component
+  directly. `schools.store.ts` is the same hydration-only shape too
+  (`{schools, setSchools}`) — `dashboard/layout.tsx` fetches via `useSchools`
+  and hydrates on a `useEffect`; `school-dialog.tsx` and the archive/restore
+  actions on `academics/schools/page.tsx` call the real mutation hooks in
+  `hooks/use-schools.ts` directly. **`schools.store.ts` still exports
+  `SEED_SCHOOL_IDS`** (plain string constants, no attached `School` rows) —
+  Faculties/Departments/Courses/Lecturers/Students are all still fully
+  mocked and hardcode those same ids as their own `schoolId`/`assignmentId`
+  seed values; keeping the constant exported (deliberately, confirmed with
+  the user rather than silently patched) means those 5 unrelated stores
+  compile unchanged, at the cost of their seeded demo rows now showing a
+  blank "School" (no match in the real, per-institution list) until each of
+  those pages gets a real backend of its own — a known, accepted gap, not a
+  bug. Every other store in `src/store/` — `staff.store.ts`,
+  `students.store.ts`, `faculties.store.ts`, `departments.store.ts`,
+  `programs.store.ts`, `program-levels.store.ts`, `course-grades.store.ts`,
+  `courses.store.ts`, `staff-members.store.ts`, `lecturers.store.ts`,
+  `rollover.store.ts` — is still a `persist`-backed Zustand store standing
+  in for a real API that doesn't exist yet, seeded with demo data, exactly
+  as before. When wiring a new page to data that has no real backend
+  section yet, keep following that same pattern — a small typed Zustand
+  store with seed data — rather than reaching for a real fetch call
+  prematurely. Because `persist` only rehydrates in the browser, any
+  component reading one of these stores **must** be a Client Component
   using the store's hook (`useXStore((s) => s.thing)`) — never
   `useXStore.getState()` in a Server Component, which would silently always
   show the seed data and never a user's changes.
+- **`NotchedComboboxField`/`NotchedSelectField` Playwright gotcha, worth
+  knowing alongside `NotchedDateField`'s (below)**: neither renders a plain
+  `<select>` or a text `<input>` for its options. Click the field's own
+  placeholder text (e.g. `page.getByText("Select school head")`) to open
+  it, then match the option by `getByRole("option", { name })` — both the
+  combobox's `cmdk` `CommandItem` and the select's base-ui `SelectItem` set
+  `role="option"`.
 - **`NotchedDateField` is a `Popover`+`Calendar` trigger button, not a native
   `<input>` — no `name` attribute to `page.fill()` against.** Worth knowing
   for any Playwright script touching a date field (Academic Sessions'

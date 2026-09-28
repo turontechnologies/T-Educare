@@ -12,9 +12,11 @@ import { useAcademicSemesters } from "@/hooks/use-academic-semesters";
 import { useAcademicSessions } from "@/hooks/use-academic-sessions";
 import { useInstitutions } from "@/hooks/use-institutions";
 import { useMe } from "@/hooks/use-login";
+import { useSchools } from "@/hooks/use-schools";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
+import { useSchoolsStore } from "@/store/schools.store";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -80,6 +82,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (semestersData) setSemesters(semestersData);
   }, [semestersData, setSemesters]);
+
+  // Same "fetch-on-mount/focus, no polling" reasoning as Academic Sessions
+  // above — only this same institution_admin session changes Schools.
+  const setSchools = useSchoolsStore((state) => state.setSchools);
+  const { data: schoolsData } = useSchools(true, {
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (schoolsData) setSchools(schoolsData);
+  }, [schoolsData, setSchools]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,
