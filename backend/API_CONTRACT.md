@@ -43,8 +43,11 @@ frontend bell/full-page feed reads the real `GET /notifications` endpoint
 directly, no client-side merge with anything local anymore (that merge
 was removed the same day, for both roles — see `frontend/CLAUDE.md`).
 Academic Sessions & Semesters (§7/§7.1) are also real now (2026-09-27).
-Everything else below (Students, Session Rollover, Schools/Faculties/
-Departments/Programs/Program Levels/Course Grades/Courses, Staff) is
+Schools (§7.4) are also real now (2026-09-28), backend-only (not yet
+wired to the frontend — `schools.store.ts` is still the frontend-mocked
+seed data until the frontend wiring is explicitly requested).
+Everything else below (Students, Session Rollover, Faculties/Departments/
+Programs/Program Levels/Course Grades/Courses, Staff) is
 **not implemented yet** — this file remains what to build those *against*.
 
 ## Deployment
@@ -1380,26 +1383,38 @@ side-effect-free.
 
 ### 7.4 Schools — institution admin
 
-The academic unit sitting above faculties/departments (`School.name`,
-e.g. "School of Engineering") — a small, standalone admin table on the
-same locked pattern as everywhere else in this contract (§1), and the
-FK target for `Student.schoolId` (7.2).
+**Implemented (2026-09-28)** — `backend/src/main/java/com/teducare/school/`,
+backend-only (not yet wired to the frontend). The academic unit sitting
+above faculties/departments (`School.name`, e.g. "School of Engineering")
+— a small, standalone admin table on the same locked pattern as
+everywhere else in this contract (§1), and the FK target for
+`Student.schoolId` (7.2, not yet built).
 
 | Method | Path                | Body                                       | Notes |
 |--------|---------------------|----------------------------------------------|-------|
 | GET    | `/schools`          | —                                             | supports `?includeArchived=true` (default `false`) |
-| POST   | `/schools`          | `{ name, headName, designation }`              | `422` on a `name` that collides case-insensitively with another non-archived school |
+| POST   | `/schools`          | `{ name, headName, designation }`              | `409` on a `name` that collides case-insensitively with another non-archived school |
 | PATCH  | `/schools/:id`      | any subset of the fields above                 | for editing |
 | POST   | `/schools/:id/archive` | —                                            | sets `archivedAt = now` |
 | POST   | `/schools/:id/restore` | —                                            | sets `archivedAt = null` |
 
-`designation` should be validated against `/staff-designations` (§8) —
-the frontend's dialog already sources its options from that same list
-rather than free text, so a school's head designation is drawn from the
-same controlled vocabulary as everyone else's staff designation, not a
-separate one. `headName` has no backing "staff/person directory" resource
-yet on either side — until one exists, treat it as a plain string, not a
-FK.
+Institution-scoped self-service, same guard pattern as Roles/Academic
+Sessions — always "my own institution's schools", resolved from the
+caller's JWT, never a path/query param. **Duplicate-name status code
+corrected to `409` (CONFLICT) here** to match the actual precedent set by
+Roles and Academic Sessions' real implementations, not the `422` this
+section originally said — keep using `409` for this same check on
+Faculties/Departments/Courses/Lecturers below when they're built, and fix
+their prose to match rather than following it literally.
+
+`designation` should eventually be validated against `/staff-designations`
+(§8) — the frontend's dialog already sources its options from that same
+list rather than free text — **but that resource has no real backend yet**
+(Staff Management, §8, is still 100% frontend-mocked), so for now
+`designation` is just a required non-blank string, same as `headName`.
+Revisit this once Staff Designations gets a real backend. `headName` has
+no backing "staff/person directory" resource yet on either side — until
+one exists, treat it as a plain string, not a FK.
 
 ### 7.5 Faculties — institution admin
 

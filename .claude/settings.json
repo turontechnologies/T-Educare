@@ -8,7 +8,9 @@
       "Bash(node /tmp/pw_abu_consistency.js)",
       "Bash(grep -n \"modulesCount.*default\\\\|defaults \\\\`0\\\\`\" backend/API_CONTRACT.md)",
       "Bash(curl -s -4 -o /dev/null -w \"backend health: %{http_code}\\\\n\" http://127.0.0.1:8081/api/health --max-time 5)",
-      "Bash(curl -s -4 -o /dev/null -w \"frontend: %{http_code}\\\\n\" http://127.0.0.1:3000 --max-time 5)"
+      "Bash(curl -s -4 -o /dev/null -w \"frontend: %{http_code}\\\\n\" http://127.0.0.1:3000 --max-time 5)",
+      "Bash(MSYS_NO_PATHCONV=1 docker run --rm -v __CMDSUB_OUTPUT__/backend:/workspace -v 'C:\\\\Users\\\\HomePC/.m2:/root/.m2' -w /workspace -e 'DB_URL=jdbc:sqlserver://host.docker.internal:1433;databaseName=teducare_db;encrypt=true;trustServerCertificate=true' maven:3.9.9-eclipse-temurin-21 mvn test)",
+      "Bash(echo \"started, PID $!\")"
     ]
   }
 }
