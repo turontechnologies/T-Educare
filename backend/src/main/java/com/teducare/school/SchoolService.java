@@ -67,8 +67,14 @@ public class SchoolService {
         return SchoolResponse.from(repository.save(school));
     }
 
-    /** Never leaks whether a school exists in a different institution — a mismatch reads identically to "not found". */
-    School requireOwnSchool(String institutionId, String id) {
+    /**
+     * Never leaks whether a school exists in a different institution — a
+     * mismatch reads identically to "not found". Public (not
+     * package-private, unlike academics' sibling-service pattern) since
+     * this is called cross-package by any resource that FKs to a school —
+     * Faculties (com.teducare.faculty) first, Departments/Courses next.
+     */
+    public School requireOwnSchool(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "School not found."));
     }
