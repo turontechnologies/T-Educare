@@ -16,6 +16,7 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import { useCreateFaculty, useUpdateFaculty } from "@/hooks/use-faculties";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Faculty } from "@/types/faculty";
@@ -89,8 +90,8 @@ function FacultyForm({
   onDone: () => void;
 }) {
   const faculties = useFacultiesStore((state) => state.faculties);
-  const createFaculty = useFacultiesStore((state) => state.createFaculty);
-  const updateFaculty = useFacultiesStore((state) => state.updateFaculty);
+  const createFaculty = useCreateFaculty();
+  const updateFaculty = useUpdateFaculty();
   const schools = useSchoolsStore((state) => state.schools);
   const activeSchools = useMemo(
     () => schools.filter((s) => !s.archivedAt),
@@ -106,7 +107,7 @@ function FacultyForm({
     },
   });
 
-  const onSubmit = (values: FacultyFormValues) => {
+  const onSubmit = async (values: FacultyFormValues) => {
     if (!deanName || !schoolId) {
       toast.error("Select a dean of faculty and a school");
       return;
@@ -125,14 +126,20 @@ function FacultyForm({
 
     const payload = { name, deanName, schoolId };
 
-    if (faculty) {
-      updateFaculty(faculty.id, payload);
-      toast.success(`${name} updated`);
-    } else {
-      const created = createFaculty(payload);
-      toast.success(`${created.name} added`);
+    try {
+      if (faculty) {
+        await updateFaculty.mutateAsync({ id: faculty.id, payload });
+        toast.success(`${name} updated`);
+      } else {
+        const created = await createFaculty.mutateAsync(payload);
+        toast.success(`${created.name} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save faculty",
+      );
     }
-    onDone();
   };
 
   return (
@@ -178,7 +185,11 @@ function FacultyForm({
         <Button
           type="submit"
           form="faculty-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createFaculty.isPending ||
+            updateFaculty.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save

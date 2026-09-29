@@ -38,6 +38,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { FacultyDialog } from "@/components/features/academics/faculty-dialog";
+import { useArchiveFaculty, useRestoreFaculty } from "@/hooks/use-faculties";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Faculty } from "@/types/faculty";
@@ -92,8 +93,8 @@ export default function FacultyManagementPage() {
 
 function FacultyTable({ onEdit }: { onEdit: (faculty: Faculty) => void }) {
   const faculties = useFacultiesStore((state) => state.faculties);
-  const archiveFaculty = useFacultiesStore((state) => state.archiveFaculty);
-  const restoreFaculty = useFacultiesStore((state) => state.restoreFaculty);
+  const archiveFaculty = useArchiveFaculty();
+  const restoreFaculty = useRestoreFaculty();
   const schools = useSchoolsStore((state) => state.schools);
 
   const [view, setView] = useState<"active" | "archived">("active");
@@ -250,9 +251,17 @@ function FacultyTable({ onEdit }: { onEdit: (faculty: Faculty) => void }) {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreFaculty(faculty.id);
-                          toast.success(`${faculty.name} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreFaculty.mutateAsync(faculty.id);
+                            toast.success(`${faculty.name} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore faculty",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -322,10 +331,18 @@ function FacultyTable({ onEdit }: { onEdit: (faculty: Faculty) => void }) {
         description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveFaculty(pendingArchive.id);
-          toast.success(`${pendingArchive.name} deleted`);
+          try {
+            await archiveFaculty.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.name} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete faculty",
+            );
+          }
         }}
       />
     </>

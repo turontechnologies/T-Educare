@@ -45,9 +45,8 @@ was removed the same day, for both roles — see `frontend/CLAUDE.md`).
 Academic Sessions & Semesters (§7/§7.1) are also real now (2026-09-27).
 Schools (§7.4) are also real now and wired to the frontend (2026-09-28) —
 `schools.store.ts` is hydration-only, no more seed data. Faculties (§7.5)
-are also real now (2026-09-29), backend-only (not yet wired to the
-frontend — `faculties.store.ts` is still the frontend-mocked seed data
-until the frontend wiring is explicitly requested).
+are also real now and wired to the frontend (2026-09-29) —
+`faculties.store.ts` is hydration-only too.
 Everything else below (Students, Session Rollover, Departments/Programs/
 Program Levels/Course Grades/Courses, Staff) is **not implemented yet**
 — this file remains what to build those *against*.
@@ -1420,8 +1419,8 @@ one exists, treat it as a plain string, not a FK.
 
 ### 7.5 Faculties — institution admin
 
-**Implemented (2026-09-29)**, backend-only for now (not yet wired to the
-frontend) — `backend/src/main/java/com/teducare/faculty/`. One level down
+**Implemented (2026-09-29)**, wired to the frontend the same day —
+`backend/src/main/java/com/teducare/faculty/`. One level down
 the academic hierarchy from Schools (7.4) — a faculty belongs to exactly
 one school. Same locked admin-table pattern as 7.4.
 
