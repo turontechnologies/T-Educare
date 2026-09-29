@@ -44,10 +44,13 @@ directly, no client-side merge with anything local anymore (that merge
 was removed the same day, for both roles — see `frontend/CLAUDE.md`).
 Academic Sessions & Semesters (§7/§7.1) are also real now (2026-09-27).
 Schools (§7.4) are also real now and wired to the frontend (2026-09-28) —
-`schools.store.ts` is hydration-only, no more seed data.
-Everything else below (Students, Session Rollover, Faculties/Departments/
-Programs/Program Levels/Course Grades/Courses, Staff) is
-**not implemented yet** — this file remains what to build those *against*.
+`schools.store.ts` is hydration-only, no more seed data. Faculties (§7.5)
+are also real now (2026-09-29), backend-only (not yet wired to the
+frontend — `faculties.store.ts` is still the frontend-mocked seed data
+until the frontend wiring is explicitly requested).
+Everything else below (Students, Session Rollover, Departments/Programs/
+Program Levels/Course Grades/Courses, Staff) is **not implemented yet**
+— this file remains what to build those *against*.
 
 ## Deployment
 
@@ -1417,19 +1420,32 @@ one exists, treat it as a plain string, not a FK.
 
 ### 7.5 Faculties — institution admin
 
-One level down the academic hierarchy from Schools (7.4) — a faculty
-belongs to exactly one school. Same locked admin-table pattern as 7.4.
+**Implemented (2026-09-29)**, backend-only for now (not yet wired to the
+frontend) — `backend/src/main/java/com/teducare/faculty/`. One level down
+the academic hierarchy from Schools (7.4) — a faculty belongs to exactly
+one school. Same locked admin-table pattern as 7.4.
 
 | Method | Path                  | Body                              | Notes |
 |--------|-----------------------|-------------------------------------|-------|
 | GET    | `/faculties`          | —                                    | supports `?schoolId=` and `?includeArchived=true` (default `false`) |
-| POST   | `/faculties`          | `{ name, deanName, schoolId }`        | `422` on a `name` that collides case-insensitively with another non-archived faculty; `schoolId` FK to `/schools` (7.4) — reject if it belongs to a different institution or doesn't exist |
-| PATCH  | `/faculties/:id`      | any subset of the fields above        | for editing |
+| POST   | `/faculties`          | `{ name, deanName, schoolId }`        | `409` on a `name` that collides case-insensitively with another non-archived faculty; `schoolId` FK to `/schools` (7.4) — `404` if it belongs to a different institution or doesn't exist |
+| PATCH  | `/faculties/:id`      | any subset of the fields above        | for editing; reassigning `schoolId` goes through the same FK guard as create |
 | POST   | `/faculties/:id/archive` | —                                  | sets `archivedAt = now` |
 | POST   | `/faculties/:id/restore` | —                                  | sets `archivedAt = null` |
 
-`deanName` is a plain string, same reasoning as School's `headName`
-(7.4) — no "staff/person directory" resource exists yet to FK against.
+Duplicate-name status corrected to `409` (not `422`) and the cross-
+institution/nonexistent `schoolId` case corrected to `404` (not a bare
+`422`) — same real-precedent correction already made for Schools (7.4);
+follow `409`/`404` for this same shape on Departments/Courses/Lecturers
+below too when they're built, rather than this file's original `422`
+prose. `deanName` is a plain string, same reasoning as School's
+`headName` (7.4) — no "staff/person directory" resource exists yet to
+FK against. `SchoolService.requireOwnSchool()` was made `public`
+(previously package-private) specifically so Faculties — and every
+future resource that FKs to a school — can reuse the exact same guard
+Academic Semesters already established for reusing a sibling service's
+"require this id belongs to my institution" check, just across packages
+this time instead of within one.
 
 ### 7.6 Departments — institution admin
 
