@@ -89,8 +89,14 @@ public class DepartmentService {
         return DepartmentResponse.from(repository.save(department));
     }
 
-    /** Never leaks whether a department exists in a different institution — a mismatch reads identically to "not found". */
-    private Department requireOwnDepartment(String institutionId, String id) {
+    /**
+     * Never leaks whether a department exists in a different institution —
+     * a mismatch reads identically to "not found". Public (not private),
+     * same reasoning as FacultyService.requireOwnFaculty / SchoolService
+     * .requireOwnSchool — Programs (com.teducare.program) FKs to this
+     * cross-package.
+     */
+    public Department requireOwnDepartment(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found."));
     }
