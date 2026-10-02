@@ -1,0 +1,128 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.teducare:teducare-backend >--------------------
+[INFO] Building teducare-backend 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ teducare-backend ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 11 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ teducare-backend ---
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 92 source files with javac [debug parameters release 21] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ teducare-backend ---
+[INFO] skip non existing resourceDirectory /workspace/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ teducare-backend ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 12 source files with javac [debug parameters release 21] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ teducare-backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.teducare.academics.AcademicSessionControllerTest
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+12:03:45.962 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.teducare.academics.AcademicSessionControllerTest]: AcademicSessionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+12:03:47.064 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.academics.AcademicSessionControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-10-02T12:03:51.110Z  INFO 69 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : Starting AcademicSessionControllerTest using Java 21.0.7 with PID 69 (started by root in /workspace)
+2026-10-02T12:03:51.115Z  INFO 69 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : No active profile set, falling back to 1 default profile: "default"
+2026-10-02T12:03:59.325Z  INFO 69 --- [teducare-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-02T12:04:00.184Z  INFO 69 --- [teducare-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 813 ms. Found 9 JPA repository interfaces.
+2026-10-02T12:04:04.544Z  INFO 69 --- [teducare-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-02T12:04:05.627Z  INFO 69 --- [teducare-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection ConnectionID:1 ClientConnectionId: ac4b0f43-9524-4696-a837-88899f5a01e0
+2026-10-02T12:04:05.641Z  INFO 69 --- [teducare-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-02T12:04:05.987Z  INFO 69 --- [teducare-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlserver://host.docker.internal:1433;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=teducare_db;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite; (Microsoft SQL Server 16.0)
+2026-10-02T12:04:06.563Z  INFO 69 --- [teducare-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 11 migrations (execution time 00:00.406s)
+2026-10-02T12:04:06.653Z  INFO 69 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema [dbo]: 10
+2026-10-02T12:04:06.757Z  INFO 69 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "11 - departments"
+2026-10-02T12:04:07.049Z  INFO 69 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema [dbo], now at version v11 (execution time 00:00.161s)
+2026-10-02T12:04:08.159Z  INFO 69 --- [teducare-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-02T12:04:09.174Z  INFO 69 --- [teducare-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-10-02T12:04:09.580Z  INFO 69 --- [teducare-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-02T12:04:12.221Z  INFO 69 --- [teducare-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-02T12:04:12.733Z  WARN 69 --- [teducare-backend] [           main] org.hibernate.orm.deprecation            : HHH90000025: SQLServerDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-10-02T12:04:21.135Z  INFO 69 --- [teducare-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-02T12:04:21.187Z  INFO 69 --- [teducare-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-02T12:04:25.842Z  INFO 69 --- [teducare-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-02T12:04:30.305Z  INFO 69 --- [teducare-backend] [           main] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name customAuthenticationProvider
+2026-10-02T12:04:36.939Z  INFO 69 --- [teducare-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-10-02T12:04:36.939Z  INFO 69 --- [teducare-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-02T12:04:36.941Z  INFO 69 --- [teducare-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-10-02T12:04:36.991Z  INFO 69 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : Started AcademicSessionControllerTest in 48.707 seconds (process running for 55.919)
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 62.62 s -- in com.teducare.academics.AcademicSessionControllerTest
+[INFO] Running com.teducare.auth.AuthControllerTest
+2026-10-02T12:04:47.564Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.auth.AuthControllerTest]: AuthControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:04:48.926Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.auth.AuthControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.737 s -- in com.teducare.auth.AuthControllerTest
+[INFO] Running com.teducare.dashboard.DashboardControllerTest
+2026-10-02T12:04:50.300Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.dashboard.DashboardControllerTest]: DashboardControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:04:50.747Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.dashboard.DashboardControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.947 s -- in com.teducare.dashboard.DashboardControllerTest
+[INFO] Running com.teducare.department.DepartmentControllerTest
+2026-10-02T12:04:52.257Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.department.DepartmentControllerTest]: DepartmentControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:04:52.782Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.department.DepartmentControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.894 s -- in com.teducare.department.DepartmentControllerTest
+[INFO] Running com.teducare.faculty.FacultyControllerTest
+2026-10-02T12:04:55.149Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.faculty.FacultyControllerTest]: FacultyControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:04:55.662Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.faculty.FacultyControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.963 s -- in com.teducare.faculty.FacultyControllerTest
+[INFO] Running com.teducare.institution.InstitutionControllerTest
+2026-10-02T12:04:58.114Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.institution.InstitutionControllerTest]: InstitutionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:04:58.507Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.institution.InstitutionControllerTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.801 s -- in com.teducare.institution.InstitutionControllerTest
+[INFO] Running com.teducare.module.ModuleControllerTest
+2026-10-02T12:05:00.912Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.module.ModuleControllerTest]: ModuleControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:05:01.297Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.module.ModuleControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.927 s -- in com.teducare.module.ModuleControllerTest
+[INFO] Running com.teducare.notification.NotificationControllerTest
+2026-10-02T12:05:01.853Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.notification.NotificationControllerTest]: NotificationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:05:02.762Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.notification.NotificationControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.429 s -- in com.teducare.notification.NotificationControllerTest
+[INFO] Running com.teducare.profile.ProfileControllerTest
+2026-10-02T12:05:05.273Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.profile.ProfileControllerTest]: ProfileControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:05:05.625Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.profile.ProfileControllerTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.748 s -- in com.teducare.profile.ProfileControllerTest
+[INFO] Running com.teducare.role.RoleControllerTest
+2026-10-02T12:05:08.037Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.role.RoleControllerTest]: RoleControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:05:08.639Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.role.RoleControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.960 s -- in com.teducare.role.RoleControllerTest
+[INFO] Running com.teducare.school.SchoolControllerTest
+2026-10-02T12:05:11.985Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.school.SchoolControllerTest]: SchoolControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:05:12.404Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.school.SchoolControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.347 s -- in com.teducare.school.SchoolControllerTest
+[INFO] Running com.teducare.usermanager.UserManagerControllerTest
+2026-10-02T12:05:15.341Z  INFO 69 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.usermanager.UserManagerControllerTest]: UserManagerControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-02T12:05:15.703Z  INFO 69 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.usermanager.UserManagerControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.164 s -- in com.teducare.usermanager.UserManagerControllerTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 37, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  02:35 min
+[INFO] Finished at: 2026-10-02T12:05:19Z
+[INFO] ------------------------------------------------------------------------

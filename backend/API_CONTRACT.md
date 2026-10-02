@@ -46,10 +46,13 @@ Academic Sessions & Semesters (§7/§7.1) are also real now (2026-09-27).
 Schools (§7.4) are also real now and wired to the frontend (2026-09-28) —
 `schools.store.ts` is hydration-only, no more seed data. Faculties (§7.5)
 are also real now and wired to the frontend (2026-09-29) —
-`faculties.store.ts` is hydration-only too.
-Everything else below (Students, Session Rollover, Departments/Programs/
-Program Levels/Course Grades/Courses, Staff) is **not implemented yet**
-— this file remains what to build those *against*.
+`faculties.store.ts` is hydration-only too. Departments (§7.6) are also
+real now (2026-10-02), backend-only (not yet wired to the frontend —
+`departments.store.ts` is still the frontend-mocked seed data until the
+frontend wiring is explicitly requested).
+Everything else below (Students, Session Rollover, Programs/Program
+Levels/Course Grades/Courses, Staff) is **not implemented yet** — this
+file remains what to build those *against*.
 
 ## Deployment
 
@@ -1448,6 +1451,9 @@ this time instead of within one.
 
 ### 7.6 Departments — institution admin
 
+**Implemented (2026-10-02)**, backend-only for now (not yet wired to the
+frontend) — `backend/src/main/java/com/teducare/department/`.
+
 **Stores both `facultyId` and `schoolId` as independent FKs — this
 resource does not derive its school through its faculty.** That's a
 deliberate modeling choice, not an inconsistency to "fix" later: the
@@ -1456,17 +1462,26 @@ school independently (e.g. a "Law Department" under "Faculty of Law"
 paired with a *different* school than Faculty of Law's own `schoolId`
 in 7.5), so school → faculty → department is not strict containment for
 this resource the way it might be assumed to be from 7.4/7.5 alone.
+Confirmed with a real live test: a department created with its
+`facultyId`'s own school A but its own `schoolId` set to a *different*
+school B is accepted, and `?schoolId=A` correctly excludes it while
+`?facultyId=` still includes it.
 
 | Method | Path                     | Body                                     | Notes |
 |--------|--------------------------|---------------------------------------------|-------|
 | GET    | `/departments`          | —                                             | supports `?facultyId=`, `?schoolId=`, and `?includeArchived=true` (default `false`) |
-| POST   | `/departments`          | `{ name, hodName, facultyId, schoolId }`       | `422` on a `name` that collides case-insensitively with another non-archived department; `facultyId`/`schoolId` FK to `/faculties` (7.5) / `/schools` (7.4) respectively, each independently — reject either if it belongs to a different institution or doesn't exist |
-| PATCH  | `/departments/:id`      | any subset of the fields above                 | for editing |
+| POST   | `/departments`          | `{ name, hodName, facultyId, schoolId }`       | `409` on a `name` that collides case-insensitively with another non-archived department; `facultyId`/`schoolId` FK to `/faculties` (7.5) / `/schools` (7.4) respectively, each independently validated — `404` if either belongs to a different institution or doesn't exist |
+| PATCH  | `/departments/:id`      | any subset of the fields above                 | for editing; reassigning either FK goes through the same independent guards as create |
 | POST   | `/departments/:id/archive` | —                                           | sets `archivedAt = now` |
 | POST   | `/departments/:id/restore` | —                                           | sets `archivedAt = null` |
 
+Status codes corrected to `409`/`404` (not the original `422`), same
+real-precedent correction already made for Schools/Faculties above.
 `hodName` is a plain string, same reasoning as `deanName`/`headName`
-above.
+above. `DepartmentService` injects both `FacultyService` and
+`SchoolService` and calls each one's own `requireOwnFaculty`/
+`requireOwnSchool` guard independently — neither FK is validated through
+the other, matching the independent-FK design note above.
 
 ### 7.7 Programs — institution admin
 
