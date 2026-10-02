@@ -15,6 +15,7 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import { useCreateProgram, useUpdateProgram } from "@/hooks/use-programs";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useProgramsStore } from "@/store/programs.store";
@@ -78,8 +79,8 @@ function ProgramForm({
   onDone: () => void;
 }) {
   const programs = useProgramsStore((state) => state.programs);
-  const createProgram = useProgramsStore((state) => state.createProgram);
-  const updateProgram = useProgramsStore((state) => state.updateProgram);
+  const createProgram = useCreateProgram();
+  const updateProgram = useUpdateProgram();
   const departments = useDepartmentsStore((state) => state.departments);
   const faculties = useFacultiesStore((state) => state.faculties);
   const activeDepartments = useMemo(
@@ -103,7 +104,7 @@ function ProgramForm({
     },
   });
 
-  const onSubmit = (values: ProgramFormValues) => {
+  const onSubmit = async (values: ProgramFormValues) => {
     if (!departmentId || !facultyId || !programType) {
       toast.error("Select a department, faculty, and program type");
       return;
@@ -122,14 +123,20 @@ function ProgramForm({
 
     const payload = { name, departmentId, facultyId, programType };
 
-    if (program) {
-      updateProgram(program.id, payload);
-      toast.success(`${name} updated`);
-    } else {
-      const created = createProgram(payload);
-      toast.success(`${created.name} added`);
+    try {
+      if (program) {
+        await updateProgram.mutateAsync({ id: program.id, payload });
+        toast.success(`${name} updated`);
+      } else {
+        const created = await createProgram.mutateAsync(payload);
+        toast.success(`${created.name} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save program",
+      );
     }
-    onDone();
   };
 
   return (
@@ -181,7 +188,11 @@ function ProgramForm({
         <Button
           type="submit"
           form="program-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createProgram.isPending ||
+            updateProgram.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save

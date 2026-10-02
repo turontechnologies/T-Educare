@@ -39,6 +39,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProgramDialog } from "@/components/features/academics/program-dialog";
+import { useArchiveProgram, useRestoreProgram } from "@/hooks/use-programs";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useProgramsStore } from "@/store/programs.store";
@@ -94,8 +95,8 @@ export default function ProgramManagementPage() {
 
 function ProgramTable({ onEdit }: { onEdit: (program: Program) => void }) {
   const programs = useProgramsStore((state) => state.programs);
-  const archiveProgram = useProgramsStore((state) => state.archiveProgram);
-  const restoreProgram = useProgramsStore((state) => state.restoreProgram);
+  const archiveProgram = useArchiveProgram();
+  const restoreProgram = useRestoreProgram();
   const departments = useDepartmentsStore((state) => state.departments);
   const faculties = useFacultiesStore((state) => state.faculties);
 
@@ -267,9 +268,17 @@ function ProgramTable({ onEdit }: { onEdit: (program: Program) => void }) {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreProgram(program.id);
-                          toast.success(`${program.name} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreProgram.mutateAsync(program.id);
+                            toast.success(`${program.name} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore program",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -339,10 +348,18 @@ function ProgramTable({ onEdit }: { onEdit: (program: Program) => void }) {
         description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveProgram(pendingArchive.id);
-          toast.success(`${pendingArchive.name} deleted`);
+          try {
+            await archiveProgram.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.name} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete program",
+            );
+          }
         }}
       />
     </>
