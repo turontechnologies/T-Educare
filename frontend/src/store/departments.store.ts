@@ -1,14 +1,19 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { SEED_FACULTY_IDS } from "@/store/faculties.store";
-import { SEED_SCHOOL_IDS } from "@/store/schools.store";
 import type { Department } from "@/types/department";
 
-function makeId() {
-  return `department-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/** Fixed, stable ids for the seeded rows (not `makeId()`) so other mock stores — Program Management's `departmentId` FK — can reference them reliably. */
+/**
+ * Fixed ids that Programs/Courses/Staff Members (all still frontend-mocked,
+ * no real backend yet) hardcode as their own `departmentId` seed values —
+ * same reasoning as `schools.store.ts`'s `SEED_SCHOOL_IDS` and
+ * `faculties.store.ts`'s `SEED_FACULTY_IDS`. Kept here as plain constants,
+ * independent of the real `departments` list below, purely so those
+ * still-mock stores keep compiling and stay internally consistent among
+ * themselves. Their seeded demo rows will show a blank "Department" (no
+ * match in the real, per-institution list) until each of those pages gets
+ * its own real backend — a known, accepted gap, not a bug (same resolution
+ * the user confirmed once for Schools and applied again for Faculties
+ * without re-asking; applied the same way here a third time).
+ */
 export const SEED_DEPARTMENT_IDS = {
   mathematics: "department-mathematics",
   law: "department-law",
@@ -19,132 +24,21 @@ export const SEED_DEPARTMENT_IDS = {
   accounting: "department-accounting",
 } as const;
 
-const SEEDED_DEPARTMENTS: Department[] = [
-  {
-    id: SEED_DEPARTMENT_IDS.mathematics,
-    name: "Mathematics Department",
-    hodName: "Dr. Solomon Olusegun",
-    facultyId: SEED_FACULTY_IDS.mathematics,
-    schoolId: SEED_SCHOOL_IDS.engineering,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-  {
-    id: SEED_DEPARTMENT_IDS.law,
-    name: "Law Department",
-    hodName: "Alh. Gbenga Olusegun",
-    facultyId: SEED_FACULTY_IDS.law,
-    schoolId: SEED_SCHOOL_IDS.computing,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-  {
-    id: SEED_DEPARTMENT_IDS.computing,
-    name: "Computing Department",
-    hodName: "Alh. Gbenga Olusegun",
-    facultyId: SEED_FACULTY_IDS.mathematics,
-    schoolId: SEED_SCHOOL_IDS.engineering,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-  {
-    id: SEED_DEPARTMENT_IDS.administration,
-    name: "Administration Department",
-    hodName: "Dr. Solomon Olusegun",
-    facultyId: SEED_FACULTY_IDS.law,
-    schoolId: SEED_SCHOOL_IDS.engineering,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-  {
-    id: SEED_DEPARTMENT_IDS.computerStudies,
-    name: "Computer Studies",
-    hodName: "Alh. Gbenga Olusegun",
-    facultyId: SEED_FACULTY_IDS.computing,
-    schoolId: SEED_SCHOOL_IDS.technology,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-  {
-    id: SEED_DEPARTMENT_IDS.statistics,
-    name: "Statistics",
-    hodName: "Prof. Ngozi Eze",
-    facultyId: SEED_FACULTY_IDS.mathematics,
-    schoolId: SEED_SCHOOL_IDS.statistics,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-  {
-    id: SEED_DEPARTMENT_IDS.accounting,
-    name: "Accounting Department",
-    hodName: "Alh. Mustapha George",
-    facultyId: SEED_FACULTY_IDS.law,
-    schoolId: SEED_SCHOOL_IDS.engineering,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-];
-
 interface DepartmentsState {
   departments: Department[];
-  createDepartment: (
-    department: Omit<Department, "id" | "createdAt" | "archivedAt">,
-  ) => Department;
-  updateDepartment: (id: string, patch: Partial<Department>) => void;
-  archiveDepartment: (id: string) => void;
-  restoreDepartment: (id: string) => void;
+  /**
+   * Called after every /departments fetch (see `dashboard/layout.tsx`) to
+   * hydrate this store with real, server-backed data — same "fetch then
+   * setX" convention `schools.store.ts`/`faculties.store.ts` use. Never
+   * seeded/mocked; empty until the first fetch resolves. Write through the
+   * real mutation hooks in `hooks/use-departments.ts` and let the next
+   * fetch update this store, never by patching it directly.
+   */
+  setDepartments: (departments: Department[]) => void;
 }
 
-export const useDepartmentsStore = create<DepartmentsState>()(
-  persist(
-    (set) => ({
-      departments: SEEDED_DEPARTMENTS,
+export const useDepartmentsStore = create<DepartmentsState>()((set) => ({
+  departments: [],
 
-      createDepartment: (department) => {
-        const newDepartment: Department = {
-          ...department,
-          id: makeId(),
-          createdAt: new Date().toISOString(),
-          archivedAt: null,
-        };
-        set((state) => ({
-          departments: [newDepartment, ...state.departments],
-        }));
-        return newDepartment;
-      },
-
-      updateDepartment: (id, patch) => {
-        set((state) => ({
-          departments: state.departments.map((department) =>
-            department.id === id ? { ...department, ...patch } : department,
-          ),
-        }));
-      },
-
-      archiveDepartment: (id) => {
-        set((state) => ({
-          departments: state.departments.map((department) =>
-            department.id === id
-              ? { ...department, archivedAt: new Date().toISOString() }
-              : department,
-          ),
-        }));
-      },
-
-      restoreDepartment: (id) => {
-        set((state) => ({
-          departments: state.departments.map((department) =>
-            department.id === id
-              ? { ...department, archivedAt: null }
-              : department,
-          ),
-        }));
-      },
-    }),
-    {
-      name: "t-educare-departments",
-      version: 4,
-      migrate: () => ({ departments: SEEDED_DEPARTMENTS }),
-    },
-  ),
-);
+  setDepartments: (departments) => set({ departments }),
+}));

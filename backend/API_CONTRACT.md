@@ -47,9 +47,8 @@ Schools (§7.4) are also real now and wired to the frontend (2026-09-28) —
 `schools.store.ts` is hydration-only, no more seed data. Faculties (§7.5)
 are also real now and wired to the frontend (2026-09-29) —
 `faculties.store.ts` is hydration-only too. Departments (§7.6) are also
-real now (2026-10-02), backend-only (not yet wired to the frontend —
-`departments.store.ts` is still the frontend-mocked seed data until the
-frontend wiring is explicitly requested).
+real now and wired to the frontend (2026-10-02) —
+`departments.store.ts` is hydration-only too.
 Everything else below (Students, Session Rollover, Programs/Program
 Levels/Course Grades/Courses, Staff) is **not implemented yet** — this
 file remains what to build those *against*.
@@ -1451,8 +1450,8 @@ this time instead of within one.
 
 ### 7.6 Departments — institution admin
 
-**Implemented (2026-10-02)**, backend-only for now (not yet wired to the
-frontend) — `backend/src/main/java/com/teducare/department/`.
+**Implemented (2026-10-02)**, wired to the frontend the same day —
+`backend/src/main/java/com/teducare/department/`.
 
 **Stores both `facultyId` and `schoolId` as independent FKs — this
 resource does not derive its school through its faculty.** That's a

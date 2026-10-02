@@ -38,6 +38,10 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { DepartmentDialog } from "@/components/features/academics/department-dialog";
+import {
+  useArchiveDepartment,
+  useRestoreDepartment,
+} from "@/hooks/use-departments";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -99,12 +103,8 @@ function DepartmentTable({
   onEdit: (department: Department) => void;
 }) {
   const departments = useDepartmentsStore((state) => state.departments);
-  const archiveDepartment = useDepartmentsStore(
-    (state) => state.archiveDepartment,
-  );
-  const restoreDepartment = useDepartmentsStore(
-    (state) => state.restoreDepartment,
-  );
+  const archiveDepartment = useArchiveDepartment();
+  const restoreDepartment = useRestoreDepartment();
   const faculties = useFacultiesStore((state) => state.faculties);
   const schools = useSchoolsStore((state) => state.schools);
 
@@ -274,9 +274,17 @@ function DepartmentTable({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreDepartment(department.id);
-                          toast.success(`${department.name} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreDepartment.mutateAsync(department.id);
+                            toast.success(`${department.name} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore department",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -346,10 +354,18 @@ function DepartmentTable({
         description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveDepartment(pendingArchive.id);
-          toast.success(`${pendingArchive.name} deleted`);
+          try {
+            await archiveDepartment.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.name} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete department",
+            );
+          }
         }}
       />
     </>

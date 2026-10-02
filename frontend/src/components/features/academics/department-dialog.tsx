@@ -16,6 +16,10 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import {
+  useCreateDepartment,
+  useUpdateDepartment,
+} from "@/hooks/use-departments";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -90,12 +94,8 @@ function DepartmentForm({
   onDone: () => void;
 }) {
   const departments = useDepartmentsStore((state) => state.departments);
-  const createDepartment = useDepartmentsStore(
-    (state) => state.createDepartment,
-  );
-  const updateDepartment = useDepartmentsStore(
-    (state) => state.updateDepartment,
-  );
+  const createDepartment = useCreateDepartment();
+  const updateDepartment = useUpdateDepartment();
   const faculties = useFacultiesStore((state) => state.faculties);
   const schools = useSchoolsStore((state) => state.schools);
   const activeFaculties = useMemo(
@@ -117,7 +117,7 @@ function DepartmentForm({
     },
   });
 
-  const onSubmit = (values: DepartmentFormValues) => {
+  const onSubmit = async (values: DepartmentFormValues) => {
     if (!hodName || !facultyId || !schoolId) {
       toast.error("Select a H.O.D, faculty, and school");
       return;
@@ -136,14 +136,20 @@ function DepartmentForm({
 
     const payload = { name, hodName, facultyId, schoolId };
 
-    if (department) {
-      updateDepartment(department.id, payload);
-      toast.success(`${name} updated`);
-    } else {
-      const created = createDepartment(payload);
-      toast.success(`${created.name} added`);
+    try {
+      if (department) {
+        await updateDepartment.mutateAsync({ id: department.id, payload });
+        toast.success(`${name} updated`);
+      } else {
+        const created = await createDepartment.mutateAsync(payload);
+        toast.success(`${created.name} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save department",
+      );
     }
-    onDone();
   };
 
   return (
@@ -194,7 +200,11 @@ function DepartmentForm({
         <Button
           type="submit"
           form="department-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createDepartment.isPending ||
+            updateDepartment.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save

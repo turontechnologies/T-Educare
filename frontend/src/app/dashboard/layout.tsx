@@ -10,12 +10,14 @@ import {
 } from "@/config/nav";
 import { useAcademicSemesters } from "@/hooks/use-academic-semesters";
 import { useAcademicSessions } from "@/hooks/use-academic-sessions";
+import { useDepartments } from "@/hooks/use-departments";
 import { useFaculties } from "@/hooks/use-faculties";
 import { useInstitutions } from "@/hooks/use-institutions";
 import { useMe } from "@/hooks/use-login";
 import { useSchools } from "@/hooks/use-schools";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -103,6 +105,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (facultiesData) setFaculties(facultiesData);
   }, [facultiesData, setFaculties]);
+
+  // Same "fetch-on-mount/focus, no polling" reasoning as Schools/Faculties above.
+  const setDepartments = useDepartmentsStore((state) => state.setDepartments);
+  const { data: departmentsData } = useDepartments(true, {
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (departmentsData) setDepartments(departmentsData);
+  }, [departmentsData, setDepartments]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,
