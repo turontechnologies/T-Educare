@@ -49,9 +49,8 @@ are also real now and wired to the frontend (2026-09-29) —
 `faculties.store.ts` is hydration-only too. Departments (§7.6) are also
 real now and wired to the frontend (2026-10-02) —
 `departments.store.ts` is hydration-only too. Programs (§7.7) are also
-real now (2026-10-02), backend-only (not yet wired to the frontend —
-`programs.store.ts` is still the frontend-mocked seed data until the
-frontend wiring is explicitly requested).
+real now and wired to the frontend (2026-10-02) — `programs.store.ts`
+is hydration-only too.
 Everything else below (Students, Session Rollover, Program Levels/Course
 Grades/Courses, Staff) is **not implemented yet** — this file remains
 what to build those *against*.
@@ -1487,8 +1486,8 @@ the other, matching the independent-FK design note above.
 
 ### 7.7 Programs — institution admin
 
-**Implemented (2026-10-02)**, backend-only for now (not yet wired to the
-frontend) — `backend/src/main/java/com/teducare/program/`.
+**Implemented (2026-10-02)**, wired to the frontend the same day —
+`backend/src/main/java/com/teducare/program/`.
 
 Like Departments (7.6), stores its parent references independently
 rather than deriving one through another: `departmentId` and

@@ -640,15 +640,16 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `/login` immediately — the caveat above only describes the
   now-closed gap between those two builds.
 - **Auth, Dashboard, Profile, Institutions, Roles, User Manager, Academic
-  Sessions & Semesters, Schools, Faculties, and Departments are wired to a
-  real backend now — everything else below is still mocked.** `backend/`
-  is a real Spring Boot app, MSSQL-backed via Flyway (not in-memory) —
-  see `backend/API_CONTRACT.md`'s Status line for exactly which sections
-  are live. `auth.service.ts`, `dashboard.service.ts`, `profile.service.ts`,
-  `institution.service.ts`, `role.service.ts`, `academic-session.service.ts`,
-  `academic-semester.service.ts`, `school.service.ts`, `faculty.service.ts`,
-  and `department.service.ts` all call it via `apiClient`
-  (`src/lib/axios.ts`) rather than reading a Zustand store.
+  Sessions & Semesters, Schools, Faculties, Departments, and Programs are
+  wired to a real backend now — everything else below is still mocked.**
+  `backend/` is a real Spring Boot app, MSSQL-backed via Flyway (not
+  in-memory) — see `backend/API_CONTRACT.md`'s Status line for exactly
+  which sections are live. `auth.service.ts`, `dashboard.service.ts`,
+  `profile.service.ts`, `institution.service.ts`, `role.service.ts`,
+  `academic-session.service.ts`, `academic-semester.service.ts`,
+  `school.service.ts`, `faculty.service.ts`, `department.service.ts`, and
+  `program.service.ts` all call it via `apiClient` (`src/lib/axios.ts`)
+  rather than reading a Zustand store.
   **The three demo logins are server-defined, not frontend-defined** —
   `super_admin`/`Super@2024`, `turon_admin`/`Turon@2024` (XYZ College,
   unrestricted), `amara_bello`/`Amara@2024` (Ahmadu Bello University,
@@ -686,8 +687,8 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `hooks/use-departments.ts` directly. **`schools.store.ts`,
   `faculties.store.ts`, and `departments.store.ts` all still export their
   `SEED_*_IDS`** (plain string constants, no attached rows) —
-  Programs/Courses/Lecturers/Students/Staff Members are all still fully
-  mocked and hardcode those same ids as their own
+  Courses/Lecturers/Students/Staff Members are all still fully mocked and
+  hardcode those same ids as their own
   `schoolId`/`facultyId`/`departmentId`/`assignmentId` seed values; keeping
   the constants exported (deliberately, confirmed with the user once for
   Schools and applied the same way again for Faculties and Departments
@@ -695,9 +696,19 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   those stores compile unchanged, at the cost of their seeded demo rows now
   showing a blank "School"/"Faculty"/"Department" (no match in the real,
   per-institution list) until each of those pages gets a real backend of
-  its own — a known, accepted gap, not a bug. Every other store in
-  `src/store/` — `staff.store.ts`, `students.store.ts`,
-  `programs.store.ts`, `program-levels.store.ts`, `course-grades.store.ts`,
+  its own — a known, accepted gap, not a bug.
+  `programs.store.ts` is the same hydration-only shape too
+  (`{programs, setPrograms}`) — `program-dialog.tsx`'s "Department" and
+  "Faculty" selects both source from real, now-hydrated stores the same
+  way; `program-dialog.tsx`/`academics/programs/page.tsx` call the real
+  mutation hooks in `hooks/use-programs.ts` directly. Unlike
+  Schools/Faculties/Departments, `programs.store.ts` has **no**
+  `SEED_PROGRAM_IDS` export — no other mock store references a Program
+  by a fixed seed id (Program Levels, §7.8, is a deliberately
+  independent lookup table, not FK'd to Programs at all), so there was
+  nothing to preserve for backward compatibility here. Every other store
+  in `src/store/` — `staff.store.ts`, `students.store.ts`,
+  `program-levels.store.ts`, `course-grades.store.ts`,
   `courses.store.ts`, `staff-members.store.ts`, `lecturers.store.ts`,
   `rollover.store.ts` — is still a `persist`-backed Zustand store
   standing in for a real API that doesn't exist yet, seeded with demo
