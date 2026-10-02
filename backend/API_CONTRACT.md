@@ -48,10 +48,13 @@ Schools (§7.4) are also real now and wired to the frontend (2026-09-28) —
 are also real now and wired to the frontend (2026-09-29) —
 `faculties.store.ts` is hydration-only too. Departments (§7.6) are also
 real now and wired to the frontend (2026-10-02) —
-`departments.store.ts` is hydration-only too.
-Everything else below (Students, Session Rollover, Programs/Program
-Levels/Course Grades/Courses, Staff) is **not implemented yet** — this
-file remains what to build those *against*.
+`departments.store.ts` is hydration-only too. Programs (§7.7) are also
+real now (2026-10-02), backend-only (not yet wired to the frontend —
+`programs.store.ts` is still the frontend-mocked seed data until the
+frontend wiring is explicitly requested).
+Everything else below (Students, Session Rollover, Program Levels/Course
+Grades/Courses, Staff) is **not implemented yet** — this file remains
+what to build those *against*.
 
 ## Deployment
 
@@ -1484,23 +1487,35 @@ the other, matching the independent-FK design note above.
 
 ### 7.7 Programs — institution admin
 
+**Implemented (2026-10-02)**, backend-only for now (not yet wired to the
+frontend) — `backend/src/main/java/com/teducare/program/`.
+
 Like Departments (7.6), stores its parent references independently
 rather than deriving one through another: `departmentId` and
-`facultyId` are both real FKs, picked separately.
+`facultyId` are both real FKs, picked separately. Confirmed with a real
+live test: a program created against a department whose own faculty is
+X, but with its own `facultyId` set to a different faculty Y, is
+accepted, and `?facultyId=X` correctly excludes it while
+`?departmentId=` still includes it.
 
 | Method | Path                  | Body                                                | Notes |
 |--------|-----------------------|--------------------------------------------------------|-------|
 | GET    | `/programs`          | —                                                        | supports `?departmentId=`, `?facultyId=`, and `?includeArchived=true` (default `false`) |
-| POST   | `/programs`          | `{ name, departmentId, facultyId, programType }`          | `422` on a `name` that collides case-insensitively with another non-archived program; `departmentId`/`facultyId` FK to `/departments` (7.6) / `/faculties` (7.5) respectively, each independently — reject either if it belongs to a different institution or doesn't exist |
-| PATCH  | `/programs/:id`      | any subset of the fields above                            | for editing |
+| POST   | `/programs`          | `{ name, departmentId, facultyId, programType }`          | `409` on a `name` that collides case-insensitively with another non-archived program; `departmentId`/`facultyId` FK to `/departments` (7.6) / `/faculties` (7.5) respectively, each independently validated — `404` if either belongs to a different institution or doesn't exist; `400` if `programType` isn't exactly `Undergraduate` or `Postgraduate` |
+| PATCH  | `/programs/:id`      | any subset of the fields above                            | for editing; reassigning either FK goes through the same independent guards as create |
 | POST   | `/programs/:id/archive` | —                                                       | sets `archivedAt = now` |
 | POST   | `/programs/:id/restore` | —                                                       | sets `archivedAt = null` |
 
-`programType` is `"Undergraduate" | "Postgraduate"`. This resource has
-no `schoolId` — the reference data's own "School" column for programs
-actually carried program-type values ("Undergraduate"/"Postgraduate"),
-not real school names, so it was modeled as `programType` here rather
-than a fabricated school reference.
+Status codes corrected to `409`/`404` (not the original `422`), same
+real-precedent correction already made for Schools/Faculties/Departments
+above. `programType` is `"Undergraduate" | "Postgraduate"`. This resource
+has no `schoolId` — the reference data's own "School" column for
+programs actually carried program-type values ("Undergraduate"/
+"Postgraduate"), not real school names, so it was modeled as
+`programType` here rather than a fabricated school reference.
+`ProgramService` injects both `DepartmentService` and `FacultyService`
+and calls each one's own `requireOwnDepartment`/`requireOwnFaculty`
+guard independently, matching the independent-FK design note above.
 
 ### 7.8 Program Levels — institution admin
 
