@@ -121,7 +121,7 @@ function NavGroup({
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
       >
         <div className="overflow-hidden">
-          <div className="flex flex-col gap-0.5 py-1 pl-11">
+          <div className="flex flex-col gap-0.5 py-1 pl-8">
             {children.map((child) => {
               const active = child.key === activeKey;
               return (
@@ -130,7 +130,7 @@ function NavGroup({
                   href={child.href}
                   onClick={onNavigate}
                   className={cn(
-                    "rounded-md px-2 py-2 text-sm transition-colors",
+                    "truncate rounded-md px-2 py-2 text-sm whitespace-nowrap transition-colors",
                     active
                       ? "font-medium text-tertiary"
                       : "text-white/80 hover:text-white",
