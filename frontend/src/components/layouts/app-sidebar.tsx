@@ -75,7 +75,9 @@ function NavLeaf({
       )}
     >
       <Icon className="size-4.5 shrink-0 text-tertiary" />
-      <span className="flex-1">{item.label}</span>
+      <span className="min-w-0 flex-1 truncate whitespace-nowrap">
+        {item.label}
+      </span>
     </Link>
   );
 }
