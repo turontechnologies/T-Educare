@@ -50,10 +50,13 @@ are also real now and wired to the frontend (2026-09-29) —
 real now and wired to the frontend (2026-10-02) —
 `departments.store.ts` is hydration-only too. Programs (§7.7) are also
 real now and wired to the frontend (2026-10-02) — `programs.store.ts`
-is hydration-only too.
-Everything else below (Students, Session Rollover, Program Levels/Course
-Grades/Courses, Staff) is **not implemented yet** — this file remains
-what to build those *against*.
+is hydration-only too. Program Levels (§7.8) are also real now
+(2026-10-03), backend-only (not yet wired to the frontend —
+`program-levels.store.ts` is still the frontend-mocked seed data until
+the frontend wiring is explicitly requested).
+Everything else below (Students, Session Rollover, Course Grades/
+Courses, Staff) is **not implemented yet** — this file remains what to
+build those *against*.
 
 ## Deployment
 
@@ -1518,21 +1521,31 @@ guard independently, matching the independent-FK design note above.
 
 ### 7.8 Program Levels — institution admin
 
+**Implemented (2026-10-03)**, backend-only for now (not yet wired to the
+frontend) — `backend/src/main/java/com/teducare/programlevel/`.
+
 A small, flat, independent lookup table — deliberately **not** related
 to the `currentLevel` field on `STUDENT` (7.2) or anything in the
 rollover engine (7.3), even though both use similar-looking values
 (`"100"` here vs. `"100 Level"` there). The rollover engine's level
 handling is a fixed, exhaustively-checked set server-side too once
 built — unifying it with this admin-editable list is a deliberate,
-larger follow-up if ever requested, not a default expectation.
+larger follow-up if ever requested, not a default expectation. This is
+also the only resource in the Academics hierarchy so far with **no FK at
+all** — simplest possible shape, same pattern as Schools minus the
+`designation`/`headName` fields.
 
 | Method | Path                        | Body                          | Notes |
 |--------|-----------------------------|----------------------------------|-------|
 | GET    | `/program-levels`          | —                                 | supports `?includeArchived=true` (default `false`) |
-| POST   | `/program-levels`          | `{ levelCode, description }`        | `422` on a `levelCode` that collides case-insensitively with another non-archived program level |
+| POST   | `/program-levels`          | `{ levelCode, description }`        | `409` on a `levelCode` that collides case-insensitively with another non-archived program level |
 | PATCH  | `/program-levels/:id`      | any subset of the fields above      | for editing |
 | POST   | `/program-levels/:id/archive` | —                                 | sets `archivedAt = now` |
 | POST   | `/program-levels/:id/restore` | —                                 | sets `archivedAt = null` |
+
+Status code corrected to `409` (not the original `422`), same
+real-precedent correction already made for Schools/Faculties/
+Departments/Programs above.
 
 ### 7.9 Course Grades — institution admin
 
