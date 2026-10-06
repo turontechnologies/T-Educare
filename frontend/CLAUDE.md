@@ -640,16 +640,17 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `/login` immediately — the caveat above only describes the
   now-closed gap between those two builds.
 - **Auth, Dashboard, Profile, Institutions, Roles, User Manager, Academic
-  Sessions & Semesters, Schools, Faculties, Departments, and Programs are
-  wired to a real backend now — everything else below is still mocked.**
-  `backend/` is a real Spring Boot app, MSSQL-backed via Flyway (not
-  in-memory) — see `backend/API_CONTRACT.md`'s Status line for exactly
-  which sections are live. `auth.service.ts`, `dashboard.service.ts`,
-  `profile.service.ts`, `institution.service.ts`, `role.service.ts`,
-  `academic-session.service.ts`, `academic-semester.service.ts`,
-  `school.service.ts`, `faculty.service.ts`, `department.service.ts`, and
-  `program.service.ts` all call it via `apiClient` (`src/lib/axios.ts`)
-  rather than reading a Zustand store.
+  Sessions & Semesters, Schools, Faculties, Departments, Programs, and
+  Program Levels are wired to a real backend now — everything else below
+  is still mocked.** `backend/` is a real Spring Boot app, MSSQL-backed via
+  Flyway (not in-memory) — see `backend/API_CONTRACT.md`'s Status line
+  for exactly which sections are live. `auth.service.ts`,
+  `dashboard.service.ts`, `profile.service.ts`, `institution.service.ts`,
+  `role.service.ts`, `academic-session.service.ts`,
+  `academic-semester.service.ts`, `school.service.ts`,
+  `faculty.service.ts`, `department.service.ts`, `program.service.ts`, and
+  `program-level.service.ts` all call it via `apiClient`
+  (`src/lib/axios.ts`) rather than reading a Zustand store.
   **The three demo logins are server-defined, not frontend-defined** —
   `super_admin`/`Super@2024`, `turon_admin`/`Turon@2024` (XYZ College,
   unrestricted), `amara_bello`/`Amara@2024` (Ahmadu Bello University,
@@ -706,11 +707,18 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `SEED_PROGRAM_IDS` export — no other mock store references a Program
   by a fixed seed id (Program Levels, §7.8, is a deliberately
   independent lookup table, not FK'd to Programs at all), so there was
-  nothing to preserve for backward compatibility here. Every other store
+  nothing to preserve for backward compatibility here.
+  `program-levels.store.ts` is the same hydration-only shape too
+  (`{programLevels, setProgramLevels}`) —
+  `program-level-dialog.tsx`/`academics/program-levels/page.tsx` call
+  the real mutation hooks in `hooks/use-program-levels.ts` directly —
+  the simplest wiring in this hierarchy so far, since the resource has
+  no FK and thus no other store to source a select's options from
+  (both fields are plain `NotchedField` text inputs). Every other store
   in `src/store/` — `staff.store.ts`, `students.store.ts`,
-  `program-levels.store.ts`, `course-grades.store.ts`,
-  `courses.store.ts`, `staff-members.store.ts`, `lecturers.store.ts`,
-  `rollover.store.ts` — is still a `persist`-backed Zustand store
+  `course-grades.store.ts`, `courses.store.ts`,
+  `staff-members.store.ts`, `lecturers.store.ts`, `rollover.store.ts`
+  — is still a `persist`-backed Zustand store
   standing in for a real API that doesn't exist yet, seeded with demo
   data, exactly as before. When wiring a new page to data that
   has no real backend section yet, keep following that same pattern — a

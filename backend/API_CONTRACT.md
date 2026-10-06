@@ -50,10 +50,9 @@ are also real now and wired to the frontend (2026-09-29) —
 real now and wired to the frontend (2026-10-02) —
 `departments.store.ts` is hydration-only too. Programs (§7.7) are also
 real now and wired to the frontend (2026-10-02) — `programs.store.ts`
-is hydration-only too. Program Levels (§7.8) are also real now
-(2026-10-03), backend-only (not yet wired to the frontend —
-`program-levels.store.ts` is still the frontend-mocked seed data until
-the frontend wiring is explicitly requested).
+is hydration-only too. Program Levels (§7.8) are also real now and
+wired to the frontend (2026-10-06) — `program-levels.store.ts` is
+hydration-only too.
 Everything else below (Students, Session Rollover, Course Grades/
 Courses, Staff) is **not implemented yet** — this file remains what to
 build those *against*.
@@ -1521,8 +1520,8 @@ guard independently, matching the independent-FK design note above.
 
 ### 7.8 Program Levels — institution admin
 
-**Implemented (2026-10-03)**, backend-only for now (not yet wired to the
-frontend) — `backend/src/main/java/com/teducare/programlevel/`.
+**Implemented (2026-10-03)**, wired to the frontend 2026-10-06 —
+`backend/src/main/java/com/teducare/programlevel/`.
 
 A small, flat, independent lookup table — deliberately **not** related
 to the `currentLevel` field on `STUDENT` (7.2) or anything in the
