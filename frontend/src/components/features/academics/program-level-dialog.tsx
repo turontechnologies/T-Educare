@@ -11,6 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { NotchedField } from "@/components/shared/notched-field";
+import {
+  useCreateProgramLevel,
+  useUpdateProgramLevel,
+} from "@/hooks/use-program-levels";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import type { ProgramLevel } from "@/types/program-level";
 
@@ -68,12 +72,8 @@ function ProgramLevelForm({
   onDone: () => void;
 }) {
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
-  const createProgramLevel = useProgramLevelsStore(
-    (state) => state.createProgramLevel,
-  );
-  const updateProgramLevel = useProgramLevelsStore(
-    (state) => state.updateProgramLevel,
-  );
+  const createProgramLevel = useCreateProgramLevel();
+  const updateProgramLevel = useUpdateProgramLevel();
 
   const { register, handleSubmit, formState } = useForm<ProgramLevelFormValues>(
     {
@@ -84,7 +84,7 @@ function ProgramLevelForm({
     },
   );
 
-  const onSubmit = (values: ProgramLevelFormValues) => {
+  const onSubmit = async (values: ProgramLevelFormValues) => {
     const levelCode = values.levelCode.trim();
     const duplicate = programLevels.some(
       (p) =>
@@ -99,14 +99,20 @@ function ProgramLevelForm({
 
     const payload = { levelCode, description: values.description.trim() };
 
-    if (programLevel) {
-      updateProgramLevel(programLevel.id, payload);
-      toast.success(`${levelCode} updated`);
-    } else {
-      const created = createProgramLevel(payload);
-      toast.success(`${created.levelCode} added`);
+    try {
+      if (programLevel) {
+        await updateProgramLevel.mutateAsync({ id: programLevel.id, payload });
+        toast.success(`${levelCode} updated`);
+      } else {
+        const created = await createProgramLevel.mutateAsync(payload);
+        toast.success(`${created.levelCode} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save program level",
+      );
     }
-    onDone();
   };
 
   return (
@@ -137,7 +143,11 @@ function ProgramLevelForm({
         <Button
           type="submit"
           form="program-level-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createProgramLevel.isPending ||
+            updateProgramLevel.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save

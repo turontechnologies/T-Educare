@@ -38,6 +38,10 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProgramLevelDialog } from "@/components/features/academics/program-level-dialog";
+import {
+  useArchiveProgramLevel,
+  useRestoreProgramLevel,
+} from "@/hooks/use-program-levels";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import type { ProgramLevel } from "@/types/program-level";
 
@@ -93,12 +97,8 @@ function ProgramLevelTable({
   onEdit: (level: ProgramLevel) => void;
 }) {
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
-  const archiveProgramLevel = useProgramLevelsStore(
-    (state) => state.archiveProgramLevel,
-  );
-  const restoreProgramLevel = useProgramLevelsStore(
-    (state) => state.restoreProgramLevel,
-  );
+  const archiveProgramLevel = useArchiveProgramLevel();
+  const restoreProgramLevel = useRestoreProgramLevel();
 
   const [view, setView] = useState<"active" | "archived">("active");
   const [search, setSearch] = useState("");
@@ -252,9 +252,17 @@ function ProgramLevelTable({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreProgramLevel(level.id);
-                          toast.success(`${level.levelCode} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreProgramLevel.mutateAsync(level.id);
+                            toast.success(`${level.levelCode} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore program level",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -324,10 +332,18 @@ function ProgramLevelTable({
         description={`Are you sure you want to delete level ${pendingArchive?.levelCode}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveProgramLevel(pendingArchive.id);
-          toast.success(`${pendingArchive.levelCode} deleted`);
+          try {
+            await archiveProgramLevel.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.levelCode} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete program level",
+            );
+          }
         }}
       />
     </>

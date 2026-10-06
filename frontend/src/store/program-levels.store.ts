@@ -1,90 +1,24 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { ProgramLevel } from "@/types/program-level";
-
-function makeId() {
-  return `program-level-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-const SEEDED_PROGRAM_LEVELS: ProgramLevel[] = [
-  {
-    id: makeId(),
-    levelCode: "100",
-    description: "100 levels",
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-  {
-    id: makeId(),
-    levelCode: "200",
-    description: "200 levels",
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-];
 
 interface ProgramLevelsState {
   programLevels: ProgramLevel[];
-  createProgramLevel: (
-    programLevel: Omit<ProgramLevel, "id" | "createdAt" | "archivedAt">,
-  ) => ProgramLevel;
-  updateProgramLevel: (id: string, patch: Partial<ProgramLevel>) => void;
-  archiveProgramLevel: (id: string) => void;
-  restoreProgramLevel: (id: string) => void;
+  /**
+   * Called after every /program-levels fetch (see `dashboard/layout.tsx`)
+   * to hydrate this store with real, server-backed data — same "fetch
+   * then setX" convention `programs.store.ts`/`departments.store.ts` use.
+   * Never seeded/mocked; empty until the first fetch resolves. Write
+   * through the real mutation hooks in `hooks/use-program-levels.ts` and
+   * let the next fetch update this store, never by patching it directly.
+   * No `SEED_PROGRAM_LEVEL_IDS` export needed — this is a deliberately
+   * independent lookup table (API_CONTRACT.md §7.8), not FK'd to or from
+   * anything else.
+   */
+  setProgramLevels: (programLevels: ProgramLevel[]) => void;
 }
 
-export const useProgramLevelsStore = create<ProgramLevelsState>()(
-  persist(
-    (set) => ({
-      programLevels: SEEDED_PROGRAM_LEVELS,
+export const useProgramLevelsStore = create<ProgramLevelsState>()((set) => ({
+  programLevels: [],
 
-      createProgramLevel: (programLevel) => {
-        const newProgramLevel: ProgramLevel = {
-          ...programLevel,
-          id: makeId(),
-          createdAt: new Date().toISOString(),
-          archivedAt: null,
-        };
-        set((state) => ({
-          programLevels: [newProgramLevel, ...state.programLevels],
-        }));
-        return newProgramLevel;
-      },
-
-      updateProgramLevel: (id, patch) => {
-        set((state) => ({
-          programLevels: state.programLevels.map((programLevel) =>
-            programLevel.id === id
-              ? { ...programLevel, ...patch }
-              : programLevel,
-          ),
-        }));
-      },
-
-      archiveProgramLevel: (id) => {
-        set((state) => ({
-          programLevels: state.programLevels.map((programLevel) =>
-            programLevel.id === id
-              ? { ...programLevel, archivedAt: new Date().toISOString() }
-              : programLevel,
-          ),
-        }));
-      },
-
-      restoreProgramLevel: (id) => {
-        set((state) => ({
-          programLevels: state.programLevels.map((programLevel) =>
-            programLevel.id === id
-              ? { ...programLevel, archivedAt: null }
-              : programLevel,
-          ),
-        }));
-      },
-    }),
-    {
-      name: "t-educare-program-levels",
-      version: 1,
-      migrate: () => ({ programLevels: SEEDED_PROGRAM_LEVELS }),
-    },
-  ),
-);
+  setProgramLevels: (programLevels) => set({ programLevels }),
+}));

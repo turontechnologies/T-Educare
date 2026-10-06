@@ -14,6 +14,7 @@ import { useDepartments } from "@/hooks/use-departments";
 import { useFaculties } from "@/hooks/use-faculties";
 import { useInstitutions } from "@/hooks/use-institutions";
 import { useMe } from "@/hooks/use-login";
+import { useProgramLevels } from "@/hooks/use-program-levels";
 import { usePrograms } from "@/hooks/use-programs";
 import { useSchools } from "@/hooks/use-schools";
 import { useAcademicsStore } from "@/store/academics.store";
@@ -21,6 +22,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
+import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useProgramsStore } from "@/store/programs.store";
 import { useSchoolsStore } from "@/store/schools.store";
 
@@ -125,6 +127,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (programsData) setPrograms(programsData);
   }, [programsData, setPrograms]);
+
+  // Same "fetch-on-mount/focus, no polling" reasoning as Schools/Faculties/Departments/Programs above.
+  const setProgramLevels = useProgramLevelsStore(
+    (state) => state.setProgramLevels,
+  );
+  const { data: programLevelsData } = useProgramLevels(true, {
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (programLevelsData) setProgramLevels(programLevelsData);
+  }, [programLevelsData, setProgramLevels]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,
