@@ -1,0 +1,32 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.teducare:teducare-backend >--------------------
+[INFO] Building teducare-backend 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ teducare-backend ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 15 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ teducare-backend ---
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 128 source files with javac [debug parameters release 21] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ teducare-backend ---
+[INFO] skip non existing resourceDirectory /workspace/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ teducare-backend ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 16 source files with javac [debug parameters release 21] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ teducare-backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.teducare.academics.AcademicSessionControllerTest
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+09:23:22.595 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.teducare.academics.AcademicSessionControllerTest]: AcademicSessionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+09:23:24.198 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.academics.AcademicSessionControllerTest
