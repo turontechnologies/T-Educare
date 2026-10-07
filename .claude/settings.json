@@ -14,7 +14,8 @@
       "Bash(curl -s -4 -o /dev/null -w \"frontend dev: %{http_code}\\\\n\" http://127.0.0.1:3000 --max-time 5)",
       "Bash(node verify-schools-ui.mjs)",
       "Bash(python -m json.tool)",
-      "Bash(node debug-schools-archive.mjs)"
+      "Bash(node debug-schools-archive.mjs)",
+      "Bash(MSYS_NO_PATHCONV=1 docker run -d --rm --name coursegrade-test-run -v __CMDSUB_OUTPUT__/backend:/workspace -v 'C:\\\\Users\\\\HomePC/.m2:/root/.m2' -w /workspace -e 'DB_URL=jdbc:sqlserver://host.docker.internal:1433;databaseName=teducare_db;encrypt=true;trustServerCertificate=true' maven:3.9.9-eclipse-temurin-21 sh -c 'mvn test > /workspace/coursegrade-test.log 2>&1')"
     ]
   }
 }
