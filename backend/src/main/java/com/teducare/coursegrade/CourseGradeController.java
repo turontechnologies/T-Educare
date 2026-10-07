@@ -62,12 +62,11 @@ public class CourseGradeController {
         return service.restore(requireInstitutionId(authentication), id);
     }
 
-    static String requireInstitutionId(Authentication authentication) {
+    private String requireInstitutionId(Authentication authentication) {
         if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
         }
 
-        AuthDirectory authDirectory = AuthDirectoryHolder.get();
         AuthenticatedUserDto caller = authDirectory.find(authentication.getName())
                 .map(AuthDirectory.Account::user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required."));
