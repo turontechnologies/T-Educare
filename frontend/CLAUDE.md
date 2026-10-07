@@ -639,20 +639,21 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   password of, or deactivating an account there **does** now affect
   `/login` immediately — the caveat above only describes the
   now-closed gap between those two builds.
-- **Auth, Dashboard, Profile, Institutions, Roles, User Manager, Academic
-  Sessions & Semesters, Schools, Faculties, Departments, Programs,
-  Program Levels, and Course Grades (plus the separate Grading Scale
-  setting) are wired to a real backend now — everything else below is
-  still mocked.** `backend/` is a real Spring Boot app, MSSQL-backed via
-  Flyway (not in-memory) — see `backend/API_CONTRACT.md`'s Status line
-  for exactly which sections are live. `auth.service.ts`,
-  `dashboard.service.ts`, `profile.service.ts`, `institution.service.ts`,
-  `role.service.ts`, `academic-session.service.ts`,
-  `academic-semester.service.ts`, `school.service.ts`,
-  `faculty.service.ts`, `department.service.ts`, `program.service.ts`,
-  `program-level.service.ts`, `course-grade.service.ts`, and
-  `grading-scale.service.ts` all call it via `apiClient`
-  (`src/lib/axios.ts`) rather than reading a Zustand store.
+- **Auth, Dashboard, Profile, Institutions, Roles, User Manager, and the
+  entire Academics submenu (Academic Sessions & Semesters, Schools,
+  Faculties, Departments, Programs, Program Levels, Course Grades plus
+  the separate Grading Scale setting, and Courses) are wired to a real
+  backend now — everything else below is still mocked.** `backend/` is
+  a real Spring Boot app, MSSQL-backed via Flyway (not in-memory) — see
+  `backend/API_CONTRACT.md`'s Status line for exactly which sections are
+  live. `auth.service.ts`, `dashboard.service.ts`, `profile.service.ts`,
+  `institution.service.ts`, `role.service.ts`,
+  `academic-session.service.ts`, `academic-semester.service.ts`,
+  `school.service.ts`, `faculty.service.ts`, `department.service.ts`,
+  `program.service.ts`, `program-level.service.ts`,
+  `course-grade.service.ts`, `grading-scale.service.ts`, and
+  `course.service.ts` all call it via `apiClient` (`src/lib/axios.ts`)
+  rather than reading a Zustand store.
   **The three demo logins are server-defined, not frontend-defined** —
   `super_admin`/`Super@2024`, `turon_admin`/`Turon@2024` (XYZ College,
   unrestricted), `amara_bello`/`Amara@2024` (Ahmadu Bello University,
@@ -740,10 +741,27 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   the immediate post-save UI state, which looked correct either way
   since the input's local state already held the just-typed value at
   that point regardless of whether the store synced correctly.
-  Every other store
+  `courses.store.ts` is the same hydration-only shape too
+  (`{courses, setCourses}`) — **closes out the entire Academics
+  submenu's frontend wiring** (Academic Sessions & Semesters through
+  here are all real now, both backend and frontend). No
+  `SEED_COURSE_IDS` export, same reasoning as Programs — Courses is
+  a leaf resource in this hierarchy, nothing else FKs to it.
+  `course-dialog.tsx`'s "Department"/"School" selects both source
+  from real, already-wired stores. **First page in this app where
+  the existing Import/Export buttons were real file I/O against the
+  real backend, not local mock CSV parsing** — `course.service.ts`'s
+  `import()` posts a `FormData` the same way `upload.service.ts`
+  already does (relies on the same global axios request interceptor
+  that strips the default JSON `Content-Type` for any `FormData`
+  body, so the browser can set its own multipart boundary), and
+  `export()` requests `responseType: "blob"` and the page builds a
+  real downloadable file from it with the same
+  `URL.createObjectURL`+anchor-click pattern already used for a
+  one-shot download trigger elsewhere in this app. Every other store
   in `src/store/` — `staff.store.ts`, `students.store.ts`,
-  `courses.store.ts`, `staff-members.store.ts`, `lecturers.store.ts`,
-  `rollover.store.ts` — is still a `persist`-backed Zustand store
+  `staff-members.store.ts`, `lecturers.store.ts`, `rollover.store.ts`
+  — is still a `persist`-backed Zustand store
   standing in for a real API that doesn't exist yet, seeded with demo
   data, exactly as before. When wiring a new page to data that
   has no real backend section yet, keep following that same pattern — a

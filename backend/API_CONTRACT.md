@@ -55,10 +55,10 @@ wired to the frontend (2026-10-06) — `program-levels.store.ts` is
 hydration-only too. Course Grades (§7.9) are also real now and wired
 to the frontend (2026-10-07) — `course-grades.store.ts` is
 hydration-only too. Courses (§7.10) are also real now (2026-10-07),
-backend-only (not yet wired to the frontend — `courses.store.ts` is
-still the frontend-mocked seed data until the frontend wiring is
-explicitly requested) — this closes out the entire Academics submenu
-backend-side (Sessions through Courses are all real).
+wired to the frontend the same week (2026-10-07) — `courses.store.ts`
+is hydration-only too — this closes out the entire Academics submenu,
+both backend and frontend (Sessions through Courses are all real end to
+end).
 Everything else below (Students, Session Rollover, Staff) is
 **not implemented yet** — this file remains what to build those
 *against*.
@@ -1580,10 +1580,10 @@ real-precedent correction already made for every prior resource above.
 
 ### 7.10 Courses — institution admin
 
-**Implemented (2026-10-07)**, backend-only for now (not yet wired to the
-frontend) — `backend/src/main/java/com/teducare/course/`. Closes out the
-entire Academics submenu backend-side — every resource from Sessions
-(7/7.1) through here is now real.
+**Implemented (2026-10-07)**, wired to the frontend the same week —
+`backend/src/main/java/com/teducare/course/`. Closes out the entire
+Academics submenu end to end — every resource from Sessions (7/7.1)
+through here is now real, both backend and frontend.
 
 Like Departments (7.6) and Programs (7.7), stores its parent references
 independently — `departmentId` and `schoolId` are both real FKs, picked

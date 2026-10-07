@@ -340,9 +340,17 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreCourse(course.id);
-                          toast.success(`${course.name} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreCourse.mutateAsync(course.id);
+                            toast.success(`${course.name} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore course",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -412,10 +420,18 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
         description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveCourse(pendingArchive.id);
-          toast.success(`${pendingArchive.name} deleted`);
+          try {
+            await archiveCourse.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.name} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete course",
+            );
+          }
         }}
       />
     </>
