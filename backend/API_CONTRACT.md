@@ -52,10 +52,13 @@ real now and wired to the frontend (2026-10-02) —
 real now and wired to the frontend (2026-10-02) — `programs.store.ts`
 is hydration-only too. Program Levels (§7.8) are also real now and
 wired to the frontend (2026-10-06) — `program-levels.store.ts` is
-hydration-only too.
-Everything else below (Students, Session Rollover, Course Grades/
-Courses, Staff) is **not implemented yet** — this file remains what to
-build those *against*.
+hydration-only too. Course Grades (§7.9) are also real now
+(2026-10-07), backend-only (not yet wired to the frontend —
+`course-grades.store.ts` is still the frontend-mocked seed data until
+the frontend wiring is explicitly requested).
+Everything else below (Students, Session Rollover, Courses, Staff) is
+**not implemented yet** — this file remains what to build those
+*against*.
 
 ## Deployment
 
@@ -1548,18 +1551,29 @@ Departments/Programs above.
 
 ### 7.9 Course Grades — institution admin
 
+**Implemented (2026-10-07)**, backend-only for now (not yet wired to the
+frontend) — `backend/src/main/java/com/teducare/coursegrade/`.
+
 The grading scale: a CRUD list of grade bands, plus one grading-scale-wide
-setting that is **not** a row in that list.
+setting that is **not** a row in that list. First resource with decimal
+fields (`BigDecimal`/`DECIMAL(5,2)` — `gradeScore`/`minimumScore`/
+`maximumScore`/`maxGradePoint`), and the first package with two distinct
+sub-resources: `CourseGrade` (the CRUD list) and `GradingScale` (a
+single `{ maxGradePoint }` object, separate entity/table/service/
+controller, not a row in `course_grades`).
 
 | Method | Path                        | Body                                                        | Notes |
 |--------|-----------------------------|------------------------------------------------------------------|-------|
 | GET    | `/course-grades`          | —                                                                   | supports `?includeArchived=true` (default `false`) |
-| POST   | `/course-grades`          | `{ code, remark, gradeScore, minimumScore, maximumScore }`           | `422` on a `code` that collides case-insensitively with another non-archived grade, or on `maximumScore <= minimumScore` |
-| PATCH  | `/course-grades/:id`      | any subset of the fields above                                      | for editing |
+| POST   | `/course-grades`          | `{ code, remark, gradeScore, minimumScore, maximumScore }`           | `409` on a `code` that collides case-insensitively with another non-archived grade; `400` on `maximumScore <= minimumScore` |
+| PATCH  | `/course-grades/:id`      | any subset of the fields above                                      | for editing; the range check re-runs against the merged min/max on every edit, not just when both are supplied together |
 | POST   | `/course-grades/:id/archive` | —                                                                 | sets `archivedAt = now` |
 | POST   | `/course-grades/:id/restore` | —                                                                 | sets `archivedAt = null` |
-| GET    | `/grading-scale`          | —                                                                   | `{ "maxGradePoint": 5 }` — a single institution-wide setting, not a `course-grades` row |
-| PUT    | `/grading-scale`          | `{ maxGradePoint }`                                                  | replaces the setting wholesale (there's only ever one) |
+| GET    | `/grading-scale`          | —                                                                   | `{ "maxGradePoint": 5 }` — a single institution-wide setting, not a `course-grades` row; defaults to `5` (matching the pre-backend mock) when no row exists yet for this institution, without persisting that default |
+| PUT    | `/grading-scale`          | `{ maxGradePoint }`                                                  | replaces the setting wholesale (there's only ever one); upserts — creates the row on first call, updates it after |
+
+Status codes corrected to `409`/`400` (not the original `422`), same
+real-precedent correction already made for every prior resource above.
 
 ### 7.10 Courses — institution admin
 
