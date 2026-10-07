@@ -39,6 +39,11 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { CourseGradeDialog } from "@/components/features/academics/course-grade-dialog";
 import { NotchedField } from "@/components/shared/notched-field";
+import {
+  useArchiveCourseGrade,
+  useRestoreCourseGrade,
+} from "@/hooks/use-course-grades";
+import { useUpdateGradingScale } from "@/hooks/use-grading-scale";
 import { useCourseGradesStore } from "@/store/course-grades.store";
 import type { CourseGrade } from "@/types/course-grade";
 
@@ -94,16 +99,26 @@ function MaxGradePointForm() {
   const setMaxGradePoint = useCourseGradesStore(
     (state) => state.setMaxGradePoint,
   );
+  const updateGradingScale = useUpdateGradingScale();
   const [value, setValue] = useState(String(maxGradePoint));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const parsed = Number(value);
     if (!value.trim() || Number.isNaN(parsed) || parsed <= 0) {
       toast.error("Enter a valid max grade point");
       return;
     }
-    setMaxGradePoint(parsed);
-    toast.success(`Max grade point set to ${parsed}`);
+    try {
+      const updated = await updateGradingScale.mutateAsync(parsed);
+      setMaxGradePoint(updated.maxGradePoint);
+      toast.success(`Max grade point set to ${updated.maxGradePoint}`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to save max grade point",
+      );
+    }
   };
 
   return (
@@ -119,6 +134,7 @@ function MaxGradePointForm() {
       </div>
       <Button
         onClick={handleSave}
+        disabled={updateGradingScale.isPending}
         className="rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
       >
         Save
@@ -133,12 +149,8 @@ function CourseGradeTable({
   onEdit: (grade: CourseGrade) => void;
 }) {
   const courseGrades = useCourseGradesStore((state) => state.courseGrades);
-  const archiveCourseGrade = useCourseGradesStore(
-    (state) => state.archiveCourseGrade,
-  );
-  const restoreCourseGrade = useCourseGradesStore(
-    (state) => state.restoreCourseGrade,
-  );
+  const archiveCourseGrade = useArchiveCourseGrade();
+  const restoreCourseGrade = useRestoreCourseGrade();
 
   const [view, setView] = useState<"active" | "archived">("active");
   const [search, setSearch] = useState("");
@@ -299,9 +311,17 @@ function CourseGradeTable({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreCourseGrade(grade.id);
-                          toast.success(`${grade.code} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreCourseGrade.mutateAsync(grade.id);
+                            toast.success(`${grade.code} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore grade",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -371,10 +391,16 @@ function CourseGradeTable({
         description={`Are you sure you want to delete grade ${pendingArchive?.code}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveCourseGrade(pendingArchive.id);
-          toast.success(`${pendingArchive.code} deleted`);
+          try {
+            await archiveCourseGrade.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.code} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error ? error.message : "Failed to delete grade",
+            );
+          }
         }}
       />
     </>

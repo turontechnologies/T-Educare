@@ -1,102 +1,27 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { CourseGrade } from "@/types/course-grade";
-
-function makeId() {
-  return `course-grade-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-const SEEDED_COURSE_GRADES: CourseGrade[] = [
-  {
-    id: makeId(),
-    code: "A",
-    remark: "Distinction",
-    gradeScore: 5,
-    minimumScore: 70,
-    maximumScore: 100,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-  {
-    id: makeId(),
-    code: "AB",
-    remark: "Very Good",
-    gradeScore: 4.5,
-    minimumScore: 65,
-    maximumScore: 69.99,
-    createdAt: new Date("2021-03-09T00:00:00.000Z").toISOString(),
-    archivedAt: null,
-  },
-];
 
 interface CourseGradesState {
   courseGrades: CourseGrade[];
-  /** A single grading-scale-wide setting shown alongside the table, not a per-row field. */
+  /** The separate `/grading-scale` setting (API_CONTRACT.md §7.9) — kept alongside `courseGrades` in one store, same shape the pre-backend mock already used, even though each is now hydrated from its own real endpoint. */
   maxGradePoint: number;
+  /**
+   * Called after every /course-grades fetch (see `dashboard/layout.tsx`)
+   * to hydrate this store with real, server-backed data — same "fetch
+   * then setX" convention `programs.store.ts`/`departments.store.ts` use.
+   * Never seeded/mocked; empty until the first fetch resolves. Write
+   * through the real mutation hooks in `hooks/use-course-grades.ts` and
+   * let the next fetch update this store, never by patching it directly.
+   */
+  setCourseGrades: (courseGrades: CourseGrade[]) => void;
+  /** Called after every /grading-scale fetch — see `hooks/use-grading-scale.ts`, a genuinely separate real resource from courseGrades above. */
   setMaxGradePoint: (value: number) => void;
-  createCourseGrade: (
-    courseGrade: Omit<CourseGrade, "id" | "createdAt" | "archivedAt">,
-  ) => CourseGrade;
-  updateCourseGrade: (id: string, patch: Partial<CourseGrade>) => void;
-  archiveCourseGrade: (id: string) => void;
-  restoreCourseGrade: (id: string) => void;
 }
 
-export const useCourseGradesStore = create<CourseGradesState>()(
-  persist(
-    (set) => ({
-      courseGrades: SEEDED_COURSE_GRADES,
-      maxGradePoint: 5,
-      setMaxGradePoint: (value) => set({ maxGradePoint: value }),
+export const useCourseGradesStore = create<CourseGradesState>()((set) => ({
+  courseGrades: [],
+  maxGradePoint: 5,
 
-      createCourseGrade: (courseGrade) => {
-        const newCourseGrade: CourseGrade = {
-          ...courseGrade,
-          id: makeId(),
-          createdAt: new Date().toISOString(),
-          archivedAt: null,
-        };
-        set((state) => ({
-          courseGrades: [newCourseGrade, ...state.courseGrades],
-        }));
-        return newCourseGrade;
-      },
-
-      updateCourseGrade: (id, patch) => {
-        set((state) => ({
-          courseGrades: state.courseGrades.map((courseGrade) =>
-            courseGrade.id === id ? { ...courseGrade, ...patch } : courseGrade,
-          ),
-        }));
-      },
-
-      archiveCourseGrade: (id) => {
-        set((state) => ({
-          courseGrades: state.courseGrades.map((courseGrade) =>
-            courseGrade.id === id
-              ? { ...courseGrade, archivedAt: new Date().toISOString() }
-              : courseGrade,
-          ),
-        }));
-      },
-
-      restoreCourseGrade: (id) => {
-        set((state) => ({
-          courseGrades: state.courseGrades.map((courseGrade) =>
-            courseGrade.id === id
-              ? { ...courseGrade, archivedAt: null }
-              : courseGrade,
-          ),
-        }));
-      },
-    }),
-    {
-      name: "t-educare-course-grades",
-      version: 1,
-      migrate: () => ({
-        courseGrades: SEEDED_COURSE_GRADES,
-        maxGradePoint: 5,
-      }),
-    },
-  ),
-);
+  setCourseGrades: (courseGrades) => set({ courseGrades }),
+  setMaxGradePoint: (value) => set({ maxGradePoint: value }),
+}));

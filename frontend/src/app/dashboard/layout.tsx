@@ -10,8 +10,10 @@ import {
 } from "@/config/nav";
 import { useAcademicSemesters } from "@/hooks/use-academic-semesters";
 import { useAcademicSessions } from "@/hooks/use-academic-sessions";
+import { useCourseGrades } from "@/hooks/use-course-grades";
 import { useDepartments } from "@/hooks/use-departments";
 import { useFaculties } from "@/hooks/use-faculties";
+import { useGradingScale } from "@/hooks/use-grading-scale";
 import { useInstitutions } from "@/hooks/use-institutions";
 import { useMe } from "@/hooks/use-login";
 import { useProgramLevels } from "@/hooks/use-program-levels";
@@ -19,6 +21,7 @@ import { usePrograms } from "@/hooks/use-programs";
 import { useSchools } from "@/hooks/use-schools";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useCourseGradesStore } from "@/store/course-grades.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
@@ -138,6 +141,30 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (programLevelsData) setProgramLevels(programLevelsData);
   }, [programLevelsData, setProgramLevels]);
+
+  // Same "fetch-on-mount/focus, no polling" reasoning as above. Two
+  // genuinely separate real resources (API_CONTRACT.md §7.9) hydrated
+  // into the one course-grades.store.ts, matching the pre-backend mock's
+  // own combined shape.
+  const setCourseGrades = useCourseGradesStore(
+    (state) => state.setCourseGrades,
+  );
+  const { data: courseGradesData } = useCourseGrades(true, {
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (courseGradesData) setCourseGrades(courseGradesData);
+  }, [courseGradesData, setCourseGrades]);
+
+  const setMaxGradePoint = useCourseGradesStore(
+    (state) => state.setMaxGradePoint,
+  );
+  const { data: gradingScaleData } = useGradingScale({
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (gradingScaleData) setMaxGradePoint(gradingScaleData.maxGradePoint);
+  }, [gradingScaleData, setMaxGradePoint]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,

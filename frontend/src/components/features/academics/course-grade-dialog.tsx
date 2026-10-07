@@ -11,6 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { NotchedField } from "@/components/shared/notched-field";
+import {
+  useCreateCourseGrade,
+  useUpdateCourseGrade,
+} from "@/hooks/use-course-grades";
 import { useCourseGradesStore } from "@/store/course-grades.store";
 import type { CourseGrade } from "@/types/course-grade";
 
@@ -71,12 +75,8 @@ function CourseGradeForm({
   onDone: () => void;
 }) {
   const courseGrades = useCourseGradesStore((state) => state.courseGrades);
-  const createCourseGrade = useCourseGradesStore(
-    (state) => state.createCourseGrade,
-  );
-  const updateCourseGrade = useCourseGradesStore(
-    (state) => state.updateCourseGrade,
-  );
+  const createCourseGrade = useCreateCourseGrade();
+  const updateCourseGrade = useUpdateCourseGrade();
 
   const { register, handleSubmit, formState } = useForm<CourseGradeFormValues>({
     defaultValues: {
@@ -88,7 +88,7 @@ function CourseGradeForm({
     },
   });
 
-  const onSubmit = (values: CourseGradeFormValues) => {
+  const onSubmit = async (values: CourseGradeFormValues) => {
     const code = values.code.trim();
     const minimumScore = Number(values.minimumScore);
     const maximumScore = Number(values.maximumScore);
@@ -116,14 +116,20 @@ function CourseGradeForm({
       maximumScore,
     };
 
-    if (courseGrade) {
-      updateCourseGrade(courseGrade.id, payload);
-      toast.success(`${code} updated`);
-    } else {
-      const created = createCourseGrade(payload);
-      toast.success(`${created.code} added`);
+    try {
+      if (courseGrade) {
+        await updateCourseGrade.mutateAsync({ id: courseGrade.id, payload });
+        toast.success(`${code} updated`);
+      } else {
+        const created = await createCourseGrade.mutateAsync(payload);
+        toast.success(`${created.code} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save grade",
+      );
     }
-    onDone();
   };
 
   return (
@@ -183,7 +189,11 @@ function CourseGradeForm({
         <Button
           type="submit"
           form="course-grade-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createCourseGrade.isPending ||
+            updateCourseGrade.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save
