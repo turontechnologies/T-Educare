@@ -15,6 +15,7 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import { useCreateCourse, useUpdateCourse } from "@/hooks/use-courses";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -74,8 +75,8 @@ function CourseForm({
   onDone: () => void;
 }) {
   const courses = useCoursesStore((state) => state.courses);
-  const createCourse = useCoursesStore((state) => state.createCourse);
-  const updateCourse = useCoursesStore((state) => state.updateCourse);
+  const createCourse = useCreateCourse();
+  const updateCourse = useUpdateCourse();
   const departments = useDepartmentsStore((state) => state.departments);
   const schools = useSchoolsStore((state) => state.schools);
   const activeDepartments = useMemo(
@@ -97,7 +98,7 @@ function CourseForm({
     },
   });
 
-  const onSubmit = (values: CourseFormValues) => {
+  const onSubmit = async (values: CourseFormValues) => {
     if (!departmentId || !schoolId) {
       toast.error("Select a department and school");
       return;
@@ -116,14 +117,20 @@ function CourseForm({
 
     const payload = { name: values.name.trim(), code, departmentId, schoolId };
 
-    if (course) {
-      updateCourse(course.id, payload);
-      toast.success(`${payload.name} updated`);
-    } else {
-      const created = createCourse(payload);
-      toast.success(`${created.name} added`);
+    try {
+      if (course) {
+        await updateCourse.mutateAsync({ id: course.id, payload });
+        toast.success(`${payload.name} updated`);
+      } else {
+        const created = await createCourse.mutateAsync(payload);
+        toast.success(`${created.name} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save course",
+      );
     }
-    onDone();
   };
 
   return (
@@ -173,7 +180,11 @@ function CourseForm({
         <Button
           type="submit"
           form="course-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createCourse.isPending ||
+            updateCourse.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save

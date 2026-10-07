@@ -40,35 +40,18 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { CourseDialog } from "@/components/features/academics/course-dialog";
+import {
+  useArchiveCourse,
+  useExportCourses,
+  useImportCourses,
+  useRestoreCourse,
+} from "@/hooks/use-courses";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Course } from "@/types/course";
 
 const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
-
-function coursesToCsv(courses: Course[]) {
-  const header = ["Course Name", "Course Code", "Department", "School"];
-  const rows = courses.map((c) => [c.name, c.code, c.departmentId, c.schoolId]);
-  return [header, ...rows]
-    .map((row) =>
-      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
-    )
-    .join("\n");
-}
-
-function parseCsv(text: string) {
-  const lines = text.trim().split(/\r?\n/);
-  const header = lines[0]
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, "").toLowerCase());
-  return lines.slice(1).map((line) => {
-    const cells = line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
-    const record: Record<string, string> = {};
-    header.forEach((key, i) => (record[key] = cells[i] ?? ""));
-    return record;
-  });
-}
 
 export default function CoursesManagementPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -118,59 +101,40 @@ export default function CoursesManagementPage() {
 }
 
 function ImportExportButtons() {
-  const courses = useCoursesStore((state) => state.courses);
-  const createCourse = useCoursesStore((state) => state.createCourse);
-  const departments = useDepartmentsStore((state) => state.departments);
-  const schools = useSchoolsStore((state) => state.schools);
+  const importCourses = useImportCourses();
+  const exportCourses = useExportCourses();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
-    const active = courses.filter((c) => !c.archivedAt);
-    const csv = coursesToCsv(active);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `courses-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${active.length} courses`);
+  const handleExport = async () => {
+    try {
+      const blob = await exportCourses.mutateAsync(false);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `courses-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Courses exported");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to export courses",
+      );
+    }
   };
 
   const handleImportFile = async (file: File) => {
-    const text = await file.text();
-    const rows = parseCsv(text);
-    const existingCodes = new Set(
-      courses.filter((c) => !c.archivedAt).map((c) => c.code.toLowerCase()),
-    );
-    const defaultDepartmentId =
-      departments.find((d) => !d.archivedAt)?.id ?? "";
-    const defaultSchoolId = schools.find((s) => !s.archivedAt)?.id ?? "";
-
-    let imported = 0;
-    let skipped = 0;
-    for (const row of rows) {
-      const name = row["course name"] || "";
-      const code = row["course code"] || "";
-      if (!name || !code || existingCodes.has(code.toLowerCase())) {
-        skipped++;
-        continue;
-      }
-      createCourse({
-        name,
-        code,
-        departmentId: defaultDepartmentId,
-        schoolId: defaultSchoolId,
-      });
-      existingCodes.add(code.toLowerCase());
-      imported++;
+    try {
+      const result = await importCourses.mutateAsync(file);
+      toast.success(
+        `${result.imported} courses imported${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to import courses",
+      );
     }
-
-    toast.success(
-      `${imported} courses imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
-    );
   };
 
   return (
@@ -178,6 +142,7 @@ function ImportExportButtons() {
       <Button
         variant="outline"
         className="gap-1.5 rounded-md"
+        disabled={importCourses.isPending}
         onClick={() => fileInputRef.current?.click()}
       >
         <Download className="size-4" />
@@ -186,6 +151,7 @@ function ImportExportButtons() {
       <Button
         variant="outline"
         className="gap-1.5 rounded-md"
+        disabled={exportCourses.isPending}
         onClick={handleExport}
       >
         <Upload className="size-4" />
@@ -208,8 +174,8 @@ function ImportExportButtons() {
 
 function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
   const courses = useCoursesStore((state) => state.courses);
-  const archiveCourse = useCoursesStore((state) => state.archiveCourse);
-  const restoreCourse = useCoursesStore((state) => state.restoreCourse);
+  const archiveCourse = useArchiveCourse();
+  const restoreCourse = useRestoreCourse();
   const departments = useDepartmentsStore((state) => state.departments);
   const schools = useSchoolsStore((state) => state.schools);
 

@@ -11,6 +11,7 @@ import {
 import { useAcademicSemesters } from "@/hooks/use-academic-semesters";
 import { useAcademicSessions } from "@/hooks/use-academic-sessions";
 import { useCourseGrades } from "@/hooks/use-course-grades";
+import { useCourses } from "@/hooks/use-courses";
 import { useDepartments } from "@/hooks/use-departments";
 import { useFaculties } from "@/hooks/use-faculties";
 import { useGradingScale } from "@/hooks/use-grading-scale";
@@ -22,6 +23,7 @@ import { useSchools } from "@/hooks/use-schools";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useAuthStore } from "@/store/auth.store";
 import { useCourseGradesStore } from "@/store/course-grades.store";
+import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
@@ -165,6 +167,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (gradingScaleData) setMaxGradePoint(gradingScaleData.maxGradePoint);
   }, [gradingScaleData, setMaxGradePoint]);
+
+  // Same "fetch-on-mount/focus, no polling" reasoning as above — this
+  // closes out the Academics hierarchy's frontend wiring.
+  const setCourses = useCoursesStore((state) => state.setCourses);
+  const { data: coursesData } = useCourses(true, {
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (coursesData) setCourses(coursesData);
+  }, [coursesData, setCourses]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,

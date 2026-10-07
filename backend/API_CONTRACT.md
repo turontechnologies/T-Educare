@@ -54,8 +54,12 @@ is hydration-only too. Program Levels (§7.8) are also real now and
 wired to the frontend (2026-10-06) — `program-levels.store.ts` is
 hydration-only too. Course Grades (§7.9) are also real now and wired
 to the frontend (2026-10-07) — `course-grades.store.ts` is
-hydration-only too.
-Everything else below (Students, Session Rollover, Courses, Staff) is
+hydration-only too. Courses (§7.10) are also real now (2026-10-07),
+backend-only (not yet wired to the frontend — `courses.store.ts` is
+still the frontend-mocked seed data until the frontend wiring is
+explicitly requested) — this closes out the entire Academics submenu
+backend-side (Sessions through Courses are all real).
+Everything else below (Students, Session Rollover, Staff) is
 **not implemented yet** — this file remains what to build those
 *against*.
 
@@ -1576,20 +1580,31 @@ real-precedent correction already made for every prior resource above.
 
 ### 7.10 Courses — institution admin
 
+**Implemented (2026-10-07)**, backend-only for now (not yet wired to the
+frontend) — `backend/src/main/java/com/teducare/course/`. Closes out the
+entire Academics submenu backend-side — every resource from Sessions
+(7/7.1) through here is now real.
+
 Like Departments (7.6) and Programs (7.7), stores its parent references
 independently — `departmentId` and `schoolId` are both real FKs, picked
 separately, not one derived through the other. Uniqueness is enforced on
-`code`, not `name` — course codes are the real-world unique key.
+`code`, not `name` — course codes are the real-world unique key. First
+resource with a multipart file upload (import) and a file-download
+response (export) — both live-verified with real CSV files, not just
+JSON bodies.
 
 | Method | Path              | Body                                             | Notes |
 |--------|-------------------|-----------------------------------------------------|-------|
-| GET    | `/courses`       | —                                                     | supports `?departmentId=`, `?schoolId=`, `?search=`, and `?includeArchived=true` (default `false`) |
-| POST   | `/courses`       | `{ name, code, departmentId, schoolId }`                | `422` on a `code` that collides case-insensitively with another non-archived course; `departmentId`/`schoolId` FK to `/departments` (7.6) / `/schools` (7.4) respectively, each independently |
-| PATCH  | `/courses/:id`   | any subset of the fields above                          | for editing |
+| GET    | `/courses`       | —                                                     | supports `?departmentId=`, `?schoolId=`, `?search=` (matches name or code), and `?includeArchived=true` (default `false`) |
+| POST   | `/courses`       | `{ name, code, departmentId, schoolId }`                | `409` on a `code` that collides case-insensitively with another non-archived course; `404` if `departmentId`/`schoolId` FK to `/departments` (7.6) / `/schools` (7.4) respectively, each independently validated, belongs to a different institution or doesn't exist |
+| PATCH  | `/courses/:id`   | any subset of the fields above                          | for editing; reassigning either FK goes through the same independent guards as create |
 | POST   | `/courses/:id/archive` | —                                                   | sets `archivedAt = now` |
 | POST   | `/courses/:id/restore` | —                                                   | sets `archivedAt = null` |
-| POST   | `/courses/import` | multipart CSV upload                                   | `200, { "imported": 12, "skipped": 2 }` — same shape as `/students/import` (7.2), skipping rows missing a required column or reusing an existing `code` |
-| GET    | `/courses/export?includeArchived=false` | —                                  | CSV download of the matching courses |
+| POST   | `/courses/import` | multipart CSV upload, field name `file`                | `200, { "imported": 12, "skipped": 2 }` — same shape as the documented `/students/import` (7.2); skips (does not fail the batch for) rows missing `name`/`code`/`departmentId`/`schoolId`, reusing an existing non-archived `code`, or naming a `departmentId`/`schoolId` that doesn't resolve for this institution |
+| GET    | `/courses/export?includeArchived=false` | —                                  | CSV download (`Content-Type: text/csv`, `Content-Disposition: attachment`) of `id,name,code,departmentId,schoolId,createdAt,archivedAt` for the matching courses |
+
+Status codes corrected to `409`/`404` (not the original `422`), same
+real-precedent correction already made for every prior resource above.
 
 ## 8. Staff Designations — institution admin
 
