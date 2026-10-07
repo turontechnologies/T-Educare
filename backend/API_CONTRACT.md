@@ -52,10 +52,9 @@ real now and wired to the frontend (2026-10-02) —
 real now and wired to the frontend (2026-10-02) — `programs.store.ts`
 is hydration-only too. Program Levels (§7.8) are also real now and
 wired to the frontend (2026-10-06) — `program-levels.store.ts` is
-hydration-only too. Course Grades (§7.9) are also real now
-(2026-10-07), backend-only (not yet wired to the frontend —
-`course-grades.store.ts` is still the frontend-mocked seed data until
-the frontend wiring is explicitly requested).
+hydration-only too. Course Grades (§7.9) are also real now and wired
+to the frontend (2026-10-07) — `course-grades.store.ts` is
+hydration-only too.
 Everything else below (Students, Session Rollover, Courses, Staff) is
 **not implemented yet** — this file remains what to build those
 *against*.
@@ -1551,8 +1550,8 @@ Departments/Programs above.
 
 ### 7.9 Course Grades — institution admin
 
-**Implemented (2026-10-07)**, backend-only for now (not yet wired to the
-frontend) — `backend/src/main/java/com/teducare/coursegrade/`.
+**Implemented (2026-10-07)**, wired to the frontend the same day —
+`backend/src/main/java/com/teducare/coursegrade/`.
 
 The grading scale: a CRUD list of grade bands, plus one grading-scale-wide
 setting that is **not** a row in that list. First resource with decimal

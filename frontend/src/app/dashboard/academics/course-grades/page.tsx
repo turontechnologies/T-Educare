@@ -52,6 +52,13 @@ const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 export default function CourseGradesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGrade, setEditingGrade] = useState<CourseGrade | undefined>();
+  // Read here purely to key MaxGradePointForm below — the form seeds its
+  // own local input state from this value once at mount, so it needs to
+  // remount (not just re-render) whenever the real fetched value arrives
+  // asynchronously after the dashboard layout's hydration effect resolves,
+  // same "keyed to reset cleanly" convention used by every dialog's
+  // `key={x?.id ?? "new"}` rather than a useEffect-based sync.
+  const maxGradePoint = useCourseGradesStore((state) => state.maxGradePoint);
 
   return (
     <div className="space-y-6">
@@ -81,7 +88,7 @@ export default function CourseGradesPage() {
               setDialogOpen(true);
             }}
           />
-          <MaxGradePointForm />
+          <MaxGradePointForm key={maxGradePoint} />
         </div>
       </div>
 

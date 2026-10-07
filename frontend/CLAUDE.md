@@ -640,16 +640,18 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   `/login` immediately — the caveat above only describes the
   now-closed gap between those two builds.
 - **Auth, Dashboard, Profile, Institutions, Roles, User Manager, Academic
-  Sessions & Semesters, Schools, Faculties, Departments, Programs, and
-  Program Levels are wired to a real backend now — everything else below
-  is still mocked.** `backend/` is a real Spring Boot app, MSSQL-backed via
+  Sessions & Semesters, Schools, Faculties, Departments, Programs,
+  Program Levels, and Course Grades (plus the separate Grading Scale
+  setting) are wired to a real backend now — everything else below is
+  still mocked.** `backend/` is a real Spring Boot app, MSSQL-backed via
   Flyway (not in-memory) — see `backend/API_CONTRACT.md`'s Status line
   for exactly which sections are live. `auth.service.ts`,
   `dashboard.service.ts`, `profile.service.ts`, `institution.service.ts`,
   `role.service.ts`, `academic-session.service.ts`,
   `academic-semester.service.ts`, `school.service.ts`,
-  `faculty.service.ts`, `department.service.ts`, `program.service.ts`, and
-  `program-level.service.ts` all call it via `apiClient`
+  `faculty.service.ts`, `department.service.ts`, `program.service.ts`,
+  `program-level.service.ts`, `course-grade.service.ts`, and
+  `grading-scale.service.ts` all call it via `apiClient`
   (`src/lib/axios.ts`) rather than reading a Zustand store.
   **The three demo logins are server-defined, not frontend-defined** —
   `super_admin`/`Super@2024`, `turon_admin`/`Turon@2024` (XYZ College,
@@ -714,11 +716,34 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   the real mutation hooks in `hooks/use-program-levels.ts` directly —
   the simplest wiring in this hierarchy so far, since the resource has
   no FK and thus no other store to source a select's options from
-  (both fields are plain `NotchedField` text inputs). Every other store
+  (both fields are plain `NotchedField` text inputs).
+  `course-grades.store.ts` is the same hydration-only shape, but is
+  the first case hydrating from **two genuinely separate real
+  resources** into one store (`{courseGrades, setCourseGrades}` from
+  `/course-grades` via `hooks/use-course-grades.ts`, plus
+  `{maxGradePoint, setMaxGradePoint}` from the distinct single-object
+  `/grading-scale` resource via `hooks/use-grading-scale.ts`) —
+  mirrors the pre-backend mock's own combined shape exactly, even
+  though each half is now backed by its own independent API call.
+  **A real bug caught and fixed while live-verifying this**:
+  `MaxGradePointForm` seeded its input via
+  `useState(String(maxGradePoint))` — since that only reads the
+  store once at mount, the input stayed stuck on the store's initial
+  default (`5`) even after the dashboard layout's hydration effect
+  resolved the real fetched value moments later, because `useState`
+  never re-reads a changed prop/store value on its own. Fixed by
+  keying `<MaxGradePointForm key={maxGradePoint} />` from the parent
+  page — the same "keyed to reset cleanly without a `useEffect`"
+  convention every dialog in this app already uses
+  (`key={x?.id ?? "new"}`), not a one-off fix. Caught by actually
+  reloading the page in the Playwright check rather than trusting
+  the immediate post-save UI state, which looked correct either way
+  since the input's local state already held the just-typed value at
+  that point regardless of whether the store synced correctly.
+  Every other store
   in `src/store/` — `staff.store.ts`, `students.store.ts`,
-  `course-grades.store.ts`, `courses.store.ts`,
-  `staff-members.store.ts`, `lecturers.store.ts`, `rollover.store.ts`
-  — is still a `persist`-backed Zustand store
+  `courses.store.ts`, `staff-members.store.ts`, `lecturers.store.ts`,
+  `rollover.store.ts` — is still a `persist`-backed Zustand store
   standing in for a real API that doesn't exist yet, seeded with demo
   data, exactly as before. When wiring a new page to data that
   has no real backend section yet, keep following that same pattern — a
