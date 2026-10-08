@@ -1,5 +1,8 @@
 package com.teducare.institution;
 
+import java.time.Instant;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -43,4 +46,7 @@ public interface InstitutionRepository extends JpaRepository<Institution, String
             where i.archivedAt is null and i.moduleKeys is not null and i.moduleKeys <> ''
             """)
     long countLinkedModules();
+
+    /** Drives the scheduled sweep (LicenseSweepScheduler) — every institution whose grace period has lapsed. */
+    List<Institution> findByLicenseStatusAndGraceEndsAtBefore(String licenseStatus, Instant cutoff);
 }

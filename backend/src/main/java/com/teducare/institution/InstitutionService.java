@@ -1,6 +1,7 @@
 package com.teducare.institution;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -21,13 +22,20 @@ public class InstitutionService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String TOKEN_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final String SUPER_ADMIN_HREF = "/super-admin/institutions";
+    private static final int DEFAULT_GRACE_DAYS = 14;
+    private static final String SYSTEM_ACTOR = "SYSTEM";
 
     private final InstitutionRepository repository;
     private final NotificationService notificationService;
+    private final InstitutionLicenseEventRepository licenseEventRepository;
 
-    public InstitutionService(InstitutionRepository repository, NotificationService notificationService) {
+    public InstitutionService(
+            InstitutionRepository repository,
+            NotificationService notificationService,
+            InstitutionLicenseEventRepository licenseEventRepository) {
         this.repository = repository;
         this.notificationService = notificationService;
+        this.licenseEventRepository = licenseEventRepository;
     }
 
     public Map<String, Object> list(
@@ -341,6 +349,111 @@ public class InstitutionService {
                 "Your institution's license was revoked and reset to Basic.",
                 null);
         return InstitutionResponse.from(saved);
+    }
+
+    /**
+     * Transitions ACTIVE -> GRACE_PERIOD (API_CONTRACT.md §4.8) — distinct
+     * from {@code revokeLicense} above, which resets an institution to the
+     * unlicensed Basic tier. This is the payment-default/license-expiry
+     * flow: continued access for a grace window before the scheduled sweep
+     * (see LicenseSweepScheduler) suspends it.
+     */
+    public InstitutionResponse startGracePeriod(String id, String actorId, StartGracePeriodRequest request) {
+        Institution institution = requireInstitution(id);
+
+        int graceDays = request.graceDays() == null ? DEFAULT_GRACE_DAYS : request.graceDays();
+        if (graceDays <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "graceDays must be positive.");
+        }
+
+        Instant graceEndsAt = Instant.now().plus(Duration.ofDays(graceDays));
+        institution.setLicenseStatus("GRACE_PERIOD");
+        institution.setGraceEndsAt(graceEndsAt);
+        Institution saved = repository.save(institution);
+
+        recordLicenseEvent(saved.getId(), "GRACE_STARTED", request.reason(), actorId, graceEndsAt);
+
+        notificationService.notifyPlatform(
+                "Institution entered grace period",
+                saved.getName() + "'s license grace period started.",
+                SUPER_ADMIN_HREF);
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your license is in a grace period",
+                "Your institution's license is in a grace period until renewed. Access will be suspended after "
+                        + graceDays + " days unless renewed.",
+                null);
+        return InstitutionResponse.from(saved);
+    }
+
+    /** Transitions GRACE_PERIOD or SUSPENDED back to ACTIVE, clearing the grace deadline. */
+    public InstitutionResponse renewLicense(String id, String actorId, RenewLicenseRequest request) {
+        Institution institution = requireInstitution(id);
+
+        institution.setLicenseStatus("ACTIVE");
+        institution.setGraceEndsAt(null);
+        Institution saved = repository.save(institution);
+
+        recordLicenseEvent(saved.getId(), "RENEWED", request.reason(), actorId, null);
+
+        notificationService.notifyPlatform(
+                "Institution license renewed",
+                saved.getName() + "'s license was renewed.",
+                SUPER_ADMIN_HREF);
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your license was renewed",
+                "Your institution's license is active again.",
+                null);
+        return InstitutionResponse.from(saved);
+    }
+
+    public List<InstitutionLicenseEventResponse> listLicenseEvents(String id) {
+        requireInstitution(id);
+        return licenseEventRepository.findByInstitutionIdOrderByCreatedAtDesc(id).stream()
+                .map(InstitutionLicenseEventResponse::from)
+                .toList();
+    }
+
+    /**
+     * Plain, directly-callable sweep logic invoked by LicenseSweepScheduler's
+     * {@code @Scheduled} method — kept here so the JUnit suite can call and
+     * assert on it directly without waiting on real wall-clock time.
+     */
+    public int sweepExpiredGracePeriods() {
+        List<Institution> expired = repository.findByLicenseStatusAndGraceEndsAtBefore(
+                "GRACE_PERIOD", Instant.now());
+
+        for (Institution institution : expired) {
+            institution.setLicenseStatus("SUSPENDED");
+            institution.setGraceEndsAt(null);
+            Institution saved = repository.save(institution);
+
+            recordLicenseEvent(saved.getId(), "SUSPENDED", "Grace period expired.", SYSTEM_ACTOR, null);
+
+            notificationService.notifyPlatform(
+                    "Institution license suspended",
+                    saved.getName() + "'s license was suspended after its grace period expired.",
+                    SUPER_ADMIN_HREF);
+            notificationService.notifyInstitution(
+                    saved.getId(),
+                    "Your license was suspended",
+                    "Your institution's license grace period expired and access has been suspended.",
+                    null);
+        }
+        return expired.size();
+    }
+
+    private void recordLicenseEvent(
+            String institutionId, String eventType, String reason, String actorId, Instant graceEndsAtSnapshot) {
+        licenseEventRepository.save(new InstitutionLicenseEvent(
+                "license-event-" + UUID.randomUUID(),
+                institutionId,
+                eventType,
+                reason,
+                actorId,
+                graceEndsAtSnapshot,
+                Instant.now()));
     }
 
     private Institution requireInstitution(String id) {

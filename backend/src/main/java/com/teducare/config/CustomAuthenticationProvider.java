@@ -52,6 +52,10 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
                 throw new BadCredentialsException(
                         "Your institution's access has been deactivated. Contact the platform administrator.");
             }
+            if (institution != null && "SUSPENDED".equals(institution.getLicenseStatus())) {
+                throw new BadCredentialsException(
+                        "Your institution's license has been suspended. Contact the platform administrator to renew it.");
+            }
         }
 
         return new UsernamePasswordAuthenticationToken(account.username(), password, java.util.List.of());

@@ -1,5 +1,6 @@
 package com.teducare.institution;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -130,11 +131,45 @@ public class InstitutionController {
         return institutionService.revokeLicense(id);
     }
 
+    @PostMapping("/institutions/{id}/start-grace-period")
+    public InstitutionResponse startGracePeriod(
+            Authentication authentication,
+            @PathVariable String id,
+            @Valid @RequestBody StartGracePeriodRequest request) {
+        AuthenticatedUserDto caller = requireSuperAdminCaller(authentication);
+        return institutionService.startGracePeriod(id, caller.id(), request);
+    }
+
+    @PostMapping("/institutions/{id}/renew-license")
+    public InstitutionResponse renewLicense(
+            Authentication authentication,
+            @PathVariable String id,
+            @RequestBody(required = false) RenewLicenseRequest request) {
+        AuthenticatedUserDto caller = requireSuperAdminCaller(authentication);
+        return institutionService.renewLicense(id, caller.id(), request == null ? new RenewLicenseRequest(null) : request);
+    }
+
+    @GetMapping("/institutions/{id}/license-events")
+    public List<InstitutionLicenseEventResponse> listLicenseEvents(
+            Authentication authentication, @PathVariable String id) {
+        requireSuperAdmin(authentication);
+        return institutionService.listLicenseEvents(id);
+    }
+
     /** Institutions routes are super-admin only per API_CONTRACT.md §4 — no Spring authorities exist yet (see JwtAuthenticationFilter), so this resolves the caller's real role the same way ProfileController/DashboardController resolve identity: via AuthDirectory. */
     private void requireSuperAdmin(Authentication authentication) {
         if (!"super_admin".equals(requireCaller(authentication).role())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Super admin access required.");
         }
+    }
+
+    /** Same gate as {@code requireSuperAdmin}, but also hands back the resolved caller for endpoints that need the super admin's own id as {@code actorId}. */
+    private AuthenticatedUserDto requireSuperAdminCaller(Authentication authentication) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        if (!"super_admin".equals(caller.role())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Super admin access required.");
+        }
+        return caller;
     }
 
     private AuthenticatedUserDto requireCaller(Authentication authentication) {
