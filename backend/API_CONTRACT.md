@@ -59,6 +59,9 @@ wired to the frontend the same week (2026-10-07) — `courses.store.ts`
 is hydration-only too — this closes out the entire Academics submenu,
 both backend and frontend (Sessions through Courses are all real end to
 end).
+License status — grace period, suspension, and the audit log (§4.8) is
+also real now (2026-10-08) — **backend only**, not yet wired to the
+frontend.
 Everything else below (Students, Session Rollover, Staff) is
 **not implemented yet** — this file remains what to build those
 *against*.
@@ -1061,6 +1064,68 @@ activate/deactivate/delete action in this contract (§1). Revoking does
 **not** archive or delete the institution — it only resets these license
 fields back to their unlicensed defaults; the institution stays fully
 intact and can get a new license record anytime via 4.7.1.
+
+### 4.8 License status — grace period, suspension, and the audit log
+
+**Implemented (2026-10-08)** — additive and separate from everything in
+4.7 above. 4.7's `licenseType`/`licenseKey`/`expiringAt` describe *what*
+license an institution holds; this section describes the institution's
+current *standing* against payment/renewal obligations, independent of
+that. It's also separate from the existing `status` field (4.3,
+active/inactive) — that's the unrelated manual super-admin on/off switch
+and is left completely untouched by everything below. A login is now
+rejected if **either** `status == "inactive"` (existing check) **or**
+`licenseStatus == "SUSPENDED"` (new check) — see
+`CustomAuthenticationProvider`.
+
+Two new fields on `Institution`:
+
+```
+licenseStatus: "ACTIVE" | "GRACE_PERIOD" | "SUSPENDED"   // default "ACTIVE"
+graceEndsAt: ISO-8601 timestamp | null                    // set only while GRACE_PERIOD
+```
+
+```
+POST /institutions/:id/start-grace-period
+{ "reason": "Payment default.", "graceDays": 14 }         // graceDays optional, defaults to 14
+→ 200, licenseStatus = "GRACE_PERIOD", graceEndsAt = now + graceDays
+```
+
+```
+POST /institutions/:id/renew-license
+{ "reason": "Payment received." }                          // reason optional
+→ 200, licenseStatus = "ACTIVE", graceEndsAt = null
+```
+
+Both are super-admin only (same gate as every other Institutions route,
+§1). `renew-license` works from either `GRACE_PERIOD` or `SUSPENDED` —
+there's no requirement to be mid-grace to renew.
+
+A new scheduled sweep (the first `@Scheduled` job in this backend, daily,
+`LicenseSweepScheduler` → `InstitutionService.sweepExpiredGracePeriods()`)
+finds every institution with `licenseStatus = "GRACE_PERIOD"` and
+`graceEndsAt` in the past, and flips each to `"SUSPENDED"` (actor
+`"SYSTEM"` in the audit log below). The sweep logic itself is a plain,
+directly-callable service method, not embedded in the `@Scheduled`
+method, specifically so it can be called and asserted on directly in
+tests without waiting on real wall-clock time.
+
+Every transition (`start-grace-period`, `renew-license`, and the
+scheduled sweep) appends one row to a lightweight, append-only audit
+table — explicitly **not** full event-sourcing (current state is never
+derived by replaying this log; it's history for support purposes only),
+the same "cached current value + append-only immutable history" shape
+already used by `Student.academicHistory`:
+
+```
+GET /institutions/:id/license-events
+→ 200, [ { id, institutionId, eventType, reason, actorId,
+           graceEndsAtSnapshot, createdAt }, ... ]        // newest first
+```
+
+`eventType` is one of `"GRACE_STARTED"` / `"SUSPENDED"` / `"RENEWED"`.
+`actorId` is the calling super admin's id, or `"SYSTEM"` for the
+automated sweep.
 
 ---
 
