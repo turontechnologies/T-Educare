@@ -28,6 +28,8 @@ public record InstitutionResponse(
         String licenseKey,
         Instant licenseIssuedAt,
         String status,
+        String licenseStatus,
+        Instant graceEndsAt,
         Instant createdAt,
         Instant archivedAt) {
 
@@ -57,6 +59,8 @@ public record InstitutionResponse(
                 institution.getLicenseKey(),
                 institution.getLicenseIssuedAt(),
                 institution.getStatus(),
+                institution.getLicenseStatus(),
+                institution.getGraceEndsAt(),
                 institution.getCreatedAt(),
                 institution.getArchivedAt());
     }

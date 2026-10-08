@@ -108,6 +108,8 @@ public class InstitutionService {
                 null,
                 null,
                 "active",
+                "ACTIVE",
+                null,
                 Instant.now(),
                 null);
 

@@ -86,6 +86,14 @@ public class Institution {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
+    /** "ACTIVE"/"GRACE_PERIOD"/"SUSPENDED" — an additive, separate concern from {@code status} above (that's the unrelated manual super-admin on/off switch). Plain string, not @Enumerated, matching this codebase's established convention. */
+    @Column(name = "license_status", nullable = false, length = 20)
+    private String licenseStatus;
+
+    /** Set when entering GRACE_PERIOD; cleared on renewal. The scheduled sweep flips any institution past this timestamp to SUSPENDED. */
+    @Column(name = "grace_ends_at")
+    private Instant graceEndsAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -120,6 +128,8 @@ public class Institution {
             String licenseKey,
             Instant licenseIssuedAt,
             String status,
+            String licenseStatus,
+            Instant graceEndsAt,
             Instant createdAt,
             Instant archivedAt) {
         this.id = id;
@@ -146,6 +156,8 @@ public class Institution {
         this.licenseKey = licenseKey;
         this.licenseIssuedAt = licenseIssuedAt;
         this.status = status;
+        this.licenseStatus = licenseStatus;
+        this.graceEndsAt = graceEndsAt;
         this.createdAt = createdAt;
         this.archivedAt = archivedAt;
     }
@@ -328,6 +340,22 @@ public class Institution {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getLicenseStatus() {
+        return licenseStatus;
+    }
+
+    public void setLicenseStatus(String licenseStatus) {
+        this.licenseStatus = licenseStatus;
+    }
+
+    public Instant getGraceEndsAt() {
+        return graceEndsAt;
+    }
+
+    public void setGraceEndsAt(Instant graceEndsAt) {
+        this.graceEndsAt = graceEndsAt;
     }
 
     public Instant getCreatedAt() {
