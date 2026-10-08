@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/axios";
 import type {
   Institution,
+  InstitutionLicenseEvent,
   InstitutionStatus,
   LicenseType,
 } from "@/types/institution";
@@ -21,6 +22,16 @@ export type LicensePayload = {
   /** Required unless licenseType is "Basic" — the backend forces it to null for Basic regardless of what's sent here. */
   expiringAt?: string;
   licenseKey: string;
+};
+
+export type StartGracePeriodPayload = {
+  reason: string;
+  /** Defaults to 14 server-side if omitted. */
+  graceDays?: number;
+};
+
+export type RenewLicensePayload = {
+  reason?: string;
 };
 
 export type InstitutionsListResponse = {
@@ -134,6 +145,38 @@ export const institutionService = {
   async revokeLicense(id: string): Promise<Institution> {
     const { data } = await apiClient.post<Institution>(
       `/institutions/${id}/revoke-license`,
+    );
+    return data;
+  },
+
+  /** Distinct from `revokeLicense` above (which resets to the unlicensed Basic tier) — this is the payment-default/license-expiry flow, API_CONTRACT.md §4.8. */
+  async startGracePeriod(
+    id: string,
+    payload: StartGracePeriodPayload,
+  ): Promise<Institution> {
+    const { data } = await apiClient.post<Institution>(
+      `/institutions/${id}/start-grace-period`,
+      payload,
+    );
+    return data;
+  },
+
+  /** Works from either GRACE_PERIOD or SUSPENDED — no requirement to be mid-grace to renew. */
+  async renewLicense(
+    id: string,
+    payload: RenewLicensePayload = {},
+  ): Promise<Institution> {
+    const { data } = await apiClient.post<Institution>(
+      `/institutions/${id}/renew-license`,
+      payload,
+    );
+    return data;
+  },
+
+  /** Newest first — append-only audit log, never the source of current state. */
+  async listLicenseEvents(id: string): Promise<InstitutionLicenseEvent[]> {
+    const { data } = await apiClient.get<InstitutionLicenseEvent[]>(
+      `/institutions/${id}/license-events`,
     );
     return data;
   },

@@ -1,5 +1,8 @@
 export type InstitutionStatus = "active" | "inactive";
 export type LicenseType = "Basic" | "Standard" | "Premium";
+/** Separate concern from `InstitutionStatus` above (the manual super-admin on/off switch) — this tracks standing against payment/renewal obligations instead. */
+export type LicenseStatus = "ACTIVE" | "GRACE_PERIOD" | "SUSPENDED";
+export type LicenseEventType = "GRACE_STARTED" | "SUSPENDED" | "RENEWED";
 
 export interface Institution {
   id: string;
@@ -35,7 +38,23 @@ export interface Institution {
   /** ISO timestamp the license record was first created — immutable, doesn't change on later edits (the "Date Created" column on `/super-admin/license-manager`). Null until created. */
   licenseIssuedAt: string | null;
   status: InstitutionStatus;
+  /** Standing against payment/renewal obligations — additive and independent of `status` above. Defaults to "ACTIVE". */
+  licenseStatus: LicenseStatus;
+  /** Set only while licenseStatus is "GRACE_PERIOD" — the scheduled sweep suspends the institution once this passes. Null otherwise. */
+  graceEndsAt: string | null;
   createdAt: string;
   /** Soft-delete — archived institutions are hidden from the main list but never destroyed. ISO timestamp, or null if active. */
   archivedAt: string | null;
+}
+
+/** One row of the append-only license-status audit log (`GET /institutions/:id/license-events`) — history only, never the source of current state. */
+export interface InstitutionLicenseEvent {
+  id: string;
+  institutionId: string;
+  eventType: LicenseEventType;
+  reason: string | null;
+  /** The calling super admin's id, or "SYSTEM" for the automated grace-period sweep. */
+  actorId: string | null;
+  graceEndsAtSnapshot: string | null;
+  createdAt: string;
 }

@@ -5,6 +5,8 @@ import {
   type InstitutionFormPayload,
   type InstitutionsListParams,
   type LicensePayload,
+  type RenewLicensePayload,
+  type StartGracePeriodPayload,
 } from "@/services/institution.service";
 import type { InstitutionStatus } from "@/types/institution";
 
@@ -115,5 +117,47 @@ export function useRevokeLicense() {
     mutationFn: (id: string) => institutionService.revokeLicense(id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+  });
+}
+
+export function useStartGracePeriod() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: StartGracePeriodPayload;
+    }) => institutionService.startGracePeriod(id, payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+  });
+}
+
+export function useRenewLicense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload?: RenewLicensePayload;
+    }) => institutionService.renewLicense(id, payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+  });
+}
+
+/** Fetched on demand (dialog open), not hydrated globally — this is a rarely-viewed audit trail, not nav-critical state. */
+export function useLicenseEvents(
+  institutionId: string | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: ["license-events", institutionId],
+    queryFn: () => institutionService.listLicenseEvents(institutionId!),
+    enabled: (options.enabled ?? true) && !!institutionId,
   });
 }

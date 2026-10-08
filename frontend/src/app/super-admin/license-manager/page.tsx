@@ -4,13 +4,17 @@ import { useMemo, useState } from "react";
 import {
   Eye,
   EyeOff,
+  History,
   KeyRound,
   MoreHorizontal,
   Pencil,
   Plus,
+  RotateCcw,
+  ShieldAlert,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -39,12 +43,16 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { GracePeriodDialog } from "@/components/features/license-manager/grace-period-dialog";
+import { LicenseEventsDialog } from "@/components/features/license-manager/license-events-dialog";
 import { LicenseManagerDialog } from "@/components/features/license-manager/license-manager-dialog";
 import {
   useRegenerateLicenseKey,
+  useRenewLicense,
   useRevokeLicense,
 } from "@/hooks/use-institutions";
 import { useInstitutionsStore } from "@/store/institutions.store";
+import { cn } from "@/lib/utils";
 import type { Institution } from "@/types/institution";
 
 const PAGE_SIZE_OPTIONS = ["5", "10", "25", "50"];
@@ -58,10 +66,14 @@ const dateOnlyLabel = (iso: string) =>
     .format(new Date(iso))
     .replace(/ /g, "-");
 
+const daysRemaining = (iso: string) =>
+  Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+
 export default function LicenseManagerPage() {
   const institutions = useInstitutionsStore((state) => state.institutions);
   const regenerateLicenseKey = useRegenerateLicenseKey();
   const revokeLicense = useRevokeLicense();
+  const renewLicense = useRenewLicense();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInstitutionId, setEditingInstitutionId] = useState<
@@ -74,6 +86,10 @@ export default function LicenseManagerPage() {
   const [pendingRegenerate, setPendingRegenerate] =
     useState<Institution | null>(null);
   const [pendingRevoke, setPendingRevoke] = useState<Institution | null>(null);
+  const [pendingRenew, setPendingRenew] = useState<Institution | null>(null);
+  const [gracePeriodTarget, setGracePeriodTarget] =
+    useState<Institution | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<Institution | null>(null);
 
   const licensed = useMemo(
     () =>
@@ -180,6 +196,7 @@ export default function LicenseManagerPage() {
                 <TableHead>License Type</TableHead>
                 <TableHead>License</TableHead>
                 <TableHead>Token</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Date Created</TableHead>
                 <TableHead>Expiring Date</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -229,6 +246,34 @@ export default function LicenseManagerPage() {
                         )}
                       </button>
                     </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          className={cn(
+                            "w-fit border-0",
+                            institution.licenseStatus === "ACTIVE" &&
+                              "bg-emerald-500/10 text-emerald-600",
+                            institution.licenseStatus === "GRACE_PERIOD" &&
+                              "bg-amber-500/10 text-amber-600",
+                            institution.licenseStatus === "SUSPENDED" &&
+                              "bg-destructive/10 text-destructive",
+                          )}
+                        >
+                          {institution.licenseStatus === "GRACE_PERIOD"
+                            ? "Grace Period"
+                            : institution.licenseStatus === "SUSPENDED"
+                              ? "Suspended"
+                              : "Active"}
+                        </Badge>
+                        {institution.licenseStatus === "GRACE_PERIOD" &&
+                          institution.graceEndsAt && (
+                            <span className="text-xs text-muted-foreground">
+                              {daysRemaining(institution.graceEndsAt)} day(s)
+                              left
+                            </span>
+                          )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {institution.licenseIssuedAt
                         ? dateOnlyLabel(institution.licenseIssuedAt)
@@ -263,6 +308,28 @@ export default function LicenseManagerPage() {
                             <KeyRound className="size-3.5" />
                             Regenerate key
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setHistoryTarget(institution)}
+                          >
+                            <History className="size-3.5" />
+                            View license history
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {institution.licenseStatus === "ACTIVE" ? (
+                            <DropdownMenuItem
+                              onClick={() => setGracePeriodTarget(institution)}
+                            >
+                              <ShieldAlert className="size-3.5" />
+                              Start grace period
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => setPendingRenew(institution)}
+                            >
+                              <RotateCcw className="size-3.5" />
+                              Renew license
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
@@ -280,7 +347,7 @@ export default function LicenseManagerPage() {
               {paginated.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className="py-10 text-center text-muted-foreground"
                   >
                     No licenses have been created yet.
@@ -376,6 +443,39 @@ export default function LicenseManagerPage() {
             );
           }
         }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingRenew}
+        onOpenChange={(open) => !open && setPendingRenew(null)}
+        title="Renew this license?"
+        description={`Are you sure you want to renew ${pendingRenew?.name}'s license? Its status will return to Active immediately.`}
+        confirmLabel="Renew"
+        onConfirm={async () => {
+          if (!pendingRenew) return;
+          try {
+            await renewLicense.mutateAsync({ id: pendingRenew.id });
+            toast.success(`License renewed for ${pendingRenew.name}`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to renew license",
+            );
+          }
+        }}
+      />
+
+      <GracePeriodDialog
+        open={!!gracePeriodTarget}
+        onOpenChange={(open) => !open && setGracePeriodTarget(null)}
+        institution={gracePeriodTarget}
+      />
+
+      <LicenseEventsDialog
+        open={!!historyTarget}
+        onOpenChange={(open) => !open && setHistoryTarget(null)}
+        institution={historyTarget}
       />
     </div>
   );

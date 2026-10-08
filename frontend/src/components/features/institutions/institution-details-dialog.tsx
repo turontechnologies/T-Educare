@@ -93,6 +93,21 @@ export function InstitutionDetailsDialog({
                   >
                     {institution.status}
                   </span>
+                  {institution.licenseStatus !== "ACTIVE" && (
+                    <Badge
+                      className={cn(
+                        "border-0",
+                        institution.licenseStatus === "GRACE_PERIOD"
+                          ? "bg-amber-500/10 text-amber-600"
+                          : "bg-destructive/10 text-destructive",
+                      )}
+                    >
+                      License{" "}
+                      {institution.licenseStatus === "GRACE_PERIOD"
+                        ? "in grace period"
+                        : "suspended"}
+                    </Badge>
+                  )}
                   {institution.archivedAt && (
                     <span className="text-xs font-medium text-muted-foreground">
                       Archived
