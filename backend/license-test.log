@@ -12,3 +12,12 @@
 [INFO] --- compiler:3.13.0:compile (default-compile) @ teducare-backend ---
 [INFO] Recompiling the module because of added or removed source files.
 [INFO] Compiling 134 source files with javac [debug parameters release 21] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ teducare-backend ---
+[INFO] skip non existing resourceDirectory /workspace/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ teducare-backend ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 17 source files with javac [debug parameters release 21] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ teducare-backend ---
