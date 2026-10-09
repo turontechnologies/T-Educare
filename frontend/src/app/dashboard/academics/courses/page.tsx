@@ -48,6 +48,7 @@ import {
 } from "@/hooks/use-courses";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
+import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Course } from "@/types/course";
 
@@ -178,6 +179,7 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
   const restoreCourse = useRestoreCourse();
   const departments = useDepartmentsStore((state) => state.departments);
   const schools = useSchoolsStore((state) => state.schools);
+  const programLevels = useProgramLevelsStore((state) => state.programLevels);
 
   const [view, setView] = useState<"active" | "archived">("active");
   const [search, setSearch] = useState("");
@@ -189,6 +191,8 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
     departments.find((d) => d.id === id)?.name ?? "—";
   const schoolName = (id: string) =>
     schools.find((s) => s.id === id)?.name ?? "—";
+  const levelName = (id: string) =>
+    programLevels.find((l) => l.id === id)?.levelCode ?? "—";
 
   const baseList = useMemo(
     () =>
@@ -291,6 +295,8 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
                 <TableHead>Course Code</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>School</TableHead>
+                <TableHead>Level</TableHead>
+                <TableHead>Unit</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -312,6 +318,12 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {schoolName(course.schoolId)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {levelName(course.programLevelId)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {course.unit}
                   </TableCell>
                   <TableCell className="text-right">
                     {view === "active" ? (
@@ -364,7 +376,7 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
               {paginated.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={8}
                     className="py-10 text-center text-muted-foreground"
                   >
                     {view === "archived"

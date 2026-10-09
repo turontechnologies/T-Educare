@@ -189,6 +189,25 @@ function CourseForm({
           options={activeSchools.map((s) => ({ label: s.name, value: s.id }))}
           placeholder="Select school"
         />
+        <NotchedSelectField
+          label="Program Level"
+          labelClassName="bg-popover"
+          value={programLevelId}
+          onValueChange={setProgramLevelId}
+          options={activeProgramLevels.map((l) => ({
+            label: l.levelCode,
+            value: l.id,
+          }))}
+          placeholder="Select level"
+        />
+        <NotchedField
+          label="Unit"
+          labelClassName="bg-popover"
+          type="number"
+          min={1}
+          max={10}
+          {...register("unit", { required: true, valueAsNumber: true })}
+        />
       </form>
 
       <div className="flex items-center justify-end gap-4 border-t border-border bg-muted/50 px-6 py-4">

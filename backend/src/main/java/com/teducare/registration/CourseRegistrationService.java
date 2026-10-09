@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.academics.AcademicSemesterService;
@@ -62,6 +63,8 @@ public class CourseRegistrationService {
                 .toList();
     }
 
+    /** @Transactional because the custom derived delete query below isn't auto-wrapped like save()/deleteById() already are — same reasoning as NotificationService.markAllRead, the only other place in this backend needing it explicitly. */
+    @Transactional
     public List<CourseRegistrationResponse> replace(String institutionId, ReplaceCourseRegistrationsRequest request) {
         Student student = studentService.requireOwnStudent(institutionId, request.studentId());
         academicSemesterService.requireOwnSemester(institutionId, request.academicSemesterId());

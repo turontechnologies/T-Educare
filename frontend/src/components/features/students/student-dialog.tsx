@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ArrowRight, Upload, User, X } from "lucide-react";
 import { toast } from "sonner";
@@ -19,9 +19,13 @@ import {
 import { readFileAsDataUrl } from "@/lib/files";
 import { fullName } from "@/lib/students";
 import { cn } from "@/lib/utils";
+import { useCreateStudent, useUpdateStudent } from "@/hooks/use-students";
 import { useAcademicsStore } from "@/store/academics.store";
+import { useDepartmentsStore } from "@/store/departments.store";
+import { useFacultiesStore } from "@/store/faculties.store";
+import { useProgramLevelsStore } from "@/store/program-levels.store";
+import { useProgramsStore } from "@/store/programs.store";
 import { useSchoolsStore } from "@/store/schools.store";
-import { useStudentsStore } from "@/store/students.store";
 import {
   BLOOD_GROUPS,
   GENOTYPES,
@@ -34,7 +38,6 @@ import {
   type Religion,
   type Student,
   type StudentGender,
-  type StudentLevel,
   type StudentTitle,
 } from "@/types/student";
 
@@ -68,14 +71,6 @@ const NIGERIAN_STATES = [
   "Anambra",
 ].map((value) => ({ label: value, value }));
 
-/** Only these four levels have a course catalog defined — see `src/lib/rollover.ts`. */
-const MANAGED_LEVELS: { label: string; value: StudentLevel }[] = [
-  { label: "100 Level", value: "100 Level" },
-  { label: "200 Level", value: "200 Level" },
-  { label: "300 Level", value: "300 Level" },
-  { label: "400 Level", value: "400 Level" },
-];
-
 interface StudentFormValues {
   matricNo: string;
   firstName: string;
@@ -91,15 +86,23 @@ interface StudentFormValues {
   nationality: string;
   lga: string;
   residentAddress: string;
-  faculty: string;
-  department: string;
-  programme: string;
+  hostelName: string;
+  roomNumber: string;
+  allergies: string;
+  chronicConditions: string;
+  currentMedications: string;
+  pastSurgeries: string;
+  physicianName: string;
+  physicianPhone: string;
+  healthInsuranceProvider: string;
+  healthInsuranceNumber: string;
+  medicalNotes: string;
 }
 
 interface StudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Present when editing an existing student. */
+  /** Present when editing an existing student (or pre-student). */
   student?: Student;
 }
 
@@ -137,17 +140,6 @@ export function StudentDialog({
   );
 }
 
-function nextMatricNo(existing: Student[]) {
-  let n = 10000 + existing.length;
-  const taken = new Set(existing.map((s) => s.matricNo));
-  let candidate = `UL-${n}`;
-  while (taken.has(candidate)) {
-    n++;
-    candidate = `UL-${n}`;
-  }
-  return candidate;
-}
-
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="col-span-full mt-2 text-xs font-semibold tracking-wide text-secondary uppercase first:mt-0">
@@ -163,19 +155,14 @@ function StudentForm({
   student?: Student;
   onDone: () => void;
 }) {
-  const students = useStudentsStore((state) => state.students);
-  const createStudent = useStudentsStore((state) => state.createStudent);
-  const updateStudent = useStudentsStore((state) => state.updateStudent);
+  const createStudent = useCreateStudent();
+  const updateStudent = useUpdateStudent();
   const sessions = useAcademicsStore((state) => state.sessions);
   const schools = useSchoolsStore((state) => state.schools);
-  const activeSessions = useMemo(
-    () => sessions.filter((s) => !s.archivedAt),
-    [sessions],
-  );
-  const activeSchools = useMemo(
-    () => schools.filter((s) => !s.archivedAt),
-    [schools],
-  );
+  const faculties = useFacultiesStore((state) => state.faculties);
+  const departments = useDepartmentsStore((state) => state.departments);
+  const programs = useProgramsStore((state) => state.programs);
+  const programLevels = useProgramLevelsStore((state) => state.programLevels);
 
   const [title, setTitle] = useState<StudentTitle | "">(student?.title ?? "");
   const [gender, setGender] = useState<StudentGender | "">(
@@ -199,11 +186,14 @@ function StudentForm({
   const [dateOfBirth, setDateOfBirth] = useState(
     student?.dateOfBirth ? student.dateOfBirth.slice(0, 10) : "",
   );
-  const [level, setLevel] = useState<StudentLevel | "">(
-    student?.currentLevel ?? "",
+  const [schoolId, setSchoolId] = useState(student?.schoolId ?? "");
+  const [facultyId, setFacultyId] = useState(student?.facultyId ?? "");
+  const [departmentId, setDepartmentId] = useState(student?.departmentId ?? "");
+  const [programId, setProgramId] = useState(student?.programId ?? "");
+  const [programLevelId, setProgramLevelId] = useState(
+    student?.programLevelId ?? "",
   );
   const [sessionId, setSessionId] = useState(student?.currentSessionId ?? "");
-  const [schoolId, setSchoolId] = useState(student?.schoolId ?? "");
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(
     student?.avatarUrl,
   );
@@ -212,7 +202,7 @@ function StudentForm({
 
   const { register, handleSubmit, formState } = useForm<StudentFormValues>({
     defaultValues: {
-      matricNo: student?.matricNo ?? nextMatricNo(students),
+      matricNo: student?.matricNo ?? "",
       firstName: student?.firstName ?? "",
       middleName: student?.middleName ?? "",
       lastName: student?.lastName ?? "",
@@ -226,9 +216,17 @@ function StudentForm({
       nationality: student?.nationality ?? "Nigeria",
       lga: student?.lga ?? "",
       residentAddress: student?.residentAddress ?? "",
-      faculty: student?.faculty ?? "",
-      department: student?.department ?? "",
-      programme: student?.programme ?? "",
+      hostelName: student?.hostelName ?? "",
+      roomNumber: student?.roomNumber ?? "",
+      allergies: student?.allergies ?? "",
+      chronicConditions: student?.chronicConditions ?? "",
+      currentMedications: student?.currentMedications ?? "",
+      pastSurgeries: student?.pastSurgeries ?? "",
+      physicianName: student?.physicianName ?? "",
+      physicianPhone: student?.physicianPhone ?? "",
+      healthInsuranceProvider: student?.healthInsuranceProvider ?? "",
+      healthInsuranceNumber: student?.healthInsuranceNumber ?? "",
+      medicalNotes: student?.medicalNotes ?? "",
     },
   });
 
@@ -240,7 +238,7 @@ function StudentForm({
     setAvatarPreview(await readFileAsDataUrl(file));
   };
 
-  const onSubmit = (values: StudentFormValues) => {
+  const onSubmit = async (values: StudentFormValues) => {
     if (
       !title ||
       !gender ||
@@ -250,33 +248,44 @@ function StudentForm({
       !genotype ||
       !stateOfOrigin ||
       !dateOfBirth ||
-      !level ||
-      !sessionId ||
-      !schoolId
+      !schoolId ||
+      !facultyId ||
+      !departmentId ||
+      !programId ||
+      !programLevelId ||
+      !sessionId
     ) {
       toast.error("Fill in every required field before saving");
       return;
     }
-    const matricNo = values.matricNo.trim();
-    const duplicate = students.some(
-      (s) =>
-        s.id !== student?.id &&
-        !s.archivedAt &&
-        s.matricNo.toLowerCase() === matricNo.toLowerCase(),
-    );
-    if (duplicate) {
-      toast.error(`Matric No "${matricNo}" is already in use`);
-      return;
-    }
 
     const payload = {
-      ...values,
-      matricNo,
+      matricNo: values.matricNo.trim() || undefined,
+      firstName: values.firstName,
       middleName: values.middleName.trim() || undefined,
+      lastName: values.lastName,
       otherName: values.otherName.trim() || undefined,
+      email: values.email,
+      phone: values.phone,
+      emergencyContact: values.emergencyContact,
       maidenName: values.maidenName.trim() || undefined,
       weightKg: Number(values.weightKg),
       heightCm: Number(values.heightCm),
+      nationality: values.nationality,
+      lga: values.lga,
+      residentAddress: values.residentAddress,
+      hostelName: values.hostelName.trim() || undefined,
+      roomNumber: values.roomNumber.trim() || undefined,
+      allergies: values.allergies.trim() || undefined,
+      chronicConditions: values.chronicConditions.trim() || undefined,
+      currentMedications: values.currentMedications.trim() || undefined,
+      pastSurgeries: values.pastSurgeries.trim() || undefined,
+      physicianName: values.physicianName.trim() || undefined,
+      physicianPhone: values.physicianPhone.trim() || undefined,
+      healthInsuranceProvider:
+        values.healthInsuranceProvider.trim() || undefined,
+      healthInsuranceNumber: values.healthInsuranceNumber.trim() || undefined,
+      medicalNotes: values.medicalNotes.trim() || undefined,
       title,
       gender,
       maritalStatus,
@@ -285,26 +294,33 @@ function StudentForm({
       genotype,
       stateOfOrigin,
       dateOfBirth: new Date(dateOfBirth).toISOString(),
-      currentLevel: level,
-      currentSessionId: sessionId,
       schoolId,
+      facultyId,
+      departmentId,
+      programId,
+      programLevelId,
+      currentSessionId: sessionId,
       avatarUrl: avatarPreview,
     };
 
-    if (student) {
-      updateStudent(student.id, payload);
-      toast.success(`${fullName(payload)} updated`);
-    } else {
-      const created = createStudent({
-        ...payload,
-        status: "active",
-        isGraduating: false,
-        isDeferred: false,
-        holdForReview: false,
-      });
-      toast.success(`${fullName(created)} added`);
+    try {
+      if (student) {
+        await updateStudent.mutateAsync({ id: student.id, payload });
+        toast.success(`${fullName(payload)} updated`);
+      } else {
+        const created = await createStudent.mutateAsync(payload);
+        toast.success(
+          created.matricNo
+            ? `${fullName(created)} added`
+            : `${fullName(created)} added as a pre-student — assign a matric number once admission is finalized`,
+        );
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save student",
+      );
     }
-    onDone();
   };
 
   return (
@@ -463,44 +479,68 @@ function StudentForm({
           />
 
           <SectionLabel>Academic</SectionLabel>
+          <div className="col-span-full -mt-2 -mb-1">
+            <p className="text-xs text-muted-foreground">
+              Leave Matric No. blank to save this record as a{" "}
+              <span className="font-medium text-foreground">pre-student</span>{" "}
+              (just admitted, not yet matriculated) — assign one later via Edit
+              once admission is finalized.
+            </p>
+          </div>
           <NotchedField
-            label="Matric No."
+            label="Matric No. (optional)"
             labelClassName="bg-popover"
-            placeholder="e.g. UL-10044"
-            {...register("matricNo", { required: true })}
+            placeholder="e.g. UL-10044 — leave blank for a pre-student"
+            {...register("matricNo")}
           />
           <NotchedSelectField
             label="School"
             labelClassName="bg-popover"
             value={schoolId}
             onValueChange={setSchoolId}
-            options={activeSchools.map((s) => ({ label: s.name, value: s.id }))}
+            options={schools
+              .filter((s) => !s.archivedAt)
+              .map((s) => ({ label: s.name, value: s.id }))}
             placeholder="Select school"
           />
-          <NotchedField
+          <NotchedSelectField
             label="Faculty"
             labelClassName="bg-popover"
-            placeholder="e.g. Faculty of Physical Sciences"
-            {...register("faculty", { required: true })}
+            value={facultyId}
+            onValueChange={setFacultyId}
+            options={faculties
+              .filter((f) => !f.archivedAt)
+              .map((f) => ({ label: f.name, value: f.id }))}
+            placeholder="Select faculty"
           />
-          <NotchedField
+          <NotchedSelectField
             label="Department"
             labelClassName="bg-popover"
-            placeholder="e.g. Department of Computer Science"
-            {...register("department", { required: true })}
+            value={departmentId}
+            onValueChange={setDepartmentId}
+            options={departments
+              .filter((d) => !d.archivedAt)
+              .map((d) => ({ label: d.name, value: d.id }))}
+            placeholder="Select department"
           />
-          <NotchedField
+          <NotchedSelectField
             label="Program of Study"
             labelClassName="bg-popover"
-            placeholder="e.g. B.Sc. Computer Science"
-            {...register("programme", { required: true })}
+            value={programId}
+            onValueChange={setProgramId}
+            options={programs
+              .filter((p) => !p.archivedAt)
+              .map((p) => ({ label: p.name, value: p.id }))}
+            placeholder="Select program"
           />
           <NotchedSelectField
             label="Current Level"
             labelClassName="bg-popover"
-            value={level}
-            onValueChange={(value) => setLevel(value as StudentLevel)}
-            options={MANAGED_LEVELS}
+            value={programLevelId}
+            onValueChange={setProgramLevelId}
+            options={programLevels
+              .filter((l) => !l.archivedAt)
+              .map((l) => ({ label: l.levelCode, value: l.id }))}
             placeholder="Select level"
           />
           <NotchedSelectField
@@ -508,11 +548,78 @@ function StudentForm({
             labelClassName="bg-popover"
             value={sessionId}
             onValueChange={setSessionId}
-            options={activeSessions.map((s) => ({
-              label: s.session,
-              value: s.id,
-            }))}
+            options={sessions
+              .filter((s) => !s.archivedAt)
+              .map((s) => ({ label: s.session, value: s.id }))}
             placeholder="Select session"
+          />
+
+          <SectionLabel>Hostel</SectionLabel>
+          <NotchedField
+            label="Hostel Name"
+            labelClassName="bg-popover"
+            placeholder="e.g. Unity Hall"
+            {...register("hostelName")}
+          />
+          <NotchedField
+            label="Room Number"
+            labelClassName="bg-popover"
+            placeholder="e.g. B12"
+            {...register("roomNumber")}
+          />
+
+          <SectionLabel>Medical History</SectionLabel>
+          <NotchedField
+            label="Allergies"
+            labelClassName="bg-popover"
+            className="sm:col-span-2"
+            placeholder="e.g. Penicillin"
+            {...register("allergies")}
+          />
+          <NotchedField
+            label="Chronic Conditions"
+            labelClassName="bg-popover"
+            className="sm:col-span-2"
+            placeholder="e.g. Asthma"
+            {...register("chronicConditions")}
+          />
+          <NotchedField
+            label="Current Medications"
+            labelClassName="bg-popover"
+            className="sm:col-span-2"
+            {...register("currentMedications")}
+          />
+          <NotchedField
+            label="Past Surgeries"
+            labelClassName="bg-popover"
+            className="sm:col-span-2"
+            {...register("pastSurgeries")}
+          />
+          <NotchedField
+            label="Physician Name"
+            labelClassName="bg-popover"
+            {...register("physicianName")}
+          />
+          <NotchedField
+            label="Physician Phone"
+            labelClassName="bg-popover"
+            {...register("physicianPhone")}
+          />
+          <NotchedField
+            label="Health Insurance Provider"
+            labelClassName="bg-popover"
+            {...register("healthInsuranceProvider")}
+          />
+          <NotchedField
+            label="Health Insurance Number"
+            labelClassName="bg-popover"
+            {...register("healthInsuranceNumber")}
+          />
+          <NotchedField
+            label="Additional Medical Notes"
+            labelClassName="bg-popover"
+            className="sm:col-span-4"
+            {...register("medicalNotes")}
           />
 
           <SectionLabel>Photo</SectionLabel>
@@ -575,7 +682,11 @@ function StudentForm({
         <Button
           type="submit"
           form="student-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createStudent.isPending ||
+            updateStudent.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save
