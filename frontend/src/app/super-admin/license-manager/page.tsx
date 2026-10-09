@@ -10,7 +10,6 @@ import {
   Pencil,
   Plus,
   RotateCcw,
-  ShieldAlert,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,13 +42,12 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
-import { GracePeriodDialog } from "@/components/features/license-manager/grace-period-dialog";
 import { LicenseEventsDialog } from "@/components/features/license-manager/license-events-dialog";
 import { LicenseManagerDialog } from "@/components/features/license-manager/license-manager-dialog";
+import { RevokeLicenseDialog } from "@/components/features/license-manager/revoke-license-dialog";
 import {
   useRegenerateLicenseKey,
   useRenewLicense,
-  useRevokeLicense,
 } from "@/hooks/use-institutions";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { cn } from "@/lib/utils";
@@ -72,7 +70,6 @@ const daysRemaining = (iso: string) =>
 export default function LicenseManagerPage() {
   const institutions = useInstitutionsStore((state) => state.institutions);
   const regenerateLicenseKey = useRegenerateLicenseKey();
-  const revokeLicense = useRevokeLicense();
   const renewLicense = useRenewLicense();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -85,10 +82,8 @@ export default function LicenseManagerPage() {
   const [revealedTokens, setRevealedTokens] = useState<Set<string>>(new Set());
   const [pendingRegenerate, setPendingRegenerate] =
     useState<Institution | null>(null);
-  const [pendingRevoke, setPendingRevoke] = useState<Institution | null>(null);
   const [pendingRenew, setPendingRenew] = useState<Institution | null>(null);
-  const [gracePeriodTarget, setGracePeriodTarget] =
-    useState<Institution | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<Institution | null>(null);
   const [historyTarget, setHistoryTarget] = useState<Institution | null>(null);
 
   const licensed = useMemo(
@@ -314,15 +309,7 @@ export default function LicenseManagerPage() {
                             <History className="size-3.5" />
                             View license history
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {institution.licenseStatus === "ACTIVE" ? (
-                            <DropdownMenuItem
-                              onClick={() => setGracePeriodTarget(institution)}
-                            >
-                              <ShieldAlert className="size-3.5" />
-                              Start grace period
-                            </DropdownMenuItem>
-                          ) : (
+                          {institution.licenseStatus !== "ACTIVE" && (
                             <DropdownMenuItem
                               onClick={() => setPendingRenew(institution)}
                             >
@@ -333,7 +320,7 @@ export default function LicenseManagerPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => setPendingRevoke(institution)}
+                            onClick={() => setRevokeTarget(institution)}
                           >
                             <Trash2 className="size-3.5" />
                             Revoke license
@@ -424,28 +411,6 @@ export default function LicenseManagerPage() {
       />
 
       <ConfirmDialog
-        open={!!pendingRevoke}
-        onOpenChange={(open) => !open && setPendingRevoke(null)}
-        title="Revoke this license?"
-        description={`Are you sure you want to revoke the license for ${pendingRevoke?.name}? It will be reset to Basic with no license key — you can create a new one anytime from "Add New".`}
-        confirmLabel="Revoke"
-        variant="destructive"
-        onConfirm={async () => {
-          if (!pendingRevoke) return;
-          try {
-            await revokeLicense.mutateAsync(pendingRevoke.id);
-            toast.success(`License revoked for ${pendingRevoke.name}`);
-          } catch (error) {
-            toast.error(
-              error instanceof Error
-                ? error.message
-                : "Failed to revoke license",
-            );
-          }
-        }}
-      />
-
-      <ConfirmDialog
         open={!!pendingRenew}
         onOpenChange={(open) => !open && setPendingRenew(null)}
         title="Renew this license?"
@@ -466,10 +431,10 @@ export default function LicenseManagerPage() {
         }}
       />
 
-      <GracePeriodDialog
-        open={!!gracePeriodTarget}
-        onOpenChange={(open) => !open && setGracePeriodTarget(null)}
-        institution={gracePeriodTarget}
+      <RevokeLicenseDialog
+        open={!!revokeTarget}
+        onOpenChange={(open) => !open && setRevokeTarget(null)}
+        institution={revokeTarget}
       />
 
       <LicenseEventsDialog

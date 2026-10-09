@@ -7,6 +7,7 @@ import {
   type LicensePayload,
   type RenewLicensePayload,
   type StartGracePeriodPayload,
+  type SuspendLicensePayload,
 } from "@/services/institution.service";
 import type { InstitutionStatus } from "@/types/institution";
 
@@ -149,6 +150,23 @@ export function useRenewLicense() {
       id: string;
       payload?: RenewLicensePayload;
     }) => institutionService.renewLicense(id, payload),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["institutions"] });
+      queryClient.invalidateQueries({ queryKey: ["license-events", id] });
+    },
+  });
+}
+
+export function useSuspendLicense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: SuspendLicensePayload;
+    }) => institutionService.suspendLicense(id, payload),
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["institutions"] });
       queryClient.invalidateQueries({ queryKey: ["license-events", id] });

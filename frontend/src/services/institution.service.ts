@@ -34,6 +34,10 @@ export type RenewLicensePayload = {
   reason?: string;
 };
 
+export type SuspendLicensePayload = {
+  reason: string;
+};
+
 export type InstitutionsListResponse = {
   data: Institution[];
   meta: { page: number; perPage: number; total: number };
@@ -168,6 +172,18 @@ export const institutionService = {
   ): Promise<Institution> {
     const { data } = await apiClient.post<Institution>(
       `/institutions/${id}/renew-license`,
+      payload,
+    );
+    return data;
+  },
+
+  /** Transitions directly to SUSPENDED from any current status, no grace window — the manual, immediate-cutoff counterpart to startGracePeriod, for severe cases only. */
+  async suspendLicense(
+    id: string,
+    payload: SuspendLicensePayload,
+  ): Promise<Institution> {
+    const { data } = await apiClient.post<Institution>(
+      `/institutions/${id}/suspend-license`,
       payload,
     );
     return data;
