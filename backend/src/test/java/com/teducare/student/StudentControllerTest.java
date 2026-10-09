@@ -83,6 +83,18 @@ class StudentControllerTest {
                     .content(createBody.replace("\"bloodGroup\":\"O+\"", "\"bloodGroup\":\"Z+\"")))
                     .andExpect(status().isBadRequest());
 
+            // Regression: creating a real (non-pre-student) student while a
+            // pre-student (matricNo == null) already exists in the institution
+            // must not NPE while scanning for a matricNo collision.
+            mockMvc.perform(post("/api/students")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(createBody
+                            .replace("chinedu.", "realstudent.")
+                            .replace("\"gender\":\"Male\",", "\"matricNo\":\"UL-REG-" + suffix + "\",\"gender\":\"Male\",")))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.matricNo").value("UL-REG-" + suffix));
+
             // --- Pre-student becomes a student: assign a matric number via normal update. ---
             String matricNo = "UL-" + suffix;
             mockMvc.perform(patch("/api/students/" + studentId)

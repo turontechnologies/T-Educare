@@ -502,9 +502,11 @@ public class StudentService {
                 .orElse(List.of());
     }
 
+    /** Pre-students (matricNo == null) are skipped here — null never collides with anything, including another pre-student. */
     private void validateUniqueMatricNo(String institutionId, String matricNo, String excludingId) {
         boolean collides = repository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
                 .anyMatch(existing -> existing.getArchivedAt() == null
+                        && existing.getMatricNo() != null
                         && !existing.getId().equals(excludingId)
                         && existing.getMatricNo().equalsIgnoreCase(matricNo));
         if (collides) {
