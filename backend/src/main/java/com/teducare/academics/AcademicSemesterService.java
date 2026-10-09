@@ -115,7 +115,8 @@ public class AcademicSemesterService {
         return AcademicSemesterResponse.from(repository.save(semester));
     }
 
-    private AcademicSemester requireOwnSemester(String institutionId, String id) {
+    /** Public — reused cross-package by CourseRegistrationService, same promotion pattern as every other sibling-service guard in this hierarchy. */
+    public AcademicSemester requireOwnSemester(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Academic semester not found."));
     }

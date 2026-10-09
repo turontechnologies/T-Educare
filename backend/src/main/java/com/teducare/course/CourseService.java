@@ -53,6 +53,7 @@ public class CourseService {
         // resource does not derive one through the other (API_CONTRACT.md §7.10).
         departmentService.requireOwnDepartment(institutionId, request.departmentId());
         schoolService.requireOwnSchool(institutionId, request.schoolId());
+        programLevelService.requireOwnProgramLevel(institutionId, request.programLevelId());
         validateUniqueCode(institutionId, request.code(), null);
 
         Course course = new Course(
@@ -62,6 +63,8 @@ public class CourseService {
                 request.code(),
                 request.departmentId(),
                 request.schoolId(),
+                request.programLevelId(),
+                request.unit(),
                 Instant.now(),
                 null);
         return CourseResponse.from(repository.save(course));
@@ -77,6 +80,16 @@ public class CourseService {
         if (isPresent(request.schoolId()) && !request.schoolId().equals(course.getSchoolId())) {
             schoolService.requireOwnSchool(institutionId, request.schoolId());
             course.setSchoolId(request.schoolId());
+        }
+        if (isPresent(request.programLevelId()) && !request.programLevelId().equals(course.getProgramLevelId())) {
+            programLevelService.requireOwnProgramLevel(institutionId, request.programLevelId());
+            course.setProgramLevelId(request.programLevelId());
+        }
+        if (request.unit() != null) {
+            if (request.unit() < 1 || request.unit() > 10) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unit must be between 1 and 10.");
+            }
+            course.setUnit(request.unit());
         }
         if (isPresent(request.code())) {
             validateUniqueCode(institutionId, request.code(), id);
@@ -118,9 +131,24 @@ public class CourseService {
             String code = row.getOrDefault("code", "").trim();
             String departmentId = row.getOrDefault("departmentid", "").trim();
             String schoolId = row.getOrDefault("schoolid", "").trim();
+            String programLevelId = row.getOrDefault("programlevelid", "").trim();
+            String unitText = row.getOrDefault("unit", "").trim();
 
             if (name.isEmpty() || code.isEmpty() || departmentId.isEmpty() || schoolId.isEmpty()
+                    || programLevelId.isEmpty() || unitText.isEmpty()
                     || repository.existsByInstitutionIdAndCodeIgnoreCaseAndArchivedAtIsNull(institutionId, code)) {
+                skipped++;
+                continue;
+            }
+
+            int unit;
+            try {
+                unit = Integer.parseInt(unitText);
+                if (unit < 1 || unit > 10) {
+                    skipped++;
+                    continue;
+                }
+            } catch (NumberFormatException ex) {
                 skipped++;
                 continue;
             }
@@ -128,13 +156,15 @@ public class CourseService {
             try {
                 departmentService.requireOwnDepartment(institutionId, departmentId);
                 schoolService.requireOwnSchool(institutionId, schoolId);
+                programLevelService.requireOwnProgramLevel(institutionId, programLevelId);
             } catch (ResponseStatusException ex) {
                 skipped++;
                 continue;
             }
 
             Course course = new Course(
-                    "course-" + UUID.randomUUID(), institutionId, name, code, departmentId, schoolId, Instant.now(), null);
+                    "course-" + UUID.randomUUID(), institutionId, name, code, departmentId, schoolId,
+                    programLevelId, unit, Instant.now(), null);
             repository.save(course);
             imported++;
         }

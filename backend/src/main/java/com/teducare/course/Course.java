@@ -37,8 +37,15 @@ public class Course {
     @Column(name = "school_id", nullable = false, length = 64)
     private String schoolId;
 
-    /** FK to ProgramLevel.id — which level this course is taken at (e.g. 100L), scoped alongside departmentId so the registration system can offer "this department's 100L courses". */
-    @Column(name = "program_level_id", nullable = false, length = 64)
+    /**
+     * FK to ProgramLevel.id — which level this course is taken at (e.g.
+     * 100L), scoped alongside departmentId so the registration system can
+     * offer "this department's 100L courses". Nullable at the DB level
+     * only because any course row that pre-dates this field has no
+     * sensible value to backfill it with — every create/update through
+     * {@link CourseService} still requires it.
+     */
+    @Column(name = "program_level_id", length = 64)
     private String programLevelId;
 
     /** Credit unit — drives the registration system's total-unit cap (API_CONTRACT.md §7.11). */

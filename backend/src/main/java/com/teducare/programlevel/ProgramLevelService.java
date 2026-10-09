@@ -63,8 +63,8 @@ public class ProgramLevelService {
         return ProgramLevelResponse.from(repository.save(level));
     }
 
-    /** Never leaks whether a program level exists in a different institution — a mismatch reads identically to "not found". */
-    private ProgramLevel requireOwnProgramLevel(String institutionId, String id) {
+    /** Never leaks whether a program level exists in a different institution — a mismatch reads identically to "not found". Public — reused cross-package by CourseService/StudentService (and, soon, course registration) the same way SchoolService/FacultyService/DepartmentService's own guards were promoted. */
+    public ProgramLevel requireOwnProgramLevel(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Program level not found."));
     }

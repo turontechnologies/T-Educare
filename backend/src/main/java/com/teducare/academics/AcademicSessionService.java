@@ -100,8 +100,8 @@ public class AcademicSessionService {
         return AcademicSessionResponse.from(repository.save(session));
     }
 
-    /** Never leaks whether a session exists in a different institution — a mismatch reads identically to "not found". */
-    AcademicSession requireOwnSession(String institutionId, String id) {
+    /** Never leaks whether a session exists in a different institution — a mismatch reads identically to "not found". Public — reused cross-package by StudentService/CourseRegistrationService, same promotion pattern as every other sibling-service guard in this hierarchy. */
+    public AcademicSession requireOwnSession(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Academic session not found."));
     }

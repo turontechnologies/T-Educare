@@ -94,8 +94,8 @@ public class ProgramService {
         return ProgramResponse.from(repository.save(program));
     }
 
-    /** Never leaks whether a program exists in a different institution — a mismatch reads identically to "not found". */
-    private Program requireOwnProgram(String institutionId, String id) {
+    /** Never leaks whether a program exists in a different institution — a mismatch reads identically to "not found". Public — reused cross-package by StudentService, same promotion pattern as every other sibling-service guard in this hierarchy. */
+    public Program requireOwnProgram(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Program not found."));
     }

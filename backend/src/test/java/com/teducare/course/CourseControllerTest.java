@@ -47,6 +47,7 @@ class CourseControllerTest {
             String otherSchoolAId = createSchool(tokenA, "Other School Course Test A");
             String facultyAId = createFaculty(tokenA, "Faculty of Course Test A", schoolAId);
             String departmentAId = createDepartment(tokenA, "Dept of Course Test A", facultyAId, schoolAId);
+            String levelAId = createProgramLevel(tokenA, "100L-" + suffix);
             String schoolBId = createSchool(tokenB, "School of Course Test B");
             String facultyBId = createFaculty(tokenB, "Faculty of Course Test B", schoolBId);
             String departmentBId = createDepartment(tokenB, "Dept of Course Test B", facultyBId, schoolBId);
@@ -56,7 +57,8 @@ class CourseControllerTest {
                     .header("Authorization", "Bearer " + tokenA)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Hijack Course\",\"code\":\"HJ101\",\"departmentId\":\"" + departmentBId
-                            + "\",\"schoolId\":\"" + schoolAId + "\"}"))
+                            + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
+                            + "\",\"unit\":3}"))
                     .andExpect(status().isNotFound());
 
             // schoolId from a different institution is rejected (departmentId valid).
@@ -64,7 +66,8 @@ class CourseControllerTest {
                     .header("Authorization", "Bearer " + tokenA)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Hijack Course 2\",\"code\":\"HJ102\",\"departmentId\":\"" + departmentAId
-                            + "\",\"schoolId\":\"" + schoolBId + "\"}"))
+                            + "\",\"schoolId\":\"" + schoolBId + "\",\"programLevelId\":\"" + levelAId
+                            + "\",\"unit\":3}"))
                     .andExpect(status().isNotFound());
 
             // Independent FK proof: schoolId differs from department's own school.
@@ -72,10 +75,13 @@ class CourseControllerTest {
                     .header("Authorization", "Bearer " + tokenA)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Pure Mathematics\",\"code\":\"MAT101\",\"departmentId\":\"" + departmentAId
-                            + "\",\"schoolId\":\"" + otherSchoolAId + "\"}"))
+                            + "\",\"schoolId\":\"" + otherSchoolAId + "\",\"programLevelId\":\"" + levelAId
+                            + "\",\"unit\":3}"))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.code").value("MAT101"))
                     .andExpect(jsonPath("$.schoolId").value(otherSchoolAId))
+                    .andExpect(jsonPath("$.programLevelId").value(levelAId))
+                    .andExpect(jsonPath("$.unit").value(3))
                     .andReturn().getResponse().getContentAsString();
             String courseId = createResponse.split("\"id\":\"")[1].split("\"")[0];
 
@@ -84,8 +90,18 @@ class CourseControllerTest {
                     .header("Authorization", "Bearer " + tokenA)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Another Name\",\"code\":\"mat101\",\"departmentId\":\"" + departmentAId
-                            + "\",\"schoolId\":\"" + schoolAId + "\"}"))
+                            + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
+                            + "\",\"unit\":3}"))
                     .andExpect(status().isConflict());
+
+            // Invalid unit (out of 1-10 range) rejected.
+            mockMvc.perform(post("/api/courses")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"Bad Unit Course\",\"code\":\"BU101\",\"departmentId\":\"" + departmentAId
+                            + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
+                            + "\",\"unit\":0}"))
+                    .andExpect(status().isBadRequest());
 
             // Search by name and by code.
             String searchByName = mockMvc.perform(get("/api/courses?search=pure")
@@ -140,11 +156,11 @@ class CourseControllerTest {
             assertFalse(listForB.contains(courseId));
 
             // CSV import: one valid row, one missing-column row, one duplicate-code row, one bad-FK row.
-            String csv = "name,code,departmentId,schoolId\n"
-                    + "General Studies,GST101," + departmentAId + "," + schoolAId + "\n"
-                    + ",NOCODE," + departmentAId + "," + schoolAId + "\n"
-                    + "Duplicate,MAT101," + departmentAId + "," + schoolAId + "\n"
-                    + "Bad FK,BADFK101,does-not-exist," + schoolAId + "\n";
+            String csv = "name,code,departmentId,schoolId,programLevelId,unit\n"
+                    + "General Studies,GST101," + departmentAId + "," + schoolAId + "," + levelAId + ",2\n"
+                    + ",NOCODE," + departmentAId + "," + schoolAId + "," + levelAId + ",2\n"
+                    + "Duplicate,MAT101," + departmentAId + "," + schoolAId + "," + levelAId + ",2\n"
+                    + "Bad FK,BADFK101,does-not-exist," + schoolAId + "," + levelAId + ",2\n";
             MockMultipartFile csvFile = new MockMultipartFile(
                     "file", "courses.csv", "text/csv", csv.getBytes(StandardCharsets.UTF_8));
             mockMvc.perform(multipart("/api/courses/import")
@@ -230,6 +246,18 @@ class CourseControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"" + name + "\",\"hodName\":\"Someone\",\"facultyId\":\"" + facultyId
                         + "\",\"schoolId\":\"" + schoolId + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createProgramLevel(String token, String levelCode) throws Exception {
+        String response = mockMvc.perform(post("/api/program-levels")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"levelCode\":\"" + levelCode + "\",\"description\":\"" + levelCode + " description\"}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
