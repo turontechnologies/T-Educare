@@ -1,5 +1,6 @@
 package com.teducare.course;
 
-/** Any field left null keeps its current value — same partial-update convention as program/UpdateProgramRequest. */
-public record UpdateCourseRequest(String name, String code, String departmentId, String schoolId) {
+/** Any field left null keeps its current value — same partial-update convention as program/UpdateProgramRequest. `unit` uses the boxed `Integer` for the same reason. */
+public record UpdateCourseRequest(
+        String name, String code, String departmentId, String schoolId, String programLevelId, Integer unit) {
 }

@@ -9,6 +9,8 @@ public record CourseResponse(
         String code,
         String departmentId,
         String schoolId,
+        String programLevelId,
+        int unit,
         Instant createdAt,
         Instant archivedAt) {
 
@@ -20,6 +22,8 @@ public record CourseResponse(
                 course.getCode(),
                 course.getDepartmentId(),
                 course.getSchoolId(),
+                course.getProgramLevelId(),
+                course.getUnit(),
                 course.getCreatedAt(),
                 course.getArchivedAt());
     }

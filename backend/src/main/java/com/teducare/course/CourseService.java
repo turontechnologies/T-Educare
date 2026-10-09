@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.department.DepartmentService;
+import com.teducare.programlevel.ProgramLevelService;
 import com.teducare.school.SchoolService;
 
 @Service
@@ -18,11 +19,17 @@ public class CourseService {
     private final CourseRepository repository;
     private final DepartmentService departmentService;
     private final SchoolService schoolService;
+    private final ProgramLevelService programLevelService;
 
-    public CourseService(CourseRepository repository, DepartmentService departmentService, SchoolService schoolService) {
+    public CourseService(
+            CourseRepository repository,
+            DepartmentService departmentService,
+            SchoolService schoolService,
+            ProgramLevelService programLevelService) {
         this.repository = repository;
         this.departmentService = departmentService;
         this.schoolService = schoolService;
+        this.programLevelService = programLevelService;
     }
 
     public List<CourseResponse> list(

@@ -37,6 +37,14 @@ public class Course {
     @Column(name = "school_id", nullable = false, length = 64)
     private String schoolId;
 
+    /** FK to ProgramLevel.id — which level this course is taken at (e.g. 100L), scoped alongside departmentId so the registration system can offer "this department's 100L courses". */
+    @Column(name = "program_level_id", nullable = false, length = 64)
+    private String programLevelId;
+
+    /** Credit unit — drives the registration system's total-unit cap (API_CONTRACT.md §7.11). */
+    @Column(name = "unit", nullable = false)
+    private int unit;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -53,6 +61,8 @@ public class Course {
             String code,
             String departmentId,
             String schoolId,
+            String programLevelId,
+            int unit,
             Instant createdAt,
             Instant archivedAt) {
         this.id = id;
@@ -61,6 +71,8 @@ public class Course {
         this.code = code;
         this.departmentId = departmentId;
         this.schoolId = schoolId;
+        this.programLevelId = programLevelId;
+        this.unit = unit;
         this.createdAt = createdAt;
         this.archivedAt = archivedAt;
     }
@@ -103,6 +115,22 @@ public class Course {
 
     public void setSchoolId(String schoolId) {
         this.schoolId = schoolId;
+    }
+
+    public String getProgramLevelId() {
+        return programLevelId;
+    }
+
+    public void setProgramLevelId(String programLevelId) {
+        this.programLevelId = programLevelId;
+    }
+
+    public int getUnit() {
+        return unit;
+    }
+
+    public void setUnit(int unit) {
+        this.unit = unit;
     }
 
     public Instant getCreatedAt() {
