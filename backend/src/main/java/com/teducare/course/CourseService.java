@@ -179,8 +179,8 @@ public class CourseService {
         return CourseCsv.write(courses);
     }
 
-    /** Never leaks whether a course exists in a different institution — a mismatch reads identically to "not found". */
-    private Course requireOwnCourse(String institutionId, String id) {
+    /** Never leaks whether a course exists in a different institution — a mismatch reads identically to "not found". Public — reused cross-package by CourseRegistrationService, same promotion pattern as every other sibling-service guard in this hierarchy. */
+    public Course requireOwnCourse(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found."));
     }

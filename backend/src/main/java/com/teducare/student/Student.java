@@ -30,7 +30,16 @@ public class Student {
     @Column(name = "institution_id", nullable = false, length = 64)
     private String institutionId;
 
-    @Column(name = "matric_no", nullable = false, length = 50)
+    /**
+     * Nullable — a student with no matric number yet is a "pre-student"
+     * (just gained admission, not yet matriculated). Assigning one via a
+     * normal update is literally how a pre-student "becomes" a student;
+     * there is deliberately no separate PreStudent entity — duplicating
+     * every field into a second table just to migrate it all back on
+     * "conversion" would be needless complexity for what is really one
+     * lifecycle stage of the same record.
+     */
+    @Column(name = "matric_no", length = 50)
     private String matricNo;
 
     @Column(name = "title", nullable = false, length = 20)
@@ -130,6 +139,20 @@ public class Student {
     @Column(name = "hold_for_review", nullable = false)
     private boolean holdForReview;
 
+    /** "NONE" | "SUSPENDED" | "EXPELLED" — cached current value; {@link StudentDisciplinaryRecord} is the append-only history, same "cached value + immutable log" shape as the institution license-status feature. */
+    @Column(name = "disciplinary_status", nullable = false, length = 20)
+    private String disciplinaryStatus;
+
+    // --- Hostel — a plain summary on the record, not a full hostel-management
+    // system (that's its own separate, not-yet-built module/nav item; this is
+    // deliberately just "which hostel/room this student is currently in"). ---
+
+    @Column(name = "hostel_name", length = 150)
+    private String hostelName;
+
+    @Column(name = "room_number", length = 30)
+    private String roomNumber;
+
     // --- Medical history — new, not present in the pre-backend mock. ---
 
     @Column(name = "allergies", length = 1000)
@@ -204,6 +227,9 @@ public class Student {
             boolean isGraduating,
             boolean isDeferred,
             boolean holdForReview,
+            String disciplinaryStatus,
+            String hostelName,
+            String roomNumber,
             String allergies,
             String chronicConditions,
             String currentMedications,
@@ -250,6 +276,9 @@ public class Student {
         this.isGraduating = isGraduating;
         this.isDeferred = isDeferred;
         this.holdForReview = holdForReview;
+        this.disciplinaryStatus = disciplinaryStatus;
+        this.hostelName = hostelName;
+        this.roomNumber = roomNumber;
         this.allergies = allergies;
         this.chronicConditions = chronicConditions;
         this.currentMedications = currentMedications;
@@ -533,6 +562,30 @@ public class Student {
 
     public void setHoldForReview(boolean holdForReview) {
         this.holdForReview = holdForReview;
+    }
+
+    public String getDisciplinaryStatus() {
+        return disciplinaryStatus;
+    }
+
+    public void setDisciplinaryStatus(String disciplinaryStatus) {
+        this.disciplinaryStatus = disciplinaryStatus;
+    }
+
+    public String getHostelName() {
+        return hostelName;
+    }
+
+    public void setHostelName(String hostelName) {
+        this.hostelName = hostelName;
+    }
+
+    public String getRoomNumber() {
+        return roomNumber;
+    }
+
+    public void setRoomNumber(String roomNumber) {
+        this.roomNumber = roomNumber;
     }
 
     public String getAllergies() {

@@ -36,9 +36,14 @@ public class StudentService {
     private static final Set<String> GENOTYPES = Set.of("AA", "AS", "SS", "AC");
     private static final Set<String> STATUSES = Set.of("active", "inactive");
     private static final Set<String> RECORD_STATUSES = Set.of("completed", "current", "repeat");
+    private static final Set<String> DISCIPLINARY_ACTION_TYPES =
+            Set.of("SUSPENSION", "EXPULSION", "WARNING", "REINSTATEMENT");
+    private static final Set<String> CASE_STATUSES = Set.of("open", "resolved", "dismissed");
 
     private final StudentRepository repository;
     private final StudentAcademicRecordRepository academicRecordRepository;
+    private final StudentDisciplinaryRecordRepository disciplinaryRecordRepository;
+    private final StudentCaseRecordRepository caseRecordRepository;
     private final SchoolService schoolService;
     private final FacultyService facultyService;
     private final DepartmentService departmentService;
@@ -49,6 +54,8 @@ public class StudentService {
     public StudentService(
             StudentRepository repository,
             StudentAcademicRecordRepository academicRecordRepository,
+            StudentDisciplinaryRecordRepository disciplinaryRecordRepository,
+            StudentCaseRecordRepository caseRecordRepository,
             SchoolService schoolService,
             FacultyService facultyService,
             DepartmentService departmentService,
@@ -57,6 +64,8 @@ public class StudentService {
             AcademicSessionService academicSessionService) {
         this.repository = repository;
         this.academicRecordRepository = academicRecordRepository;
+        this.disciplinaryRecordRepository = disciplinaryRecordRepository;
+        this.caseRecordRepository = caseRecordRepository;
         this.schoolService = schoolService;
         this.facultyService = facultyService;
         this.departmentService = departmentService;
@@ -104,7 +113,9 @@ public class StudentService {
         validateEnum(RELIGIONS, request.religion(), "religion");
         validateEnum(BLOOD_GROUPS, request.bloodGroup(), "bloodGroup");
         validateEnum(GENOTYPES, request.genotype(), "genotype");
-        validateUniqueMatricNo(institutionId, request.matricNo(), null);
+        if (isPresent(request.matricNo())) {
+            validateUniqueMatricNo(institutionId, request.matricNo(), null);
+        }
 
         schoolService.requireOwnSchool(institutionId, request.schoolId());
         facultyService.requireOwnFaculty(institutionId, request.facultyId());
@@ -149,6 +160,9 @@ public class StudentService {
                 false,
                 false,
                 false,
+                "NONE",
+                request.hostelName(),
+                request.roomNumber(),
                 request.allergies(),
                 request.chronicConditions(),
                 request.currentMedications(),
@@ -295,6 +309,12 @@ public class StudentService {
         if (request.holdForReview() != null) {
             student.setHoldForReview(request.holdForReview());
         }
+        if (request.hostelName() != null) {
+            student.setHostelName(request.hostelName());
+        }
+        if (request.roomNumber() != null) {
+            student.setRoomNumber(request.roomNumber());
+        }
         if (request.allergies() != null) {
             student.setAllergies(request.allergies());
         }
@@ -380,10 +400,106 @@ public class StudentService {
         return StudentAcademicRecordResponse.from(saved);
     }
 
-    /** Never leaks whether a student exists in a different institution — a mismatch reads identically to "not found". */
-    private Student requireOwnStudent(String institutionId, String id) {
+    /**
+     * Transitions {@code disciplinaryStatus} and appends an immutable
+     * record of the action — same cached-value-plus-audit-log shape as
+     * the institution license-status feature's {@code suspend-license}/
+     * {@code renew-license}. "REINSTATEMENT" is how a suspension/expulsion
+     * is lifted (moves status back to "NONE").
+     */
+    public StudentDisciplinaryRecordResponse recordDisciplinaryAction(
+            String institutionId, String studentId, String actorId, RecordDisciplinaryActionRequest request) {
+        Student student = requireOwnStudent(institutionId, studentId);
+
+        if (!DISCIPLINARY_ACTION_TYPES.contains(request.actionType())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "actionType must be SUSPENSION, EXPULSION, WARNING, or REINSTATEMENT.");
+        }
+
+        // A WARNING doesn't change standing — only SUSPENSION/EXPULSION/REINSTATEMENT do.
+        if ("SUSPENSION".equals(request.actionType())) {
+            student.setDisciplinaryStatus("SUSPENDED");
+        } else if ("EXPULSION".equals(request.actionType())) {
+            student.setDisciplinaryStatus("EXPELLED");
+        } else if ("REINSTATEMENT".equals(request.actionType())) {
+            student.setDisciplinaryStatus("NONE");
+        }
+        repository.save(student);
+
+        StudentDisciplinaryRecord record = new StudentDisciplinaryRecord(
+                "disc-" + UUID.randomUUID(),
+                studentId,
+                request.actionType(),
+                request.reason(),
+                request.startDate(),
+                request.endDate(),
+                actorId,
+                Instant.now());
+        return StudentDisciplinaryRecordResponse.from(disciplinaryRecordRepository.save(record));
+    }
+
+    public List<StudentDisciplinaryRecordResponse> listDisciplinaryRecords(String institutionId, String studentId) {
+        requireOwnStudent(institutionId, studentId);
+        return disciplinaryRecordRepository.findByStudentIdOrderByCreatedAtDesc(studentId).stream()
+                .map(StudentDisciplinaryRecordResponse::from)
+                .toList();
+    }
+
+    public StudentCaseRecordResponse reportCase(
+            String institutionId, String studentId, String actorId, ReportCaseRequest request) {
+        requireOwnStudent(institutionId, studentId);
+
+        StudentCaseRecord record = new StudentCaseRecord(
+                "case-" + UUID.randomUUID(),
+                studentId,
+                request.title(),
+                request.description(),
+                "open",
+                actorId,
+                null,
+                Instant.now(),
+                null);
+        return StudentCaseRecordResponse.from(caseRecordRepository.save(record));
+    }
+
+    public StudentCaseRecordResponse resolveCase(
+            String institutionId, String studentId, String caseId, ResolveCaseRequest request) {
+        requireOwnStudent(institutionId, studentId);
+
+        if (!CASE_STATUSES.contains(request.status())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status must be open, resolved, or dismissed.");
+        }
+
+        StudentCaseRecord record = caseRecordRepository.findByIdAndStudentId(caseId, studentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Case not found."));
+        record.setStatus(request.status());
+        record.setResolutionNotes(request.resolutionNotes());
+        if (!"open".equals(request.status())) {
+            record.setResolvedAt(Instant.now());
+        }
+        return StudentCaseRecordResponse.from(caseRecordRepository.save(record));
+    }
+
+    public List<StudentCaseRecordResponse> listCases(String institutionId, String studentId) {
+        requireOwnStudent(institutionId, studentId);
+        return caseRecordRepository.findByStudentIdOrderByCreatedAtDesc(studentId).stream()
+                .map(StudentCaseRecordResponse::from)
+                .toList();
+    }
+
+    /** Never leaks whether a student exists in a different institution — a mismatch reads identically to "not found". Public — reused cross-package by CourseRegistrationService, same promotion pattern as every other sibling-service guard in this hierarchy. */
+    public Student requireOwnStudent(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found."));
+    }
+
+    /** Newest-first history's most recent record's outstanding carryover course ids — what CourseRegistrationService needs to enforce the carryover-first rule. Empty list if the student has no history yet or nothing outstanding. */
+    public List<String> latestCarryoverCourseIds(String institutionId, String studentId) {
+        requireOwnStudent(institutionId, studentId);
+        return academicRecordRepository.findByStudentIdOrderByCreatedAtDesc(studentId).stream()
+                .findFirst()
+                .map(record -> StudentAcademicRecordResponse.from(record).carryoverCourseIds())
+                .orElse(List.of());
     }
 
     private void validateUniqueMatricNo(String institutionId, String matricNo, String excludingId) {

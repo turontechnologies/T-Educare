@@ -5,8 +5,9 @@ import java.time.Instant;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+/** `matricNo` is intentionally optional — a student created without one is a "pre-student" (just admitted, not yet matriculated); assigning one later via a normal update is how they become a full student. */
 public record CreateStudentRequest(
-        @NotBlank(message = "Matric number is required.") String matricNo,
+        String matricNo,
         @NotBlank(message = "Title is required.") String title,
         @NotBlank(message = "First name is required.") String firstName,
         String middleName,
@@ -35,6 +36,8 @@ public record CreateStudentRequest(
         @NotBlank(message = "Program is required.") String programId,
         @NotBlank(message = "Program level is required.") String programLevelId,
         @NotBlank(message = "Current session is required.") String currentSessionId,
+        String hostelName,
+        String roomNumber,
         String allergies,
         String chronicConditions,
         String currentMedications,

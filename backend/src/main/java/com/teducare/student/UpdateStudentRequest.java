@@ -37,6 +37,8 @@ public record UpdateStudentRequest(
         Boolean isGraduating,
         Boolean isDeferred,
         Boolean holdForReview,
+        String hostelName,
+        String roomNumber,
         String allergies,
         String chronicConditions,
         String currentMedications,

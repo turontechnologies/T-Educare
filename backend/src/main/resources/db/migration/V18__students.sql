@@ -3,7 +3,7 @@ BEGIN
     CREATE TABLE dbo.students (
         id NVARCHAR(64) PRIMARY KEY,
         institution_id NVARCHAR(64) NOT NULL,
-        matric_no NVARCHAR(50) NOT NULL,
+        matric_no NVARCHAR(50) NULL,
         title NVARCHAR(20) NOT NULL,
         first_name NVARCHAR(100) NOT NULL,
         middle_name NVARCHAR(100) NULL,
@@ -36,6 +36,9 @@ BEGIN
         is_graduating BIT NOT NULL,
         is_deferred BIT NOT NULL,
         hold_for_review BIT NOT NULL,
+        disciplinary_status NVARCHAR(20) NOT NULL CONSTRAINT DF_students_disciplinary_status DEFAULT 'NONE',
+        hostel_name NVARCHAR(150) NULL,
+        room_number NVARCHAR(30) NULL,
         allergies NVARCHAR(1000) NULL,
         chronic_conditions NVARCHAR(1000) NULL,
         current_medications NVARCHAR(1000) NULL,
@@ -71,4 +74,37 @@ BEGIN
     );
 
     CREATE INDEX IX_student_academic_records_student ON dbo.student_academic_records(student_id, created_at DESC);
+END;
+
+IF OBJECT_ID(N'dbo.student_disciplinary_records', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.student_disciplinary_records (
+        id NVARCHAR(64) PRIMARY KEY,
+        student_id NVARCHAR(64) NOT NULL,
+        action_type NVARCHAR(20) NOT NULL,
+        reason NVARCHAR(1000) NOT NULL,
+        start_date DATETIME2 NULL,
+        end_date DATETIME2 NULL,
+        actor_id NVARCHAR(64) NULL,
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+
+    CREATE INDEX IX_student_disciplinary_records_student ON dbo.student_disciplinary_records(student_id, created_at DESC);
+END;
+
+IF OBJECT_ID(N'dbo.student_case_records', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.student_case_records (
+        id NVARCHAR(64) PRIMARY KEY,
+        student_id NVARCHAR(64) NOT NULL,
+        title NVARCHAR(200) NOT NULL,
+        description NVARCHAR(2000) NOT NULL,
+        status NVARCHAR(20) NOT NULL,
+        reported_by NVARCHAR(64) NULL,
+        resolution_notes NVARCHAR(1000) NULL,
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        resolved_at DATETIME2 NULL
+    );
+
+    CREATE INDEX IX_student_case_records_student ON dbo.student_case_records(student_id, created_at DESC);
 END;

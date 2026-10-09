@@ -95,7 +95,47 @@ public class StudentController {
         return service.addAcademicRecord(requireInstitutionId(authentication), id, request);
     }
 
+    @GetMapping("/{id}/disciplinary-records")
+    public List<StudentDisciplinaryRecordResponse> disciplinaryRecords(
+            Authentication authentication, @PathVariable String id) {
+        return service.listDisciplinaryRecords(requireInstitutionId(authentication), id);
+    }
+
+    @PostMapping("/{id}/disciplinary-records")
+    public StudentDisciplinaryRecordResponse recordDisciplinaryAction(
+            Authentication authentication,
+            @PathVariable String id,
+            @Valid @RequestBody RecordDisciplinaryActionRequest request) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        return service.recordDisciplinaryAction(caller.institutionId(), id, caller.id(), request);
+    }
+
+    @GetMapping("/{id}/cases")
+    public List<StudentCaseRecordResponse> cases(Authentication authentication, @PathVariable String id) {
+        return service.listCases(requireInstitutionId(authentication), id);
+    }
+
+    @PostMapping("/{id}/cases")
+    public StudentCaseRecordResponse reportCase(
+            Authentication authentication, @PathVariable String id, @Valid @RequestBody ReportCaseRequest request) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        return service.reportCase(caller.institutionId(), id, caller.id(), request);
+    }
+
+    @PatchMapping("/{id}/cases/{caseId}")
+    public StudentCaseRecordResponse resolveCase(
+            Authentication authentication,
+            @PathVariable String id,
+            @PathVariable String caseId,
+            @Valid @RequestBody ResolveCaseRequest request) {
+        return service.resolveCase(requireInstitutionId(authentication), id, caseId, request);
+    }
+
     private String requireInstitutionId(Authentication authentication) {
+        return requireCaller(authentication).institutionId();
+    }
+
+    private AuthenticatedUserDto requireCaller(Authentication authentication) {
         if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
         }
@@ -107,6 +147,6 @@ public class StudentController {
         if (!"institution_admin".equals(caller.role()) || caller.institutionId() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Institution admin access required.");
         }
-        return caller.institutionId();
+        return caller;
     }
 }
