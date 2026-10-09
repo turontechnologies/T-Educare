@@ -20,6 +20,7 @@ import { useMe } from "@/hooks/use-login";
 import { useProgramLevels } from "@/hooks/use-program-levels";
 import { usePrograms } from "@/hooks/use-programs";
 import { useSchools } from "@/hooks/use-schools";
+import { useStudents } from "@/hooks/use-students";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useAuthStore } from "@/store/auth.store";
 import { useCourseGradesStore } from "@/store/course-grades.store";
@@ -30,6 +31,7 @@ import { useInstitutionsStore } from "@/store/institutions.store";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useProgramsStore } from "@/store/programs.store";
 import { useSchoolsStore } from "@/store/schools.store";
+import { useStudentsStore } from "@/store/students.store";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -177,6 +179,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (coursesData) setCourses(coursesData);
   }, [coursesData, setCourses]);
+
+  const setStudents = useStudentsStore((state) => state.setStudents);
+  const { data: studentsData } = useStudents(
+    { includeArchived: true },
+    { enabled: hasHydrated && !!token && user?.role === "institution_admin" },
+  );
+  useEffect(() => {
+    if (studentsData) setStudents(studentsData);
+  }, [studentsData, setStudents]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,

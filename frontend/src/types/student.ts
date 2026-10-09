@@ -1,16 +1,6 @@
-export const STUDENT_LEVELS = [
-  "100 Level",
-  "200 Level",
-  "300 Level",
-  "400 Level",
-  "500 Level",
-] as const;
-
-export type StudentLevel = (typeof STUDENT_LEVELS)[number];
-
 export type StudentGender = "Male" | "Female" | "Other";
-
 export type StudentStatus = "active" | "inactive";
+export type DisciplinaryStatus = "NONE" | "SUSPENDED" | "EXPELLED";
 
 export const STUDENT_TITLES = [
   "Mr",
@@ -54,43 +44,32 @@ export type BloodGroup = (typeof BLOOD_GROUPS)[number];
 export const GENOTYPES = ["AA", "AS", "SS", "AC"] as const;
 export type Genotype = (typeof GENOTYPES)[number];
 
-export interface CourseResult {
-  courseCode: string;
-  courseTitle: string;
-  score: number;
-  grade: string;
-  passed: boolean;
-  /** Which session this attempt happened in. */
-  sessionId: string;
-  /** 1 = first attempt, 2 = a carryover retake, etc. — never overwritten, a new attempt is appended. */
-  attempt: number;
-}
+export const DISCIPLINARY_ACTION_TYPES = [
+  "SUSPENSION",
+  "EXPULSION",
+  "WARNING",
+  "REINSTATEMENT",
+] as const;
+export type DisciplinaryActionType = (typeof DISCIPLINARY_ACTION_TYPES)[number];
+
+export type CaseStatus = "open" | "resolved" | "dismissed";
 
 /**
- * One session's worth of a student's academic standing — appended to
- * `Student.academicHistory` on every rollover, never mutated afterward.
- * This is the "never overwrite history" ledger the rollover engine writes
- * to (see `src/store/rollover.store.ts`).
+ * Comprehensive student profile (API_CONTRACT.md §7.13). `facultyId`/
+ * `departmentId`/`programId`/`programLevelId` (current level) are real FKs
+ * into the Academics hierarchy — matching the backend, which replaced the
+ * original mock's free-text `faculty`/`department`/`programme` and fixed
+ * `currentLevel` union with real ids. `matricNo` is nullable — a student
+ * with none yet is a "pre-student" (just admitted, not yet matriculated);
+ * assigning one via a normal edit is how they become a full student.
  */
-export interface StudentAcademicRecord {
-  sessionId: string;
-  level: StudentLevel;
-  /** "repeat" means this record is a repeated attempt at the same level as the previous record. */
-  status: "completed" | "current" | "repeat";
-  courseResults: CourseResult[];
-  /** Course codes still outstanding as of the end of this record. */
-  carryoverCourses: string[];
-}
-
 export interface Student {
   id: string;
-  /** Display code, e.g. "UL-10010" — unique among non-archived students. */
-  matricNo: string;
+  matricNo: string | null;
   title: StudentTitle;
   firstName: string;
   middleName?: string;
   lastName: string;
-  /** A distinct alternate/preferred name field, kept separate from Middle Name per the source record. */
   otherName?: string;
   gender: StudentGender;
   maritalStatus: MaritalStatus;
@@ -109,27 +88,75 @@ export interface Student {
   stateOfOrigin: string;
   lga: string;
   residentAddress: string;
-  /** Nullable — same convention as institution logo/user manager avatar (see `readFileAsDataUrl`). */
   avatarUrl?: string;
-  /** FK to `School.id`. */
   schoolId: string;
-  faculty: string;
-  department: string;
-  programme: string;
-  currentLevel: StudentLevel;
-  /** FK to `AcademicSession.id`. */
+  facultyId: string;
+  departmentId: string;
+  programId: string;
+  /** The student's CURRENT level — FK to ProgramLevel.id. */
+  programLevelId: string;
   currentSessionId: string;
-  /** Enrollment status — independent of academic standing (isGraduating/isDeferred/holdForReview below). An inactive student is excluded from a rollover draft the same way an archived one would be. */
   status: StudentStatus;
-  /** Completed the final level and all requirements — excluded from further rollover. */
   isGraduating: boolean;
-  /** On an approved leave of absence — excluded from rollover until reinstated. */
   isDeferred: boolean;
-  /** A case needing manual attention before rollover (disciplinary, incomplete records, etc.) — the engine suggests "hold" regardless of course results. */
   holdForReview: boolean;
-  /** Append-only — a rollover adds a new entry, it never edits or removes a previous one. */
-  academicHistory: StudentAcademicRecord[];
+  /** Cached current value — see `StudentDisciplinaryRecord` for the append-only history behind it. */
+  disciplinaryStatus: DisciplinaryStatus;
+  /** A plain summary on the record, not a full hostel-management system (that's its own separate module). */
+  hostelName?: string;
+  roomNumber?: string;
+  allergies?: string;
+  chronicConditions?: string;
+  currentMedications?: string;
+  pastSurgeries?: string;
+  physicianName?: string;
+  physicianPhone?: string;
+  healthInsuranceProvider?: string;
+  healthInsuranceNumber?: string;
+  medicalNotes?: string;
   createdAt: string;
-  /** Nullable — soft-delete, same convention as every other admin table (archive, never hard delete). */
   archivedAt: string | null;
+}
+
+/**
+ * One session's worth of a student's level/standing — append-only, never
+ * edited or removed. `carryoverCourseIds` are real Course ids (the mock
+ * used free-text course codes; Courses are a real resource now).
+ * Per-course scores/grades are deliberately not modeled here — that's
+ * Results Management, a separate, not-yet-built module.
+ */
+export interface StudentAcademicRecord {
+  id: string;
+  studentId: string;
+  academicSessionId: string;
+  programLevelId: string;
+  status: "completed" | "current" | "repeat";
+  carryoverCourseIds: string[];
+  createdAt: string;
+}
+
+/** Append-only — mirrors `disciplinaryStatus`'s "cached value + immutable history" shape. */
+export interface StudentDisciplinaryRecord {
+  id: string;
+  studentId: string;
+  actionType: DisciplinaryActionType;
+  reason: string;
+  startDate: string | null;
+  endDate: string | null;
+  /** The recording staff/admin's id. */
+  actorId: string | null;
+  createdAt: string;
+}
+
+/** A reported case/incident — independent of (but may lead to) a disciplinary record; has a real editable lifecycle, unlike the append-only history above. */
+export interface StudentCaseRecord {
+  id: string;
+  studentId: string;
+  title: string;
+  description: string;
+  status: CaseStatus;
+  reportedBy: string | null;
+  resolutionNotes: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
 }

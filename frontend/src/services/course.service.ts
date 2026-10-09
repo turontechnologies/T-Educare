@@ -6,6 +6,8 @@ export type CourseFormPayload = {
   code: string;
   departmentId: string;
   schoolId: string;
+  programLevelId: string;
+  unit: number;
 };
 
 export interface CourseImportResult {

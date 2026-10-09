@@ -39,9 +39,10 @@ class CourseRegistrationControllerTest {
             String departmentId = createDepartment(token, "Dept of Course Reg Test", facultyId, schoolId);
             String otherDepartmentId = createDepartment(token, "Other Dept of Course Reg Test", facultyId, schoolId);
             String programId = createProgram(token, "Program of Course Reg Test", departmentId, facultyId);
-            String level100Id = createProgramLevel(token, "100L-CR-" + suffix);
-            String level200Id = createProgramLevel(token, "200L-CR-" + suffix);
-            String sessionId = createAcademicSession(token, "2026/2027-CR-" + suffix);
+            String shortSuffix = suffix.substring(suffix.length() - 6);
+            String level100Id = createProgramLevel(token, "1L-" + shortSuffix);
+            String level200Id = createProgramLevel(token, "2L-" + shortSuffix);
+            String sessionId = createAcademicSession(token, "26/27-" + shortSuffix);
             String semesterId = createAcademicSemester(token, sessionId, "First Semester CR " + suffix);
 
             String course100Id = createCourse(token, "Intro to Programming", "CSC101-" + suffix, departmentId, level100Id, 3);

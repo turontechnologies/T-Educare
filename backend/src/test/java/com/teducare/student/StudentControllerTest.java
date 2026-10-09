@@ -38,9 +38,10 @@ class StudentControllerTest {
             String facultyId = createFaculty(token, "Faculty of Student Test", schoolId);
             String departmentId = createDepartment(token, "Dept of Student Test", facultyId, schoolId);
             String programId = createProgram(token, "Program of Student Test", departmentId, facultyId);
+            String shortSuffix = suffix.substring(suffix.length() - 6);
             String levelId = createProgramLevel(token, "100L-" + suffix);
             String nextLevelId = createProgramLevel(token, "200L-" + suffix);
-            String sessionId = createAcademicSession(token, "2026/2027-" + suffix);
+            String sessionId = createAcademicSession(token, "26/27-" + shortSuffix);
 
             // --- Create a pre-student: no matricNo at all. ---
             String createBody = """

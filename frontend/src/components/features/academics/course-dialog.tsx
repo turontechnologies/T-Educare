@@ -18,12 +18,14 @@ import {
 import { useCreateCourse, useUpdateCourse } from "@/hooks/use-courses";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
+import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Course } from "@/types/course";
 
 interface CourseFormValues {
   name: string;
   code: string;
+  unit: number;
 }
 
 interface CourseDialogProps {
@@ -79,6 +81,7 @@ function CourseForm({
   const updateCourse = useUpdateCourse();
   const departments = useDepartmentsStore((state) => state.departments);
   const schools = useSchoolsStore((state) => state.schools);
+  const programLevels = useProgramLevelsStore((state) => state.programLevels);
   const activeDepartments = useMemo(
     () => departments.filter((d) => !d.archivedAt),
     [departments],
@@ -87,20 +90,28 @@ function CourseForm({
     () => schools.filter((s) => !s.archivedAt),
     [schools],
   );
+  const activeProgramLevels = useMemo(
+    () => programLevels.filter((l) => !l.archivedAt),
+    [programLevels],
+  );
 
   const [departmentId, setDepartmentId] = useState(course?.departmentId ?? "");
   const [schoolId, setSchoolId] = useState(course?.schoolId ?? "");
+  const [programLevelId, setProgramLevelId] = useState(
+    course?.programLevelId ?? "",
+  );
 
   const { register, handleSubmit, formState } = useForm<CourseFormValues>({
     defaultValues: {
       name: course?.name ?? "",
       code: course?.code ?? "",
+      unit: course?.unit ?? 3,
     },
   });
 
   const onSubmit = async (values: CourseFormValues) => {
-    if (!departmentId || !schoolId) {
-      toast.error("Select a department and school");
+    if (!departmentId || !schoolId || !programLevelId) {
+      toast.error("Select a department, school, and program level");
       return;
     }
     const code = values.code.trim();
@@ -115,7 +126,14 @@ function CourseForm({
       return;
     }
 
-    const payload = { name: values.name.trim(), code, departmentId, schoolId };
+    const payload = {
+      name: values.name.trim(),
+      code,
+      departmentId,
+      schoolId,
+      programLevelId,
+      unit: Number(values.unit),
+    };
 
     try {
       if (course) {
