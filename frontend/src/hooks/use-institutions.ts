@@ -130,8 +130,12 @@ export function useStartGracePeriod() {
       id: string;
       payload: StartGracePeriodPayload;
     }) => institutionService.startGracePeriod(id, payload),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["institutions"] });
+      // Otherwise a history dialog reopened without a full page reload can
+      // briefly show the list cached from before this mutation.
+      queryClient.invalidateQueries({ queryKey: ["license-events", id] });
+    },
   });
 }
 
@@ -145,8 +149,10 @@ export function useRenewLicense() {
       id: string;
       payload?: RenewLicensePayload;
     }) => institutionService.renewLicense(id, payload),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["institutions"] }),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["institutions"] });
+      queryClient.invalidateQueries({ queryKey: ["license-events", id] });
+    },
   });
 }
 

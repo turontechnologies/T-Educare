@@ -60,8 +60,8 @@ is hydration-only too — this closes out the entire Academics submenu,
 both backend and frontend (Sessions through Courses are all real end to
 end).
 License status — grace period, suspension, and the audit log (§4.8) is
-also real now (2026-10-08) — **backend only**, not yet wired to the
-frontend.
+also real now (2026-10-08) and wired to `/super-admin/license-manager`
+the same day.
 Everything else below (Students, Session Rollover, Staff) is
 **not implemented yet** — this file remains what to build those
 *against*.

@@ -849,6 +849,62 @@ justify-between gap-4` — not `flex-row`, which doesn't override
   revoked it, and confirmed via both a fresh page load and a direct API
   check that it was actually removed from the licensed table server-side —
   zero console/HTTP errors throughout.
+- **License status — grace period, suspension, and the audit log
+  (backend's §4.8) wired to `/super-admin/license-manager` (2026-10-08),
+  user instruction: "so now wire the frontend pls and make this full
+  fledge fixes."** New `LicenseStatus`/`LicenseEventType` types and
+  `licenseStatus`/`graceEndsAt` fields on `Institution`
+  (`types/institution.ts`), three new `institution.service.ts` calls
+  (`startGracePeriod`/`renewLicense`/`listLicenseEvents`) and matching
+  `hooks/use-institutions.ts` mutations/query
+  (`useStartGracePeriod`/`useRenewLicense`/`useLicenseEvents`) — no store
+  changes needed, `institutions.store.ts` already hydrates full
+  `Institution` objects from the real backend, so the two new fields just
+  ride along. Deliberately named the new actions "Start grace period"/
+  "Renew license" rather than anything with "revoke" in it, to avoid
+  colliding with the pre-existing, differently-scoped "Revoke license"
+  action (resets to the unlicensed Basic tier) already on this same page.
+  Added a Status column (Active/Grace Period/Suspended badge, plus a
+  days-remaining countdown while in grace) and three new kebab-menu
+  actions: "Start grace period" (new `grace-period-dialog.tsx` — reason +
+  grace-days form, defaulting to 14) shown only when `licenseStatus ===
+"ACTIVE"`, "Renew license" (plain `ConfirmDialog`) shown otherwise, and
+  "View license history" (new `license-events-dialog.tsx` — read-only,
+  newest-first, color-coded by event type) always available. Also
+  surfaced a small license-status badge on `institution-details-dialog.tsx`
+  (the one opened from the main Institutions page) for consistency,
+  hidden when status is the default `"ACTIVE"` so it stays quiet for the
+  common case. **A real bug caught and fixed during live Playwright
+  verification, not a false alarm**: `useStartGracePeriod`/
+  `useRenewLicense` only invalidated the `["institutions"]` query key, not
+  `["license-events", id]` — so reopening the history dialog right after
+  either action (without an intervening full page reload) could briefly
+  render the list cached from before the mutation, since TanStack Query
+  serves stale cached data immediately while refetching in the
+  background, and the dialog's own `enabled`-gated query was never told
+  that specific cache entry was stale. Fixed by invalidating both keys in
+  each mutation's `onSuccess`. Caught by first reaching for a test-script
+  workaround (a full `page.reload()` between actions) before realizing a
+  reload shouldn't have been necessary at all for correctness — the same
+  "don't paper over a real gap in a verification script" instinct as the
+  Course Grades `MaxGradePointForm` bug earlier in this build-out. Login
+  rejection on a suspended license needed **no frontend change at all** —
+  confirmed `useLogin()`'s `onError` already does generic
+  `error.message` passthrough (same as the existing "account
+  deactivated" message), so the backend's distinct suspended-license
+  message surfaces correctly without any special-casing. Live
+  Playwright-verified end-to-end against the real backend, 13/13 checks
+  clean: status badge starts Active, start-grace-period shows the Grace
+  Period badge + countdown + a GRACE_STARTED history entry with the real
+  reason text and "platform administrator" attribution, renew-license
+  returns it to Active with the countdown gone, and the history dialog
+  reopened immediately afterward (no reload) correctly shows the new
+  RENEWED event first — zero console errors. Backend-only verification of
+  the scheduled-sweep/`SUSPENDED` path isn't repeated here since the
+  backend's own JUnit suite already covers it directly (§4.8's "backend
+  first" segment); this frontend pass only needed to prove the
+  super-admin-triggered `start-grace-period`/`renew-license` actions and
+  history display, which don't depend on the sweep's timing.
 - **Modules (`/super-admin/modules`) is real now too, wired to the backend
   built the same day (2026-09-26)** — `config/modules.ts`'s hardcoded
   19-entry `PLATFORM_MODULES` array is gone; the catalog now comes from a
