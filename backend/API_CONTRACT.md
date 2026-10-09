@@ -1097,9 +1097,23 @@ POST /institutions/:id/renew-license
 → 200, licenseStatus = "ACTIVE", graceEndsAt = null
 ```
 
-Both are super-admin only (same gate as every other Institutions route,
-§1). `renew-license` works from either `GRACE_PERIOD` or `SUSPENDED` —
-there's no requirement to be mid-grace to renew.
+```
+POST /institutions/:id/suspend-license
+{ "reason": "Confirmed fraudulent activity." }             // reason required
+→ 200, licenseStatus = "SUSPENDED", graceEndsAt = null
+```
+
+All three are super-admin only (same gate as every other Institutions
+route, §1). `renew-license` works from either `GRACE_PERIOD` or
+`SUSPENDED` — there's no requirement to be mid-grace to renew.
+`suspend-license` (2026-10-09) is the manual, immediate-cutoff
+counterpart to `start-grace-period` — works from any current
+`licenseStatus`, with no grace window, for severe cases (fraud, etc.)
+where giving notice first isn't appropriate; its audit-log `actorId` is
+the calling super admin's real id, distinguishing it from the automated
+sweep's own `SUSPENDED` events (`actorId = "SYSTEM"`). The
+production-standard response to an ordinary payment problem is still
+`start-grace-period`, not this.
 
 A new scheduled sweep (the first `@Scheduled` job in this backend, daily,
 `LicenseSweepScheduler` → `InstitutionService.sweepExpiredGracePeriods()`)
@@ -1110,8 +1124,9 @@ directly-callable service method, not embedded in the `@Scheduled`
 method, specifically so it can be called and asserted on directly in
 tests without waiting on real wall-clock time.
 
-Every transition (`start-grace-period`, `renew-license`, and the
-scheduled sweep) appends one row to a lightweight, append-only audit
+Every transition (`start-grace-period`, `renew-license`,
+`suspend-license`, and the scheduled sweep) appends one row to a
+lightweight, append-only audit
 table — explicitly **not** full event-sourcing (current state is never
 derived by replaying this log; it's history for support purposes only),
 the same "cached current value + append-only immutable history" shape
