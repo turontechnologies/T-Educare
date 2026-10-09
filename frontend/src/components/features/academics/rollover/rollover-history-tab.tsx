@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useRolloverStore } from "@/store/rollover.store";
-import { useStudentsStore } from "@/store/students.store";
 import { RolloverReviewTable } from "./rollover-review-table";
 import type { RolloverRecord } from "@/types/rollover";
 
@@ -33,7 +32,7 @@ const dateTimeLabel = (iso: string) =>
 export function RolloverHistoryTab() {
   const records = useRolloverStore((state) => state.records);
   const sessions = useAcademicsStore((state) => state.sessions);
-  const students = useStudentsStore((state) => state.students);
+  const students = useRolloverStore((state) => state.roster);
   const [detail, setDetail] = useState<RolloverRecord | null>(null);
 
   const completed = useMemo(

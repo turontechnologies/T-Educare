@@ -18,12 +18,15 @@ import {
 } from "@/lib/rollover";
 import { fullName } from "@/lib/students";
 import { RolloverOverrideDialog } from "./rollover-override-dialog";
-import type { RolloverDecision, RolloverStudentEntry } from "@/types/rollover";
-import type { Student } from "@/types/student";
+import type {
+  RolloverDecision,
+  RolloverStudentEntry,
+  RolloverStudentProfile,
+} from "@/types/rollover";
 
 interface RolloverReviewTableProps {
   entries: RolloverStudentEntry[];
-  students: Student[];
+  students: RolloverStudentProfile[];
   /** Omit to render a read-only view (used by Rollover History's detail view). */
   onOverride?: (
     studentId: string,

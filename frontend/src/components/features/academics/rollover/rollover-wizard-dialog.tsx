@@ -20,7 +20,6 @@ import {
 } from "@/lib/rollover";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useRolloverStore } from "@/store/rollover.store";
-import { useStudentsStore } from "@/store/students.store";
 import { RolloverReviewTable } from "./rollover-review-table";
 import type { RolloverDecision, RolloverRecord } from "@/types/rollover";
 
@@ -83,7 +82,7 @@ function RolloverWizard({
   onDone: () => void;
 }) {
   const sessions = useAcademicsStore((state) => state.sessions);
-  const students = useStudentsStore((state) => state.students);
+  const students = useRolloverStore((state) => state.roster);
   const createDraft = useRolloverStore((state) => state.createDraft);
   const updateEntryDecision = useRolloverStore(
     (state) => state.updateEntryDecision,

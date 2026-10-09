@@ -1,24 +1,25 @@
-import type { RolloverDecision, RolloverStudentEntry } from "@/types/rollover";
 import type {
-  Student,
-  StudentAcademicRecord,
-  StudentLevel,
-} from "@/types/student";
+  RolloverAcademicRecord,
+  RolloverDecision,
+  RolloverStudentEntry,
+  RolloverStudentLevel,
+  RolloverStudentProfile,
+} from "@/types/rollover";
+import { ROLLOVER_STUDENT_LEVELS } from "@/types/rollover";
 
 /**
  * Only these four levels have courses defined for this seed's single
- * programme (see `students.store.ts`) — "400 Level" is treated as the
+ * programme (see `lib/rollover-seed.ts`) — "400 Level" is treated as the
  * exit level (graduation), not a step toward an unused "500 Level".
  */
-const PROGRAMME_LEVEL_ORDER: StudentLevel[] = [
-  "100 Level",
-  "200 Level",
-  "300 Level",
-  "400 Level",
+const PROGRAMME_LEVEL_ORDER: RolloverStudentLevel[] = [
+  ...ROLLOVER_STUDENT_LEVELS,
 ];
 
 /** Null means "no next level" — i.e. this is the exit level. */
-export function nextLevel(level: StudentLevel): StudentLevel | null {
+export function nextLevel(
+  level: RolloverStudentLevel,
+): RolloverStudentLevel | null {
   const index = PROGRAMME_LEVEL_ORDER.indexOf(level);
   if (index === -1 || index === PROGRAMME_LEVEL_ORDER.length - 1) return null;
   return PROGRAMME_LEVEL_ORDER[index + 1];
@@ -34,9 +35,9 @@ const REPEAT_THRESHOLD = 3;
  * original suggestion resolved to.
  */
 export function resolveToLevel(
-  fromLevel: StudentLevel,
+  fromLevel: RolloverStudentLevel,
   decision: RolloverDecision,
-): StudentLevel | null {
+): RolloverStudentLevel | null {
   if (decision === "promote" || decision === "promote-carryover") {
     return nextLevel(fromLevel);
   }
@@ -51,7 +52,9 @@ export function resolveToLevel(
  * given their latest academic record, so re-opening a rollover draft
  * always suggests the same thing until an admin overrides it.
  */
-export function computeRolloverEntry(student: Student): RolloverStudentEntry {
+export function computeRolloverEntry(
+  student: RolloverStudentProfile,
+): RolloverStudentEntry {
   const latestRecord =
     student.academicHistory[student.academicHistory.length - 1];
   const passedCourses = latestRecord.courseResults
@@ -99,10 +102,10 @@ export function computeRolloverEntry(student: Student): RolloverStudentEntry {
  * session until manually resolved in a future rollover).
  */
 export function applyRolloverToStudent(
-  student: Student,
+  student: RolloverStudentProfile,
   entry: RolloverStudentEntry,
   toSessionId: string,
-): Student {
+): RolloverStudentProfile {
   if (entry.decision === "deferred" || entry.decision === "hold") {
     return student;
   }
@@ -116,7 +119,7 @@ export function applyRolloverToStudent(
       ? student.currentLevel
       : (entry.toLevel ?? student.currentLevel);
 
-  const newRecord: StudentAcademicRecord = {
+  const newRecord: RolloverAcademicRecord = {
     sessionId: toSessionId,
     level: newLevel,
     status: entry.decision === "repeat" ? "repeat" : "current",
