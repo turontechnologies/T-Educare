@@ -1,6 +1,7 @@
 export type StudentGender = "Male" | "Female" | "Other";
 export type StudentStatus = "active" | "inactive";
-export type DisciplinaryStatus = "NONE" | "SUSPENDED" | "EXPELLED";
+export type DisciplinaryStatus =
+  "NONE" | "SUSPENDED" | "RUSTICATED" | "EXPELLED";
 
 export const STUDENT_TITLES = [
   "Mr",
@@ -46,6 +47,7 @@ export type Genotype = (typeof GENOTYPES)[number];
 
 export const DISCIPLINARY_ACTION_TYPES = [
   "SUSPENSION",
+  "RUSTICATION",
   "EXPULSION",
   "WARNING",
   "REINSTATEMENT",

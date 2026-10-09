@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { fullName } from "@/lib/students";
+import { DISCIPLINARY_STATUS_BADGE, fullName } from "@/lib/students";
 import {
   useResolveCase,
   useStudentAcademicHistory,
@@ -39,6 +39,7 @@ const RECORD_STATUS_BADGE_CLASS: Record<string, string> = {
 
 const DISCIPLINARY_BADGE_CLASS: Record<string, string> = {
   SUSPENSION: "bg-amber-500/10 text-amber-600",
+  RUSTICATION: "bg-red-500/10 text-red-600",
   EXPULSION: "bg-destructive/10 text-destructive",
   WARNING: "bg-orange-500/15 text-orange-600",
   REINSTATEMENT: "bg-emerald-500/10 text-emerald-600",
@@ -210,14 +211,14 @@ export function StudentDetailsDialog({
                     {student.disciplinaryStatus !== "NONE" && (
                       <Badge
                         className={
-                          student.disciplinaryStatus === "SUSPENDED"
-                            ? "bg-amber-500/10 text-amber-600"
-                            : "bg-destructive/10 text-destructive"
+                          DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]
+                            .className
                         }
                       >
-                        {student.disciplinaryStatus === "SUSPENDED"
-                          ? "Suspended"
-                          : "Expelled"}
+                        {
+                          DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]
+                            .label
+                        }
                       </Badge>
                     )}
                   </div>

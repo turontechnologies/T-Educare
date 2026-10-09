@@ -43,7 +43,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { StudentDetailsDialog } from "@/components/features/students/student-details-dialog";
 import { StudentDialog } from "@/components/features/students/student-dialog";
-import { fullName } from "@/lib/students";
+import { DISCIPLINARY_STATUS_BADGE, fullName } from "@/lib/students";
 import { useArchiveStudent, useRestoreStudent } from "@/hooks/use-students";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useProgramsStore } from "@/store/programs.store";
@@ -387,14 +387,14 @@ function StudentTable({
                     {student.disciplinaryStatus !== "NONE" ? (
                       <Badge
                         className={
-                          student.disciplinaryStatus === "SUSPENDED"
-                            ? "bg-amber-500/10 text-amber-600"
-                            : "bg-destructive/10 text-destructive"
+                          DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]
+                            .className
                         }
                       >
-                        {student.disciplinaryStatus === "SUSPENDED"
-                          ? "Suspended"
-                          : "Expelled"}
+                        {
+                          DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]
+                            .label
+                        }
                       </Badge>
                     ) : (
                       <Badge className="bg-emerald-500/10 text-emerald-600">

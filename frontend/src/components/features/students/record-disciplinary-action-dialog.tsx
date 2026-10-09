@@ -23,10 +23,11 @@ import {
 
 const ACTION_OPTIONS: { label: string; value: DisciplinaryActionType }[] = [
   { label: "Suspension", value: "SUSPENSION" },
+  { label: "Rustication", value: "RUSTICATION" },
   { label: "Expulsion", value: "EXPULSION" },
   { label: "Warning", value: "WARNING" },
   {
-    label: "Reinstatement (lift suspension/expulsion)",
+    label: "Reinstatement (lift suspension/rustication/expulsion)",
     value: "REINSTATEMENT",
   },
 ];
@@ -138,7 +139,9 @@ function RecordDisciplinaryActionForm({
         <Button
           type="button"
           variant={
-            actionType === "SUSPENSION" || actionType === "EXPULSION"
+            actionType === "SUSPENSION" ||
+            actionType === "RUSTICATION" ||
+            actionType === "EXPULSION"
               ? "destructive"
               : "default"
           }

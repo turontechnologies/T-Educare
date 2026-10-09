@@ -37,7 +37,7 @@ public class StudentService {
     private static final Set<String> STATUSES = Set.of("active", "inactive");
     private static final Set<String> RECORD_STATUSES = Set.of("completed", "current", "repeat");
     private static final Set<String> DISCIPLINARY_ACTION_TYPES =
-            Set.of("SUSPENSION", "EXPULSION", "WARNING", "REINSTATEMENT");
+            Set.of("SUSPENSION", "RUSTICATION", "EXPULSION", "WARNING", "REINSTATEMENT");
     private static final Set<String> CASE_STATUSES = Set.of("open", "resolved", "dismissed");
 
     private final StudentRepository repository;
@@ -413,12 +413,15 @@ public class StudentService {
 
         if (!DISCIPLINARY_ACTION_TYPES.contains(request.actionType())) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "actionType must be SUSPENSION, EXPULSION, WARNING, or REINSTATEMENT.");
+                    HttpStatus.BAD_REQUEST,
+                    "actionType must be SUSPENSION, RUSTICATION, EXPULSION, WARNING, or REINSTATEMENT.");
         }
 
         // A WARNING doesn't change standing — only SUSPENSION/EXPULSION/REINSTATEMENT do.
         if ("SUSPENSION".equals(request.actionType())) {
             student.setDisciplinaryStatus("SUSPENDED");
+        } else if ("RUSTICATION".equals(request.actionType())) {
+            student.setDisciplinaryStatus("RUSTICATED");
         } else if ("EXPULSION".equals(request.actionType())) {
             student.setDisciplinaryStatus("EXPELLED");
         } else if ("REINSTATEMENT".equals(request.actionType())) {
