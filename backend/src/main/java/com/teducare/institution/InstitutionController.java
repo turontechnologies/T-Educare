@@ -149,6 +149,15 @@ public class InstitutionController {
         return institutionService.renewLicense(id, caller.id(), request == null ? new RenewLicenseRequest(null) : request);
     }
 
+    @PostMapping("/institutions/{id}/suspend-license")
+    public InstitutionResponse suspendLicense(
+            Authentication authentication,
+            @PathVariable String id,
+            @Valid @RequestBody SuspendLicenseRequest request) {
+        AuthenticatedUserDto caller = requireSuperAdminCaller(authentication);
+        return institutionService.suspendLicense(id, caller.id(), request);
+    }
+
     @GetMapping("/institutions/{id}/license-events")
     public List<InstitutionLicenseEventResponse> listLicenseEvents(
             Authentication authentication, @PathVariable String id) {

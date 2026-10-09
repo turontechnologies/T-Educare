@@ -330,13 +330,26 @@ public class InstitutionService {
         return Map.of("licenseKey", newKey);
     }
 
-    /** Resets to the unlicensed defaults — does not archive or delete the institution itself. */
+    /**
+     * Resets to the unlicensed defaults — does not archive or delete the
+     * institution itself. Also resets licenseStatus/graceEndsAt back to the
+     * unlicensed-Basic baseline (§4.8) — there's no sensible "this free-tier
+     * institution is suspended/in grace" state, so an institution that was
+     * GRACE_PERIOD or SUSPENDED when revoked doesn't stay locked out after
+     * its license was just reset to clean. Does NOT record a RENEWED event
+     * in the license-events audit log — that log is specifically about
+     * licenseStatus transitions driven by start-grace-period/renew-license/
+     * the sweep, not every mutation that happens to touch these fields as a
+     * side effect.
+     */
     public InstitutionResponse revokeLicense(String id) {
         Institution institution = requireInstitution(id);
         institution.setLicenseType("Basic");
         institution.setLicenseKey(null);
         institution.setExpiringAt(null);
         institution.setLicenseIssuedAt(null);
+        institution.setLicenseStatus("ACTIVE");
+        institution.setGraceEndsAt(null);
         Institution saved = repository.save(institution);
 
         notificationService.notifyPlatform(
@@ -404,6 +417,35 @@ public class InstitutionService {
                 saved.getId(),
                 "Your license was renewed",
                 "Your institution's license is active again.",
+                null);
+        return InstitutionResponse.from(saved);
+    }
+
+    /**
+     * Transitions directly to SUSPENDED, from any current licenseStatus,
+     * with no grace window — the manual, immediate-cutoff counterpart to
+     * start-grace-period, for severe cases (fraud, etc.) where giving
+     * notice first isn't appropriate. actorId here is the calling super
+     * admin's real id, distinguishing this event from the automated
+     * sweep's own SUSPENDED events (actorId "SYSTEM").
+     */
+    public InstitutionResponse suspendLicense(String id, String actorId, SuspendLicenseRequest request) {
+        Institution institution = requireInstitution(id);
+
+        institution.setLicenseStatus("SUSPENDED");
+        institution.setGraceEndsAt(null);
+        Institution saved = repository.save(institution);
+
+        recordLicenseEvent(saved.getId(), "SUSPENDED", request.reason(), actorId, null);
+
+        notificationService.notifyPlatform(
+                "Institution license suspended",
+                saved.getName() + "'s license was suspended immediately.",
+                SUPER_ADMIN_HREF);
+        notificationService.notifyInstitution(
+                saved.getId(),
+                "Your license was suspended",
+                "Your institution's license was suspended by the platform administrator.",
                 null);
         return InstitutionResponse.from(saved);
     }

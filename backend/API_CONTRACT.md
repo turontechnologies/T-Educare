@@ -1127,6 +1127,18 @@ GET /institutions/:id/license-events
 `actorId` is the calling super admin's id, or `"SYSTEM"` for the
 automated sweep.
 
+**Interaction with `POST /institutions/:id/revoke-license` (4.7.2)**:
+revoking also resets `licenseStatus` to `"ACTIVE"` and clears
+`graceEndsAt` (2026-10-09 fix) — an institution reset to the unlicensed
+Basic tier must never stay stuck `GRACE_PERIOD`/`SUSPENDED` from
+whatever paid tier it had before. This does **not** append a
+`license-events` row — that log is specifically for transitions driven
+by `start-grace-period`/`renew-license`/the sweep, not every mutation
+that happens to touch these two fields as a side effect. Conceptually,
+`revoke-license` is an administrative reset ("unassign this license"),
+not the production-standard response to a payment problem — that's
+`start-grace-period`, which gives notice before anything locks out.
+
 ---
 
 ## 5. Roles — institution admin, scoped to their own institution

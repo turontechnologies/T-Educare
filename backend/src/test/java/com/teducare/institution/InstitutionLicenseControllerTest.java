@@ -147,9 +147,76 @@ class InstitutionLicenseControllerTest {
                 .content("{}"))
                 .andExpect(status().isForbidden());
 
+        mockMvc.perform(post("/api/institutions/inst-ahmadubellouniversit-1/suspend-license")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Fraud investigation.\"}"))
+                .andExpect(status().isForbidden());
+
         mockMvc.perform(get("/api/institutions/inst-ahmadubellouniversit-1/license-events")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void suspendLicenseIsImmediateFromActiveAndDistinguishesItselfFromTheAutomatedSweep() throws Exception {
+        String token = loginAs("super_admin", "Super@2024");
+        String id = createInstitution(token, "Immediate Suspend University", "admin@immediatesuspend.edu.ng");
+
+        try {
+            mockMvc.perform(post("/api/institutions/" + id + "/suspend-license")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"reason\":\"Fraud investigation.\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.licenseStatus").value("SUSPENDED"))
+                    .andExpect(jsonPath("$.graceEndsAt").doesNotExist());
+
+            mockMvc.perform(post("/api/institutions/" + id + "/suspend-license")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"reason\":\"\"}"))
+                    .andExpect(status().isBadRequest());
+
+            mockMvc.perform(get("/api/institutions/" + id + "/license-events")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].eventType").value("SUSPENDED"))
+                    .andExpect(jsonPath("$[0].reason").value("Fraud investigation."))
+                    .andExpect(jsonPath("$[0].actorId").value(org.hamcrest.Matchers.not("SYSTEM")));
+        } finally {
+            mockMvc.perform(post("/api/institutions/" + id + "/archive")
+                    .header("Authorization", "Bearer " + token));
+        }
+    }
+
+    @Test
+    void revokingLicenseResetsLicenseStatusBackToActiveEvenFromSuspended() throws Exception {
+        String token = loginAs("super_admin", "Super@2024");
+        String id = createInstitution(token, "Revoke Reset University", "admin@revokereset.edu.ng");
+
+        try {
+            mockMvc.perform(post("/api/institutions/" + id + "/start-grace-period")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"reason\":\"Payment default.\"}"))
+                    .andExpect(status().isOk());
+
+            Institution institution = institutionRepository.findById(id).orElseThrow();
+            institution.setLicenseStatus("SUSPENDED");
+            institution.setGraceEndsAt(null);
+            institutionRepository.save(institution);
+
+            mockMvc.perform(post("/api/institutions/" + id + "/revoke-license")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.licenseType").value("Basic"))
+                    .andExpect(jsonPath("$.licenseStatus").value("ACTIVE"))
+                    .andExpect(jsonPath("$.graceEndsAt").doesNotExist());
+        } finally {
+            mockMvc.perform(post("/api/institutions/" + id + "/archive")
+                    .header("Authorization", "Bearer " + token));
+        }
     }
 
     private String createInstitution(String token, String name, String adminEmail) throws Exception {
