@@ -257,7 +257,8 @@ class CourseRegistrationControllerTest {
                          "bloodGroup":"O+","genotype":"AA","weightKg":68.5,"heightCm":175.0,
                          "nationality":"Nigerian","stateOfOrigin":"Anambra","lga":"Awka North",
                          "residentAddress":"12 Unity Road","schoolId":"%s","facultyId":"%s",
-                         "departmentId":"%s","programId":"%s","programLevelId":"%s","currentSessionId":"%s"}
+                         "departmentId":"%s","programId":"%s","programLevelId":"%s","currentSessionId":"%s",
+                         "admissionMode":"UTME"}
                         """.formatted(emailPrefix, schoolId, facultyId, departmentId, programId, programLevelId, sessionId)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();

@@ -54,7 +54,8 @@ class StudentControllerTest {
                      "residentAddress":"12 Unity Road","schoolId":"%s","facultyId":"%s",
                      "departmentId":"%s","programId":"%s","programLevelId":"%s","currentSessionId":"%s",
                      "allergies":"Penicillin","chronicConditions":"Asthma",
-                     "physicianName":"Dr. Ade","physicianPhone":"08055556666"}
+                     "physicianName":"Dr. Ade","physicianPhone":"08055556666",
+                     "admissionMode":"DIRECT_ENTRY","jambRegNumber":"12345678AB"}
                     """.formatted(suffix, schoolId, facultyId, departmentId, programId, levelId, sessionId);
 
             String createResponse = mockMvc.perform(post("/api/students")
@@ -66,8 +67,31 @@ class StudentControllerTest {
                     .andExpect(jsonPath("$.firstName").value("Chinedu"))
                     .andExpect(jsonPath("$.disciplinaryStatus").value("NONE"))
                     .andExpect(jsonPath("$.allergies").value("Penicillin"))
+                    .andExpect(jsonPath("$.admissionMode").value("DIRECT_ENTRY"))
+                    .andExpect(jsonPath("$.jambRegNumber").value("12345678AB"))
+                    .andExpect(jsonPath("$.preAdmissionId").value(org.hamcrest.Matchers.startsWith("PRE-")))
                     .andReturn().getResponse().getContentAsString();
             String studentId = createResponse.split("\"id\":\"")[1].split("\"")[0];
+            String preAdmissionId = createResponse.split("\"preAdmissionId\":\"")[1].split("\"")[0];
+
+            // Invalid admissionMode rejected.
+            mockMvc.perform(post("/api/students")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(createBody.replace("\"admissionMode\":\"DIRECT_ENTRY\"", "\"admissionMode\":\"BOGUS\"")))
+                    .andExpect(status().isBadRequest());
+
+            // A pre-student (no matricNo yet) is findable by their auto-generated preAdmissionId.
+            mockMvc.perform(get("/api/students?search=" + preAdmissionId)
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].firstName").value("Chinedu"));
+
+            // ...and by their JAMB reg number.
+            mockMvc.perform(get("/api/students?search=12345678AB")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].firstName").value("Chinedu"));
 
             // Bad FK (programId from nowhere) rejected.
             mockMvc.perform(post("/api/students")
