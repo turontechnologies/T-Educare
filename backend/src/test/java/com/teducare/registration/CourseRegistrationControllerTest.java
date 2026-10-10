@@ -147,6 +147,120 @@ class CourseRegistrationControllerTest {
         }
     }
 
+    @Test
+    void semesterMismatchBorrowedCoursesAndElectiveGroupsAreEnforced() throws Exception {
+        String superToken = loginAs("super_admin", "Super@2024");
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String institutionId = createInstitution(superToken, "Course Reg Test University 2 " + suffix);
+        String username = "coursereg2_admin_" + suffix;
+        String userManagerId = null;
+
+        try {
+            userManagerId = createUserManager(superToken, institutionId, username, "coursereg2_" + suffix);
+            String token = loginAs(username, "CourseRegTest@2026");
+
+            String schoolId = createSchool(token, "School of Course Reg Test 2");
+            String facultyId = createFaculty(token, "Faculty of Course Reg Test 2", schoolId);
+            String homeDeptId = createDepartment(token, "Home Dept of Course Reg Test 2", facultyId, schoolId);
+            String borrowingDeptId =
+                    createDepartment(token, "Borrowing Dept of Course Reg Test 2", facultyId, schoolId);
+            String programId = createProgram(token, "Program of Course Reg Test 2", borrowingDeptId, facultyId);
+            String shortSuffix = suffix.substring(suffix.length() - 6);
+            String levelId = createProgramLevel(token, "1L2-" + shortSuffix);
+            String sessionId = createAcademicSession(token, "27/28-" + shortSuffix);
+            String firstSemesterId =
+                    createAcademicSemester(token, sessionId, "First Semester CR2 " + suffix, 1);
+            String secondSemesterId =
+                    createAcademicSemester(token, sessionId, "Second Semester CR2 " + suffix, 2);
+
+            // A 2nd-semester course, owned by a different ("home") department.
+            String borrowedCourseId = createCourse(
+                    token, "Borrowed Course", "BOR201-" + suffix, homeDeptId, levelId, 3, 2);
+            // Two elective options for the borrowing department, both 1st-semester.
+            String electiveAId =
+                    createCourse(token, "Elective A", "ELA101-" + suffix, borrowingDeptId, levelId, 2, 1);
+            String electiveBId =
+                    createCourse(token, "Elective B", "ELB101-" + suffix, borrowingDeptId, levelId, 2, 1);
+
+            String studentId = createStudent(
+                    token, "amaka.cr2." + suffix, schoolId, facultyId, borrowingDeptId, programId, levelId,
+                    sessionId);
+
+            // --- Without a borrowed offering, the borrowing department cannot register the home-owned course. ---
+            mockMvc.perform(put("/api/course-registrations")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"studentId\":\"" + studentId + "\",\"academicSemesterId\":\"" + secondSemesterId
+                            + "\",\"courseIds\":[\"" + borrowedCourseId + "\"]}"))
+                    .andExpect(status().isBadRequest());
+
+            // --- Grant the borrowing department an offering, with its own (lower) unit override. ---
+            mockMvc.perform(post("/api/courses/" + borrowedCourseId + "/offerings")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"departmentId\":\"" + borrowingDeptId + "\",\"unitOverride\":2,\"compulsory\":true}"))
+                    .andExpect(status().isCreated());
+
+            // --- Registering it in the WRONG (1st) semester instance is rejected — it's a 2nd-semester course. ---
+            mockMvc.perform(put("/api/course-registrations")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"studentId\":\"" + studentId + "\",\"academicSemesterId\":\"" + firstSemesterId
+                            + "\",\"courseIds\":[\"" + borrowedCourseId + "\"]}"))
+                    .andExpect(status().isBadRequest());
+
+            // --- Registering it in the correct (2nd) semester instance succeeds, using the borrowed unit override (2, not the home department's 3). ---
+            mockMvc.perform(put("/api/course-registrations")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"studentId\":\"" + studentId + "\",\"academicSemesterId\":\"" + secondSemesterId
+                            + "\",\"courseIds\":[\"" + borrowedCourseId + "\"]}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].unitSnapshot").value(2));
+
+            // --- Elective group: this department+level must choose exactly one of Elective A / Elective B. ---
+            mockMvc.perform(post("/api/elective-groups")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"departmentId\":\"" + borrowingDeptId + "\",\"programLevelId\":\"" + levelId
+                            + "\",\"name\":\"CR2 Elective Group\",\"minSelect\":1,\"maxSelect\":1,\"courseIds\":[\""
+                            + electiveAId + "\",\"" + electiveBId + "\"]}"))
+                    .andExpect(status().isCreated());
+
+            // --- Registering neither elective course is rejected. ---
+            mockMvc.perform(put("/api/course-registrations")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"studentId\":\"" + studentId + "\",\"academicSemesterId\":\"" + firstSemesterId
+                            + "\",\"courseIds\":[]}"))
+                    .andExpect(status().isBadRequest());
+
+            // --- Registering BOTH elective courses (exceeds maxSelect=1) is rejected. ---
+            mockMvc.perform(put("/api/course-registrations")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"studentId\":\"" + studentId + "\",\"academicSemesterId\":\"" + firstSemesterId
+                            + "\",\"courseIds\":[\"" + electiveAId + "\",\"" + electiveBId + "\"]}"))
+                    .andExpect(status().isBadRequest());
+
+            // --- Registering exactly one of them satisfies the group. ---
+            mockMvc.perform(put("/api/course-registrations")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"studentId\":\"" + studentId + "\",\"academicSemesterId\":\"" + firstSemesterId
+                            + "\",\"courseIds\":[\"" + electiveAId + "\"]}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(1));
+        } finally {
+            if (userManagerId != null) {
+                mockMvc.perform(post("/api/user-managers/" + userManagerId + "/archive")
+                        .header("Authorization", "Bearer " + superToken));
+            }
+            mockMvc.perform(post("/api/institutions/" + institutionId + "/archive")
+                    .header("Authorization", "Bearer " + superToken));
+        }
+    }
+
     private String createSchool(String token, String name) throws Exception {
         String response = mockMvc.perform(post("/api/schools")
                 .header("Authorization", "Bearer " + token)
