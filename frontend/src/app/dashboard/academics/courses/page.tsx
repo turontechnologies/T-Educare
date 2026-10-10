@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Share2,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -40,6 +41,8 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { CourseDialog } from "@/components/features/academics/course-dialog";
+import { CourseOfferingsDialog } from "@/components/features/academics/course-offerings-dialog";
+import { ElectiveGroupsDialog } from "@/components/features/academics/elective-groups-dialog";
 import {
   useArchiveCourse,
   useExportCourses,
@@ -57,6 +60,9 @@ const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 export default function CoursesManagementPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | undefined>();
+  const [offeringsCourse, setOfferingsCourse] = useState<Course | undefined>();
+  const [offeringsOpen, setOfferingsOpen] = useState(false);
+  const [electiveGroupsOpen, setElectiveGroupsOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -80,6 +86,14 @@ export default function CoursesManagementPage() {
             Add New
           </Button>
           <ImportExportButtons />
+          <Button
+            variant="outline"
+            className="gap-1.5 rounded-md"
+            onClick={() => setElectiveGroupsOpen(true)}
+          >
+            <Share2 className="size-4" />
+            Elective Groups
+          </Button>
         </div>
 
         <div className="mt-6">
@@ -87,6 +101,10 @@ export default function CoursesManagementPage() {
             onEdit={(course) => {
               setEditingCourse(course);
               setDialogOpen(true);
+            }}
+            onManageOfferings={(course) => {
+              setOfferingsCourse(course);
+              setOfferingsOpen(true);
             }}
           />
         </div>
@@ -96,6 +114,15 @@ export default function CoursesManagementPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         course={editingCourse}
+      />
+      <CourseOfferingsDialog
+        open={offeringsOpen}
+        onOpenChange={setOfferingsOpen}
+        course={offeringsCourse}
+      />
+      <ElectiveGroupsDialog
+        open={electiveGroupsOpen}
+        onOpenChange={setElectiveGroupsOpen}
       />
     </div>
   );
@@ -173,7 +200,13 @@ function ImportExportButtons() {
   );
 }
 
-function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
+function CourseTable({
+  onEdit,
+  onManageOfferings,
+}: {
+  onEdit: (course: Course) => void;
+  onManageOfferings: (course: Course) => void;
+}) {
   const courses = useCoursesStore((state) => state.courses);
   const archiveCourse = useArchiveCourse();
   const restoreCourse = useRestoreCourse();
@@ -297,6 +330,7 @@ function CourseTable({ onEdit }: { onEdit: (course: Course) => void }) {
                 <TableHead>School</TableHead>
                 <TableHead>Level</TableHead>
                 <TableHead>Unit</TableHead>
+                <TableHead>Semester</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>

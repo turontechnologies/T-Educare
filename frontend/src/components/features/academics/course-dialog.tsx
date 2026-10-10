@@ -108,6 +108,9 @@ function CourseForm({
     course?.programLevelId ?? "",
   );
   const [lecturerId, setLecturerId] = useState(course?.lecturerId ?? "");
+  const [semesterNumber, setSemesterNumber] = useState<"1" | "2" | "">(
+    course ? (String(course.semesterNumber) as "1" | "2") : "",
+  );
 
   const { register, handleSubmit, formState } = useForm<CourseFormValues>({
     defaultValues: {
@@ -120,6 +123,10 @@ function CourseForm({
   const onSubmit = async (values: CourseFormValues) => {
     if (!departmentId || !schoolId || !programLevelId) {
       toast.error("Select a department, school, and program level");
+      return;
+    }
+    if (!semesterNumber) {
+      toast.error("Select whether this is a 1st or 2nd semester course");
       return;
     }
     const code = values.code.trim();
@@ -141,6 +148,7 @@ function CourseForm({
       schoolId,
       programLevelId,
       unit: Number(values.unit),
+      semesterNumber: Number(semesterNumber) as 1 | 2,
       lecturerId,
     };
 
@@ -216,6 +224,17 @@ function CourseForm({
           min={1}
           max={10}
           {...register("unit", { required: true, valueAsNumber: true })}
+        />
+        <NotchedSelectField
+          label="Semester Number"
+          labelClassName="bg-popover"
+          value={semesterNumber}
+          onValueChange={(value) => setSemesterNumber(value as "1" | "2")}
+          options={[
+            { label: "1st Semester", value: "1" },
+            { label: "2nd Semester", value: "2" },
+          ]}
+          placeholder="Select semester number"
         />
         <NotchedSelectField
           label="Lecturer (optional)"
