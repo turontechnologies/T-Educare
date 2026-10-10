@@ -359,6 +359,9 @@ function CourseTable({
                   <TableCell className="text-muted-foreground">
                     {course.unit}
                   </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {course.semesterNumber === 2 ? "2nd" : "1st"}
+                  </TableCell>
                   <TableCell className="text-right">
                     {view === "active" ? (
                       <DropdownMenu>
@@ -372,6 +375,12 @@ function CourseTable({
                           <DropdownMenuItem onClick={() => onEdit(course)}>
                             <Pencil className="size-3.5" />
                             Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onManageOfferings(course)}
+                          >
+                            <Share2 className="size-3.5" />
+                            Manage Borrowing
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -410,7 +419,7 @@ function CourseTable({
               {paginated.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className="py-10 text-center text-muted-foreground"
                   >
                     {view === "archived"
