@@ -1,3 +1,19 @@
-docker: Error response from daemon: the working directory 'C:/Program Files/Git/workspace' is invalid, it needs to be an absolute path
+Unable to find image 'maven:3.9-eclipse-temurin-21' locally
+3.9-eclipse-temurin-21: Pulling from library/maven
+edd1ed89f0d4: Pulling fs layer
+49cf9009e0af: Pulling fs layer
+c5b9275bc0db: Pulling fs layer
+f1408710f65c: Pulling fs layer
+07bad0cccfa1: Pulling fs layer
+1bf7f7b7d02f: Pulling fs layer
+bd0bb49686d3: Pulling fs layer
+a466b9e11010: Pulling fs layer
+405aa165b3ac: Pulling fs layer
+9ba33060581d: Download complete
+49cf9009e0af: Download complete
+9cf53e23c096: Download complete
+1bf7f7b7d02f: Download complete
+f1408710f65c: Download complete
+docker: failed to copy: httpReadSeeker: failed open: failed to authorize: failed to fetch anonymous token: Get "https://auth.docker.io/token?scope=repository%3Alibrary%2Fmaven%3Apull&service=registry.docker.io": dialing auth.docker.io:443 container via direct connection because Docker Desktop has no HTTPS proxy: connecting to auth.docker.io:443: dial tcp: lookup auth.docker.io: no such host
 
 Run 'docker run --help' for more information
