@@ -87,53 +87,64 @@ export default function UserManagementPage() {
         </p>
       </div>
 
-      <section>
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Roles</h2>
-          <Button
-            className="gap-1.5 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.98]"
-            onClick={() => {
-              setEditingRole(undefined);
-              setRoleDialogOpen(true);
-            }}
-          >
-            <Plus className="size-4" />
-            Create Role
-          </Button>
-        </div>
-        <div className="mt-4">
-          <RolesTable
-            onEdit={(role) => {
-              setEditingRole(role);
-              setRoleDialogOpen(true);
-            }}
-          />
-        </div>
-      </section>
+      <Tabs defaultValue="roles">
+        <TabsList variant="line">
+          <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+        </TabsList>
 
-      <section>
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Users</h2>
-          <Button
-            className="gap-1.5 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.98]"
-            onClick={() => {
-              setEditingUser(undefined);
-              setUserDialogOpen(true);
-            }}
-          >
-            <Plus className="size-4" />
-            Add User
-          </Button>
-        </div>
-        <div className="mt-4">
-          <UsersTable
-            onEdit={(user) => {
-              setEditingUser(user);
-              setUserDialogOpen(true);
-            }}
-          />
-        </div>
-      </section>
+        <TabsContent
+          value="roles"
+          className="animate-in fade-in slide-in-from-bottom-1 mt-4 duration-300"
+        >
+          <div className="flex justify-end">
+            <Button
+              className="gap-1.5 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              onClick={() => {
+                setEditingRole(undefined);
+                setRoleDialogOpen(true);
+              }}
+            >
+              <Plus className="size-4" />
+              Create Role
+            </Button>
+          </div>
+          <div className="mt-4">
+            <RolesTable
+              onEdit={(role) => {
+                setEditingRole(role);
+                setRoleDialogOpen(true);
+              }}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent
+          value="users"
+          className="animate-in fade-in slide-in-from-bottom-1 mt-4 duration-300"
+        >
+          <div className="flex justify-end">
+            <Button
+              className="gap-1.5 rounded-full transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              onClick={() => {
+                setEditingUser(undefined);
+                setUserDialogOpen(true);
+              }}
+            >
+              <Plus className="size-4" />
+              Add User
+            </Button>
+          </div>
+          <div className="mt-4">
+            <UsersTable
+              onEdit={(user) => {
+                setEditingUser(user);
+                setUserDialogOpen(true);
+              }}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <RoleDialog
         open={roleDialogOpen}
