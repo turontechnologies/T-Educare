@@ -25,19 +25,24 @@ public class StaffMemberService {
 
     private static final Set<String> GENDERS = Set.of("Male", "Female", "Other");
     private static final Set<String> MARITAL_STATUSES = Set.of("Single", "Married", "Divorced", "Widowed");
+    private static final Set<String> DISCIPLINARY_ACTION_TYPES =
+            Set.of("WARNING", "QUERY", "SUSPENSION", "TERMINATION", "REINSTATEMENT");
 
     private final StaffMemberRepository repository;
     private final StaffQualificationRepository qualificationRepository;
+    private final StaffDisciplinaryRecordRepository disciplinaryRecordRepository;
     private final DepartmentService departmentService;
     private final StaffDesignationService designationService;
 
     public StaffMemberService(
             StaffMemberRepository repository,
             StaffQualificationRepository qualificationRepository,
+            StaffDisciplinaryRecordRepository disciplinaryRecordRepository,
             DepartmentService departmentService,
             StaffDesignationService designationService) {
         this.repository = repository;
         this.qualificationRepository = qualificationRepository;
+        this.disciplinaryRecordRepository = disciplinaryRecordRepository;
         this.departmentService = departmentService;
         this.designationService = designationService;
     }
@@ -92,6 +97,7 @@ public class StaffMemberService {
                 request.avatarUrl(),
                 request.salaryAmount(),
                 request.salaryCurrency(),
+                "NONE",
                 Instant.now(),
                 null);
         return StaffMemberResponse.from(repository.save(staff));
@@ -177,6 +183,45 @@ public class StaffMemberService {
         StaffMember staff = requireOwnStaffMember(institutionId, id);
         staff.setArchivedAt(null);
         return StaffMemberResponse.from(repository.save(staff));
+    }
+
+    public StaffDisciplinaryRecordResponse recordDisciplinaryAction(
+            String institutionId, String staffId, String actorId, RecordStaffDisciplinaryActionRequest request) {
+        StaffMember staff = requireOwnStaffMember(institutionId, staffId);
+
+        if (!DISCIPLINARY_ACTION_TYPES.contains(request.actionType())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "actionType must be WARNING, QUERY, SUSPENSION, TERMINATION, or REINSTATEMENT.");
+        }
+
+        // WARNING/QUERY are logged but don't change standing — only SUSPENSION/TERMINATION/REINSTATEMENT do.
+        if ("SUSPENSION".equals(request.actionType())) {
+            staff.setDisciplinaryStatus("SUSPENDED");
+        } else if ("TERMINATION".equals(request.actionType())) {
+            staff.setDisciplinaryStatus("TERMINATED");
+        } else if ("REINSTATEMENT".equals(request.actionType())) {
+            staff.setDisciplinaryStatus("NONE");
+        }
+        repository.save(staff);
+
+        StaffDisciplinaryRecord record = new StaffDisciplinaryRecord(
+                "staffdisc-" + UUID.randomUUID(),
+                staffId,
+                request.actionType(),
+                request.reason(),
+                request.startDate(),
+                request.endDate(),
+                actorId,
+                Instant.now());
+        return StaffDisciplinaryRecordResponse.from(disciplinaryRecordRepository.save(record));
+    }
+
+    public List<StaffDisciplinaryRecordResponse> listDisciplinaryRecords(String institutionId, String staffId) {
+        requireOwnStaffMember(institutionId, staffId);
+        return disciplinaryRecordRepository.findByStaffIdOrderByCreatedAtDesc(staffId).stream()
+                .map(StaffDisciplinaryRecordResponse::from)
+                .toList();
     }
 
     public List<StaffQualificationResponse> listQualifications(String institutionId, String staffId) {
@@ -289,6 +334,7 @@ public class StaffMemberService {
                     null,
                     null,
                     null,
+                    "NONE",
                     Instant.now(),
                     null);
             repository.save(staff);

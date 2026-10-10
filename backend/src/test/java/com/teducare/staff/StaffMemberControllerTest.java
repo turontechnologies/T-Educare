@@ -159,6 +159,50 @@ class StaffMemberControllerTest {
                     .andReturn().getResponse().getContentAsString();
             assertFalse(listForB.contains(staffId));
 
+            // Disciplinary: invalid actionType rejected.
+            mockMvc.perform(post("/api/staff-members/" + staffId + "/disciplinary-records")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"actionType\":\"BOGUS\",\"reason\":\"test\"}"))
+                    .andExpect(status().isBadRequest());
+
+            // A WARNING is logged but doesn't change standing.
+            mockMvc.perform(post("/api/staff-members/" + staffId + "/disciplinary-records")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"actionType\":\"WARNING\",\"reason\":\"Late to three consecutive lectures\"}"))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.actionType").value("WARNING"));
+            mockMvc.perform(get("/api/staff-members/" + staffId)
+                    .header("Authorization", "Bearer " + tokenA))
+                    .andExpect(jsonPath("$.disciplinaryStatus").value("NONE"));
+
+            // A SUSPENSION changes standing; REINSTATEMENT clears it.
+            mockMvc.perform(post("/api/staff-members/" + staffId + "/disciplinary-records")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"actionType\":\"SUSPENSION\",\"reason\":\"Unauthorized absence\"}"))
+                    .andExpect(status().isCreated());
+            mockMvc.perform(get("/api/staff-members/" + staffId)
+                    .header("Authorization", "Bearer " + tokenA))
+                    .andExpect(jsonPath("$.disciplinaryStatus").value("SUSPENDED"));
+            mockMvc.perform(post("/api/staff-members/" + staffId + "/disciplinary-records")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"actionType\":\"REINSTATEMENT\",\"reason\":\"Investigation concluded\"}"))
+                    .andExpect(status().isCreated());
+            mockMvc.perform(get("/api/staff-members/" + staffId)
+                    .header("Authorization", "Bearer " + tokenA))
+                    .andExpect(jsonPath("$.disciplinaryStatus").value("NONE"));
+
+            String disciplinaryHistory = mockMvc.perform(get("/api/staff-members/" + staffId + "/disciplinary-records")
+                    .header("Authorization", "Bearer " + tokenA))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertTrue(disciplinaryHistory.contains("WARNING"));
+            assertTrue(disciplinaryHistory.contains("SUSPENSION"));
+            assertTrue(disciplinaryHistory.contains("REINSTATEMENT"));
+
             // CSV import: one valid row, one duplicate-staffId row, one bad-FK row.
             String csv = "staffId,roleId,designationId,departmentId,gender,firstName,middleName,lastName,otherName,"
                     + "maritalStatus,email,phone,emergencyContact,dateOfBirth,employmentStartDate,contactAddress\n"

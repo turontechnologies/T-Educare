@@ -77,6 +77,21 @@ public class StaffMemberController {
         return service.restore(requireInstitutionId(authentication), id);
     }
 
+    @GetMapping("/{id}/disciplinary-records")
+    public List<StaffDisciplinaryRecordResponse> disciplinaryRecords(
+            Authentication authentication, @PathVariable String id) {
+        return service.listDisciplinaryRecords(requireInstitutionId(authentication), id);
+    }
+
+    @PostMapping("/{id}/disciplinary-records")
+    public StaffDisciplinaryRecordResponse recordDisciplinaryAction(
+            Authentication authentication,
+            @PathVariable String id,
+            @Valid @RequestBody RecordStaffDisciplinaryActionRequest request) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        return service.recordDisciplinaryAction(caller.institutionId(), id, caller.id(), request);
+    }
+
     @GetMapping("/{id}/qualifications")
     public List<StaffQualificationResponse> qualifications(Authentication authentication, @PathVariable String id) {
         return service.listQualifications(requireInstitutionId(authentication), id);
@@ -125,6 +140,10 @@ public class StaffMemberController {
     }
 
     private String requireInstitutionId(Authentication authentication) {
+        return requireCaller(authentication).institutionId();
+    }
+
+    private AuthenticatedUserDto requireCaller(Authentication authentication) {
         if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
         }
@@ -136,6 +155,6 @@ public class StaffMemberController {
         if (!"institution_admin".equals(caller.role()) || caller.institutionId() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Institution admin access required.");
         }
-        return caller.institutionId();
+        return caller;
     }
 }

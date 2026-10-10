@@ -86,6 +86,10 @@ public class StaffMember {
     @Column(name = "salary_currency", length = 10)
     private String salaryCurrency;
 
+    /** "NONE" | "SUSPENDED" | "TERMINATED" — cached current standing; WARNING/QUERY are logged to history without flipping this (same "a warning doesn't change standing" rule Student's disciplinaryStatus follows). {@link StaffDisciplinaryRecord} is the append-only full history. */
+    @Column(name = "disciplinary_status", nullable = false, length = 20)
+    private String disciplinaryStatus;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -117,6 +121,7 @@ public class StaffMember {
             String avatarUrl,
             BigDecimal salaryAmount,
             String salaryCurrency,
+            String disciplinaryStatus,
             Instant createdAt,
             Instant archivedAt) {
         this.id = id;
@@ -140,6 +145,7 @@ public class StaffMember {
         this.avatarUrl = avatarUrl;
         this.salaryAmount = salaryAmount;
         this.salaryCurrency = salaryCurrency;
+        this.disciplinaryStatus = disciplinaryStatus;
         this.createdAt = createdAt;
         this.archivedAt = archivedAt;
     }
@@ -302,6 +308,14 @@ public class StaffMember {
 
     public void setSalaryCurrency(String salaryCurrency) {
         this.salaryCurrency = salaryCurrency;
+    }
+
+    public String getDisciplinaryStatus() {
+        return disciplinaryStatus;
+    }
+
+    public void setDisciplinaryStatus(String disciplinaryStatus) {
+        this.disciplinaryStatus = disciplinaryStatus;
     }
 
     public Instant getCreatedAt() {

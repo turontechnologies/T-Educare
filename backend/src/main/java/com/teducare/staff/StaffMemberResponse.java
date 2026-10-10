@@ -24,6 +24,7 @@ public record StaffMemberResponse(
         String avatarUrl,
         BigDecimal salaryAmount,
         String salaryCurrency,
+        String disciplinaryStatus,
         Instant createdAt,
         Instant archivedAt) {
 
@@ -49,6 +50,7 @@ public record StaffMemberResponse(
                 s.getAvatarUrl(),
                 s.getSalaryAmount(),
                 s.getSalaryCurrency(),
+                s.getDisciplinaryStatus(),
                 s.getCreatedAt(),
                 s.getArchivedAt());
     }
