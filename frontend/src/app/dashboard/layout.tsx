@@ -17,6 +17,8 @@ import { useElectiveGroups } from "@/hooks/use-elective-groups";
 import { useFaculties } from "@/hooks/use-faculties";
 import { useGradingScale } from "@/hooks/use-grading-scale";
 import { useInstitutions } from "@/hooks/use-institutions";
+import { useLectureAssignments } from "@/hooks/use-lecture-assignments";
+import { useLecturers } from "@/hooks/use-lecturers";
 import { useMe } from "@/hooks/use-login";
 import { useProgramLevels } from "@/hooks/use-program-levels";
 import { usePrograms } from "@/hooks/use-programs";
@@ -33,6 +35,8 @@ import { useDepartmentsStore } from "@/store/departments.store";
 import { useElectiveGroupsStore } from "@/store/elective-groups.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
+import { useLectureAssignmentsStore } from "@/store/lecture-assignments.store";
+import { useLecturersStore } from "@/store/lecturers.store";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useProgramsStore } from "@/store/programs.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -215,6 +219,25 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (staffMembersData) setStaffMembers(staffMembersData);
   }, [staffMembersData, setStaffMembers]);
+
+  const setLecturers = useLecturersStore((state) => state.setLecturers);
+  const { data: lecturersData } = useLecturers({
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (lecturersData) setLecturers(lecturersData);
+  }, [lecturersData, setLecturers]);
+
+  const setLectureAssignments = useLectureAssignmentsStore(
+    (state) => state.setAssignments,
+  );
+  const { data: lectureAssignmentsData } = useLectureAssignments(
+    {},
+    { enabled: hasHydrated && !!token && user?.role === "institution_admin" },
+  );
+  useEffect(() => {
+    if (lectureAssignmentsData) setLectureAssignments(lectureAssignmentsData);
+  }, [lectureAssignmentsData, setLectureAssignments]);
 
   const setStudentIdentitySettings = useStudentIdentitySettingsStore(
     (state) => state.setSettings,
