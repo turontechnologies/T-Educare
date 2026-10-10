@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   ArchiveRestore,
   Download,
+  Eye,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -41,7 +42,14 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { StaffDetailsDialog } from "@/components/features/staff/staff-details-dialog";
 import { StaffMemberDialog } from "@/components/features/staff/staff-member-dialog";
+import {
+  useArchiveStaffMember,
+  useExportStaffMembers,
+  useImportStaffMembers,
+  useRestoreStaffMember,
+} from "@/hooks/use-staff-members";
 import { fullName } from "@/lib/staff-members";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useStaffStore } from "@/store/staff.store";
@@ -50,48 +58,11 @@ import type { StaffMember } from "@/types/staff-member";
 
 const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 
-function staffToCsv(staffMembers: StaffMember[]) {
-  const header = [
-    "Staff ID",
-    "First Name",
-    "Middle Name",
-    "Last Name",
-    "Gender",
-    "Designation",
-    "Department",
-  ];
-  const rows = staffMembers.map((s) => [
-    s.staffId,
-    s.firstName,
-    s.middleName ?? "",
-    s.lastName,
-    s.gender,
-    s.designation,
-    s.departmentId,
-  ]);
-  return [header, ...rows]
-    .map((row) =>
-      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
-    )
-    .join("\n");
-}
-
-function parseCsv(text: string) {
-  const lines = text.trim().split(/\r?\n/);
-  const header = lines[0]
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, "").toLowerCase());
-  return lines.slice(1).map((line) => {
-    const cells = line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
-    const record: Record<string, string> = {};
-    header.forEach((key, i) => (record[key] = cells[i] ?? ""));
-    return record;
-  });
-}
-
 export default function AllStaffPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | undefined>();
+  const [detailsStaff, setDetailsStaff] = useState<StaffMember | undefined>();
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -121,6 +92,10 @@ export default function AllStaffPage() {
               setEditingStaff(staff);
               setDialogOpen(true);
             }}
+            onView={(staff) => {
+              setDetailsStaff(staff);
+              setDetailsOpen(true);
+            }}
           />
         </div>
       </div>
@@ -130,88 +105,50 @@ export default function AllStaffPage() {
         onOpenChange={setDialogOpen}
         staffMember={editingStaff}
       />
+      <StaffDetailsDialog
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        staffMember={detailsStaff}
+      />
     </div>
   );
 }
 
 function ImportExportButtons() {
-  const staffMembers = useStaffMembersStore((state) => state.staffMembers);
-  const createStaffMember = useStaffMembersStore(
-    (state) => state.createStaffMember,
-  );
-  const designations = useStaffStore((state) => state.designations);
-  const departments = useDepartmentsStore((state) => state.departments);
+  const importStaff = useImportStaffMembers();
+  const exportStaff = useExportStaffMembers();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
-    const active = staffMembers.filter((s) => !s.archivedAt);
-    const csv = staffToCsv(active);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `staff-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${active.length} staff`);
+  const handleExport = async () => {
+    try {
+      const blob = await exportStaff.mutateAsync(false);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `staff-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Staff exported");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to export staff",
+      );
+    }
   };
 
   const handleImportFile = async (file: File) => {
-    const text = await file.text();
-    const rows = parseCsv(text);
-    const existingStaffIds = new Set(
-      staffMembers
-        .filter((s) => !s.archivedAt)
-        .map((s) => s.staffId.toLowerCase()),
-    );
-    const defaultDesignation =
-      designations.find((d) => !d.archivedAt)?.name ?? "";
-    const defaultDepartmentId =
-      departments.find((d) => !d.archivedAt)?.id ?? "";
-
-    let imported = 0;
-    let skipped = 0;
-    for (const row of rows) {
-      const staffId = row["staff id"] || "";
-      const firstName = row["first name"] || "";
-      const lastName = row["last name"] || "";
-      if (!staffId || !firstName || !lastName) {
-        skipped++;
-        continue;
-      }
-      if (existingStaffIds.has(staffId.toLowerCase())) {
-        skipped++;
-        continue;
-      }
-      const gender = row["gender"] === "Female" ? "Female" : "Male";
-      createStaffMember({
-        staffId,
-        role: row["designation"] || defaultDesignation,
-        designation: row["designation"] || defaultDesignation,
-        departmentId: defaultDepartmentId,
-        gender,
-        firstName,
-        middleName: row["middle name"] || undefined,
-        lastName,
-        maritalStatus: "Single",
-        email:
-          row["email"] ||
-          `${firstName.toLowerCase()}.${lastName.toLowerCase()}@staff.xyzcollege.edu.ng`,
-        phone: row["phone"] || "",
-        emergencyContact: row["phone"] || "",
-        dateOfBirth: new Date("1990-01-01T00:00:00.000Z").toISOString(),
-        employmentStartDate: new Date().toISOString(),
-        contactAddress: "Not provided",
-      });
-      existingStaffIds.add(staffId.toLowerCase());
-      imported++;
+    try {
+      const result = await importStaff.mutateAsync(file);
+      toast.success(
+        `${result.imported} staff imported${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to import staff",
+      );
     }
-
-    toast.success(
-      `${imported} staff imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
-    );
   };
 
   return (
@@ -219,6 +156,7 @@ function ImportExportButtons() {
       <Button
         variant="outline"
         className="gap-1.5 rounded-md"
+        disabled={importStaff.isPending}
         onClick={() => fileInputRef.current?.click()}
       >
         <Download className="size-4" />
@@ -227,6 +165,7 @@ function ImportExportButtons() {
       <Button
         variant="outline"
         className="gap-1.5 rounded-md"
+        disabled={exportStaff.isPending}
         onClick={handleExport}
       >
         <Upload className="size-4" />
@@ -247,15 +186,18 @@ function ImportExportButtons() {
   );
 }
 
-function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
+function StaffTable({
+  onEdit,
+  onView,
+}: {
+  onEdit: (staff: StaffMember) => void;
+  onView: (staff: StaffMember) => void;
+}) {
   const staffMembers = useStaffMembersStore((state) => state.staffMembers);
-  const archiveStaffMember = useStaffMembersStore(
-    (state) => state.archiveStaffMember,
-  );
-  const restoreStaffMember = useStaffMembersStore(
-    (state) => state.restoreStaffMember,
-  );
+  const archiveStaffMember = useArchiveStaffMember();
+  const restoreStaffMember = useRestoreStaffMember();
   const departments = useDepartmentsStore((state) => state.departments);
+  const designations = useStaffStore((state) => state.designations);
 
   const [view, setView] = useState<"active" | "archived">("active");
   const [search, setSearch] = useState("");
@@ -269,6 +211,8 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
 
   const departmentName = (id: string) =>
     departments.find((d) => d.id === id)?.name ?? "—";
+  const designationName = (id: string) =>
+    designations.find((d) => d.id === id)?.name ?? "—";
 
   const baseList = useMemo(
     () =>
@@ -285,9 +229,10 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
       (staff) =>
         fullName(staff).toLowerCase().includes(query) ||
         staff.staffId.toLowerCase().includes(query) ||
-        staff.designation.toLowerCase().includes(query),
+        designationName(staff.designationId).toLowerCase().includes(query),
     );
-  }, [baseList, search]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseList, search, designations]);
 
   const size = Number(pageSize);
   const totalPages = Math.max(1, Math.ceil(filtered.length / size));
@@ -474,7 +419,7 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
                     {staff.gender}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {staff.designation}
+                    {designationName(staff.designationId)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {departmentName(staff.departmentId)}
@@ -489,6 +434,10 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={() => onView(staff)}>
+                            <Eye className="size-3.5" />
+                            View
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onEdit(staff)}>
                             <Pencil className="size-3.5" />
                             Edit
@@ -506,9 +455,17 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreStaffMember(staff.id);
-                          toast.success(`${fullName(staff)} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreStaffMember.mutateAsync(staff.id);
+                            toast.success(`${fullName(staff)} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore staff member",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -578,10 +535,18 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
         description={`Are you sure you want to delete ${pendingArchive ? fullName(pendingArchive) : ""}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveStaffMember(pendingArchive.id);
-          toast.success(`${fullName(pendingArchive)} deleted`);
+          try {
+            await archiveStaffMember.mutateAsync(pendingArchive.id);
+            toast.success(`${fullName(pendingArchive)} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete staff member",
+            );
+          }
         }}
       />
 
@@ -592,10 +557,21 @@ function StaffTable({ onEdit }: { onEdit: (staff: StaffMember) => void }) {
         description={`Are you sure you want to delete the ${selected.size} selected staff? They will be hidden from the active list, but nothing is deleted — you can restore them anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
-          selected.forEach((id) => archiveStaffMember(id));
-          toast.success(`${selected.size} staff deleted`);
-          setSelected(new Set());
+        onConfirm={async () => {
+          const ids = Array.from(selected);
+          try {
+            await Promise.all(
+              ids.map((id) => archiveStaffMember.mutateAsync(id)),
+            );
+            toast.success(`${ids.length} staff deleted`);
+            setSelected(new Set());
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete selected staff",
+            );
+          }
         }}
       />
     </>
