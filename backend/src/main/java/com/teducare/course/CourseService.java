@@ -76,6 +76,7 @@ public class CourseService {
                 request.schoolId(),
                 request.programLevelId(),
                 request.unit(),
+                request.semesterNumber(),
                 isPresent(request.lecturerId()) ? request.lecturerId() : null,
                 Instant.now(),
                 null);
@@ -102,6 +103,12 @@ public class CourseService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unit must be between 1 and 10.");
             }
             course.setUnit(request.unit());
+        }
+        if (request.semesterNumber() != null) {
+            if (request.semesterNumber() < 1 || request.semesterNumber() > 2) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Semester number must be 1 or 2.");
+            }
+            course.setSemesterNumber(request.semesterNumber());
         }
         if (isPresent(request.code())) {
             validateUniqueCode(institutionId, request.code(), id);
