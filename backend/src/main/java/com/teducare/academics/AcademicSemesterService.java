@@ -38,6 +38,7 @@ public class AcademicSemesterService {
                 institutionId,
                 request.sessionId(),
                 request.name(),
+                request.semesterNumber(),
                 request.description(),
                 request.from(),
                 request.to(),
@@ -64,6 +65,12 @@ public class AcademicSemesterService {
 
         if (isPresent(request.name())) {
             semester.setName(request.name());
+        }
+        if (request.semesterNumber() != null) {
+            if (request.semesterNumber() < 1 || request.semesterNumber() > 2) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Semester number must be 1 or 2.");
+            }
+            semester.setSemesterNumber(request.semesterNumber());
         }
         if (request.description() != null) {
             semester.setDescription(request.description());

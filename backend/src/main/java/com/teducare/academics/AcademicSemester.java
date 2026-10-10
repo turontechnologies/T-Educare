@@ -29,6 +29,22 @@ public class AcademicSemester {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    /**
+     * Which semester-of-the-year this is (1 or 2) — distinct from
+     * {@code name}, which is free text an admin can type however they
+     * like. {@link com.teducare.course.Course} carries the same number,
+     * and {@link com.teducare.registration.CourseRegistrationService}
+     * matches the two so a 2nd-semester course never shows up as
+     * registrable in a 1st-semester instance, or vice versa — a course
+     * list is NOT reused as-is across both halves of a session. Nullable
+     * at the DB level only because a pre-existing semester row (created
+     * before this field existed) has no sensible value to backfill with;
+     * every create/update through {@link AcademicSemesterService} still
+     * requires it.
+     */
+    @Column(name = "semester_number")
+    private Integer semesterNumber;
+
     @Column(name = "description", length = 500)
     private String description;
 
@@ -58,6 +74,7 @@ public class AcademicSemester {
             String institutionId,
             String sessionId,
             String name,
+            Integer semesterNumber,
             String description,
             Instant from,
             Instant to,
@@ -69,6 +86,7 @@ public class AcademicSemester {
         this.institutionId = institutionId;
         this.sessionId = sessionId;
         this.name = name;
+        this.semesterNumber = semesterNumber;
         this.description = description;
         this.from = from;
         this.to = to;
@@ -100,6 +118,14 @@ public class AcademicSemester {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Integer getSemesterNumber() {
+        return semesterNumber;
+    }
+
+    public void setSemesterNumber(Integer semesterNumber) {
+        this.semesterNumber = semesterNumber;
     }
 
     public String getDescription() {
