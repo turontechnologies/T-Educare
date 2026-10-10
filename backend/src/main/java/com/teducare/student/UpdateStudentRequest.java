@@ -5,6 +5,8 @@ import java.time.Instant;
 /** Any field left null keeps its current value — same partial-update convention as program/UpdateProgramRequest. Booleans use boxed `Boolean` for the same reason. */
 public record UpdateStudentRequest(
         String matricNo,
+        String jambRegNumber,
+        String admissionMode,
         String title,
         String firstName,
         String middleName,

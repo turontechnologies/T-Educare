@@ -34,6 +34,7 @@ public class StudentService {
     private static final Set<String> RELIGIONS = Set.of("Christian", "Islam", "Traditional", "Other");
     private static final Set<String> BLOOD_GROUPS = Set.of("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-");
     private static final Set<String> GENOTYPES = Set.of("AA", "AS", "SS", "AC");
+    private static final Set<String> ADMISSION_MODES = Set.of("UTME", "DIRECT_ENTRY");
     private static final Set<String> STATUSES = Set.of("active", "inactive");
     private static final Set<String> RECORD_STATUSES = Set.of("completed", "current", "repeat");
     private static final Set<String> DISCIPLINARY_ACTION_TYPES =
@@ -96,6 +97,8 @@ public class StudentService {
                 .filter(s -> query == null || query.isBlank()
                         // Pre-students (matricNo == null) must not NPE a search — they simply never match on matricNo.
                         || (s.getMatricNo() != null && s.getMatricNo().toLowerCase().contains(query))
+                        || s.getPreAdmissionId().toLowerCase().contains(query)
+                        || (s.getJambRegNumber() != null && s.getJambRegNumber().toLowerCase().contains(query))
                         || s.getFirstName().toLowerCase().contains(query)
                         || s.getLastName().toLowerCase().contains(query)
                         || s.getEmail().toLowerCase().contains(query))
@@ -114,6 +117,7 @@ public class StudentService {
         validateEnum(RELIGIONS, request.religion(), "religion");
         validateEnum(BLOOD_GROUPS, request.bloodGroup(), "bloodGroup");
         validateEnum(GENOTYPES, request.genotype(), "genotype");
+        validateEnum(ADMISSION_MODES, request.admissionMode(), "admissionMode");
         if (isPresent(request.matricNo())) {
             validateUniqueMatricNo(institutionId, request.matricNo(), null);
         }
@@ -125,10 +129,14 @@ public class StudentService {
         programLevelService.requireOwnProgramLevel(institutionId, request.programLevelId());
         academicSessionService.requireOwnSession(institutionId, request.currentSessionId());
 
+        String id = "student-" + UUID.randomUUID();
         Student student = new Student(
-                "student-" + UUID.randomUUID(),
+                id,
                 institutionId,
                 request.matricNo(),
+                derivePreAdmissionId(id),
+                request.jambRegNumber(),
+                request.admissionMode(),
                 request.title(),
                 request.firstName(),
                 request.middleName(),
@@ -198,6 +206,13 @@ public class StudentService {
         if (isPresent(request.matricNo()) && !request.matricNo().equals(student.getMatricNo())) {
             validateUniqueMatricNo(institutionId, request.matricNo(), id);
             student.setMatricNo(request.matricNo());
+        }
+        if (request.jambRegNumber() != null) {
+            student.setJambRegNumber(request.jambRegNumber());
+        }
+        if (isPresent(request.admissionMode())) {
+            validateEnum(ADMISSION_MODES, request.admissionMode(), "admissionMode");
+            student.setAdmissionMode(request.admissionMode());
         }
         if (isPresent(request.title())) {
             validateEnum(TITLES, request.title(), "title");
@@ -516,6 +531,12 @@ public class StudentService {
         if (collides) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A student with that matric number already exists.");
         }
+    }
+
+    /** Derived from the student's own (already-unique) id — needs no counter/sequence and can never collide, e.g. "student-f1e0b0fc-88bd-..." -> "PRE-7505A3A3". */
+    private static String derivePreAdmissionId(String id) {
+        String hex = id.replace("-", "").toUpperCase();
+        return "PRE-" + hex.substring(Math.max(0, hex.length() - 8));
     }
 
     private static void validateEnum(Set<String> allowed, String value, String fieldName) {

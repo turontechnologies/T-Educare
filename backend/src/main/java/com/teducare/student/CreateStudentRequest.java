@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotNull;
 /** `matricNo` is intentionally optional — a student created without one is a "pre-student" (just admitted, not yet matriculated); assigning one later via a normal update is how they become a full student. */
 public record CreateStudentRequest(
         String matricNo,
+        String jambRegNumber,
+        @NotBlank(message = "Admission mode is required.") String admissionMode,
         @NotBlank(message = "Title is required.") String title,
         @NotBlank(message = "First name is required.") String firstName,
         String middleName,

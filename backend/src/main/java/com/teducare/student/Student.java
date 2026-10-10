@@ -42,6 +42,26 @@ public class Student {
     @Column(name = "matric_no", length = 50)
     private String matricNo;
 
+    /**
+     * Always present, even for a pre-student with no matricNo — derived
+     * once from this student's own {@code id} at creation time (so it
+     * needs no counter/sequence and can never collide), e.g. "PRE-A1B2C3D4".
+     * This is the fallback identifier search/display falls back to before
+     * a matric number exists; {@code jambRegNumber} is a second, optional,
+     * real-world identifier (their actual JAMB registration number) an
+     * admin can record on top of it.
+     */
+    @Column(name = "pre_admission_id", nullable = false, length = 20)
+    private String preAdmissionId;
+
+    /** Nullable — not every pre-student's JAMB number is known/entered yet. */
+    @Column(name = "jamb_reg_number", length = 50)
+    private String jambRegNumber;
+
+    /** "UTME" | "DIRECT_ENTRY" — whether this student was admitted via the standard UTME route or direct entry (typically already holding an OND/NCE/A-Level qualification, entering above 100L). Purely informational/tracked, not used to auto-assign programLevelId. */
+    @Column(name = "admission_mode", nullable = false, length = 20)
+    private String admissionMode;
+
     @Column(name = "title", nullable = false, length = 20)
     private String title;
 
@@ -195,6 +215,9 @@ public class Student {
             String id,
             String institutionId,
             String matricNo,
+            String preAdmissionId,
+            String jambRegNumber,
+            String admissionMode,
             String title,
             String firstName,
             String middleName,
@@ -244,6 +267,9 @@ public class Student {
         this.id = id;
         this.institutionId = institutionId;
         this.matricNo = matricNo;
+        this.preAdmissionId = preAdmissionId;
+        this.jambRegNumber = jambRegNumber;
+        this.admissionMode = admissionMode;
         this.title = title;
         this.firstName = firstName;
         this.middleName = middleName;
@@ -306,6 +332,26 @@ public class Student {
 
     public void setMatricNo(String matricNo) {
         this.matricNo = matricNo;
+    }
+
+    public String getPreAdmissionId() {
+        return preAdmissionId;
+    }
+
+    public String getJambRegNumber() {
+        return jambRegNumber;
+    }
+
+    public void setJambRegNumber(String jambRegNumber) {
+        this.jambRegNumber = jambRegNumber;
+    }
+
+    public String getAdmissionMode() {
+        return admissionMode;
+    }
+
+    public void setAdmissionMode(String admissionMode) {
+        this.admissionMode = admissionMode;
     }
 
     public String getTitle() {

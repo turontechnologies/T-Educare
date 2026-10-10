@@ -5,6 +5,9 @@ import java.time.Instant;
 public record StudentResponse(
         String id,
         String matricNo,
+        String preAdmissionId,
+        String jambRegNumber,
+        String admissionMode,
         String title,
         String firstName,
         String middleName,
@@ -56,6 +59,9 @@ public record StudentResponse(
         return new StudentResponse(
                 s.getId(),
                 s.getMatricNo(),
+                s.getPreAdmissionId(),
+                s.getJambRegNumber(),
+                s.getAdmissionMode(),
                 s.getTitle(),
                 s.getFirstName(),
                 s.getMiddleName(),
