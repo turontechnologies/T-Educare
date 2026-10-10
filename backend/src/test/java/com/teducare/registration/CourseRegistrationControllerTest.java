@@ -211,11 +211,17 @@ class CourseRegistrationControllerTest {
     }
 
     private String createAcademicSemester(String token, String sessionId, String name) throws Exception {
+        return createAcademicSemester(token, sessionId, name, 1);
+    }
+
+    private String createAcademicSemester(String token, String sessionId, String name, int semesterNumber)
+            throws Exception {
         String response = mockMvc.perform(post("/api/academic-semesters")
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"sessionId\":\"" + sessionId + "\",\"name\":\"" + name
-                        + "\",\"from\":\"2026-09-01T00:00:00.000Z\",\"to\":\"2027-01-31T00:00:00.000Z\"}"))
+                .content("{\"sessionId\":\"" + sessionId + "\",\"name\":\"" + name + "\",\"semesterNumber\":"
+                        + semesterNumber
+                        + ",\"from\":\"2026-09-01T00:00:00.000Z\",\"to\":\"2027-01-31T00:00:00.000Z\"}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return response.split("\"id\":\"")[1].split("\"")[0];
@@ -224,13 +230,25 @@ class CourseRegistrationControllerTest {
     private String createCourse(
             String token, String name, String code, String departmentId, String programLevelId, int unit)
             throws Exception {
+        return createCourse(token, name, code, departmentId, programLevelId, unit, 1);
+    }
+
+    private String createCourse(
+            String token,
+            String name,
+            String code,
+            String departmentId,
+            String programLevelId,
+            int unit,
+            int semesterNumber)
+            throws Exception {
         String schoolIdForCourse = createSchool(token, "School for " + code);
         String response = mockMvc.perform(post("/api/courses")
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"" + name + "\",\"code\":\"" + code + "\",\"departmentId\":\"" + departmentId
                         + "\",\"schoolId\":\"" + schoolIdForCourse + "\",\"programLevelId\":\"" + programLevelId
-                        + "\",\"unit\":" + unit + "}"))
+                        + "\",\"unit\":" + unit + ",\"semesterNumber\":" + semesterNumber + "}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return response.split("\"id\":\"")[1].split("\"")[0];
