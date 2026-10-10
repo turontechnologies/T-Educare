@@ -163,6 +163,14 @@ public class Course {
         this.unit = unit;
     }
 
+    public Integer getSemesterNumber() {
+        return semesterNumber;
+    }
+
+    public void setSemesterNumber(Integer semesterNumber) {
+        this.semesterNumber = semesterNumber;
+    }
+
     public String getLecturerId() {
         return lecturerId;
     }
