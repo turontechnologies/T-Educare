@@ -78,6 +78,8 @@ public class RoleService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A role with that name already exists.");
         }
         validateMenuKeys(request.menuKeys());
+        List<String> editableMenuKeys = request.editableMenuKeys() == null ? List.of() : request.editableMenuKeys();
+        validateEditableMenuKeys(editableMenuKeys, request.menuKeys());
 
         Role role = new Role(
                 "role-" + UUID.randomUUID(),
@@ -85,6 +87,7 @@ public class RoleService {
                 request.name(),
                 request.description(),
                 String.join(",", request.menuKeys()),
+                String.join(",", editableMenuKeys),
                 Instant.now(),
                 null);
         return RoleResponse.from(repository.save(role));
@@ -107,6 +110,13 @@ public class RoleService {
         if (request.menuKeys() != null) {
             validateMenuKeys(request.menuKeys());
             role.setMenuKeys(String.join(",", request.menuKeys()));
+        }
+        if (request.editableMenuKeys() != null) {
+            List<String> menuKeysForValidation = request.menuKeys() != null
+                    ? request.menuKeys()
+                    : List.of(role.getMenuKeys().split(","));
+            validateEditableMenuKeys(request.editableMenuKeys(), menuKeysForValidation);
+            role.setEditableMenuKeys(String.join(",", request.editableMenuKeys()));
         }
 
         return RoleResponse.from(repository.save(role));
@@ -141,6 +151,18 @@ public class RoleService {
         for (String key : menuKeys) {
             if (!VALID_MENU_KEYS.contains(key)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown menu key: " + key);
+            }
+        }
+    }
+
+    /** Editable keys must always be a subset of the granted/visible keys — can't edit what you can't even see. */
+    private static void validateEditableMenuKeys(List<String> editableMenuKeys, List<String> menuKeys) {
+        Set<String> granted = Set.copyOf(menuKeys);
+        for (String key : editableMenuKeys) {
+            if (!granted.contains(key)) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Cannot grant edit access to \"" + key + "\" without also granting view access to it.");
             }
         }
     }

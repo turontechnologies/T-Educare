@@ -35,6 +35,10 @@ public class Role {
     @Column(name = "menu_keys", nullable = false, length = 1000)
     private String menuKeys;
 
+    /** Comma-separated subset of {@code menuKeys} this role may also edit (create/update/delete), not just view. Null/blank means view-only. */
+    @Column(name = "editable_menu_keys", length = 1000)
+    private String editableMenuKeys;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -50,6 +54,7 @@ public class Role {
             String name,
             String description,
             String menuKeys,
+            String editableMenuKeys,
             Instant createdAt,
             Instant archivedAt) {
         this.id = id;
@@ -57,6 +62,7 @@ public class Role {
         this.name = name;
         this.description = description;
         this.menuKeys = menuKeys;
+        this.editableMenuKeys = editableMenuKeys;
         this.createdAt = createdAt;
         this.archivedAt = archivedAt;
     }
@@ -91,6 +97,14 @@ public class Role {
 
     public void setMenuKeys(String menuKeys) {
         this.menuKeys = menuKeys;
+    }
+
+    public String getEditableMenuKeys() {
+        return editableMenuKeys;
+    }
+
+    public void setEditableMenuKeys(String editableMenuKeys) {
+        this.editableMenuKeys = editableMenuKeys;
     }
 
     public Instant getCreatedAt() {

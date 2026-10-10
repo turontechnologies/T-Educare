@@ -9,18 +9,23 @@ public record RoleResponse(
         String name,
         String description,
         List<String> menuKeys,
+        List<String> editableMenuKeys,
         Instant createdAt,
         Instant archivedAt) {
 
     static RoleResponse from(Role role) {
-        String keys = role.getMenuKeys();
         return new RoleResponse(
                 role.getId(),
                 role.getInstitutionId(),
                 role.getName(),
                 role.getDescription(),
-                keys == null || keys.isBlank() ? List.of() : List.of(keys.split(",")),
+                split(role.getMenuKeys()),
+                split(role.getEditableMenuKeys()),
                 role.getCreatedAt(),
                 role.getArchivedAt());
+    }
+
+    private static List<String> split(String keys) {
+        return keys == null || keys.isBlank() ? List.of() : List.of(keys.split(","));
     }
 }
