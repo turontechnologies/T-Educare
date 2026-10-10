@@ -83,6 +83,13 @@ class StudentControllerTest {
                     .content(createBody.replace("\"bloodGroup\":\"O+\"", "\"bloodGroup\":\"Z+\"")))
                     .andExpect(status().isBadRequest());
 
+            // Regression: searching with a pre-student (matricNo == null)
+            // present must not NPE while scanning matricNo for a match.
+            mockMvc.perform(get("/api/students?search=okafor")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].firstName").value("Chinedu"));
+
             // Regression: creating a real (non-pre-student) student while a
             // pre-student (matricNo == null) already exists in the institution
             // must not NPE while scanning for a matricNo collision.

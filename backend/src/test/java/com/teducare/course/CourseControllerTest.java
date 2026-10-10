@@ -186,6 +186,37 @@ class CourseControllerTest {
             assertTrue(csvExport.contains("GST101"));
             assertTrue(csvExport.contains("MAT101"));
 
+            // lecturerId: nullable FK to a StaffMember, optional at create, clearable via a blank string on update.
+            String lecturerDesigId = createDesignation(tokenA, "Lecturer-" + suffix, "Academic Staff");
+            String lecturerId = createStaffMember(tokenA, "LEC-" + suffix, lecturerDesigId, departmentAId);
+
+            mockMvc.perform(post("/api/courses")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"Taught Course\",\"code\":\"TC101\",\"departmentId\":\"" + departmentAId
+                            + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
+                            + "\",\"unit\":3,\"lecturerId\":\"does-not-exist\"}"))
+                    .andExpect(status().isNotFound());
+
+            String taughtCourseResponse = mockMvc.perform(post("/api/courses")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"Taught Course\",\"code\":\"TC101\",\"departmentId\":\"" + departmentAId
+                            + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
+                            + "\",\"unit\":3,\"lecturerId\":\"" + lecturerId + "\"}"))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.lecturerId").value(lecturerId))
+                    .andReturn().getResponse().getContentAsString();
+            String taughtCourseId = taughtCourseResponse.split("\"id\":\"")[1].split("\"")[0];
+
+            // Clearing via an explicit blank string un-assigns the lecturer.
+            mockMvc.perform(patch("/api/courses/" + taughtCourseId)
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"lecturerId\":\"\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.lecturerId").doesNotExist());
+
             // Archive + restore round trip.
             mockMvc.perform(post("/api/courses/" + courseId + "/archive")
                     .header("Authorization", "Bearer " + tokenA))
@@ -258,6 +289,38 @@ class CourseControllerTest {
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"levelCode\":\"" + levelCode + "\",\"description\":\"" + levelCode + " description\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createDesignation(String token, String name, String category) throws Exception {
+        String response = mockMvc.perform(post("/api/staff-designations")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"" + name + "\",\"description\":\"desc\",\"category\":\"" + category + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createStaffMember(String token, String staffId, String designationId, String departmentId)
+            throws Exception {
+        String response = mockMvc.perform(post("/api/staff-members")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"staffId":"%s","roleId":"%s","designationId":"%s","departmentId":"%s",
+                         "gender":"Male","firstName":"Course","lastName":"Lecturer","maritalStatus":"Single",
+                         "email":"lecturer.%s@staff.test","phone":"08033334444",
+                         "emergencyContact":"08033334445","dateOfBirth":"1980-01-01T00:00:00Z",
+                         "employmentStartDate":"2015-01-01T00:00:00Z","contactAddress":"1 Lecturer Lane"}
+                        """.formatted(staffId, designationId, designationId, departmentId, staffId))
+                )
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
