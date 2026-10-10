@@ -2,6 +2,7 @@ package com.teducare.course;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -58,7 +59,7 @@ class CourseControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Hijack Course\",\"code\":\"HJ101\",\"departmentId\":\"" + departmentBId
                             + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
-                            + "\",\"unit\":3}"))
+                            + "\",\"unit\":3,\"semesterNumber\":1}"))
                     .andExpect(status().isNotFound());
 
             // schoolId from a different institution is rejected (departmentId valid).
@@ -67,7 +68,7 @@ class CourseControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Hijack Course 2\",\"code\":\"HJ102\",\"departmentId\":\"" + departmentAId
                             + "\",\"schoolId\":\"" + schoolBId + "\",\"programLevelId\":\"" + levelAId
-                            + "\",\"unit\":3}"))
+                            + "\",\"unit\":3,\"semesterNumber\":1}"))
                     .andExpect(status().isNotFound());
 
             // Independent FK proof: schoolId differs from department's own school.
@@ -76,7 +77,7 @@ class CourseControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Pure Mathematics\",\"code\":\"MAT101\",\"departmentId\":\"" + departmentAId
                             + "\",\"schoolId\":\"" + otherSchoolAId + "\",\"programLevelId\":\"" + levelAId
-                            + "\",\"unit\":3}"))
+                            + "\",\"unit\":3,\"semesterNumber\":1}"))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.code").value("MAT101"))
                     .andExpect(jsonPath("$.schoolId").value(otherSchoolAId))
@@ -91,7 +92,7 @@ class CourseControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Another Name\",\"code\":\"mat101\",\"departmentId\":\"" + departmentAId
                             + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
-                            + "\",\"unit\":3}"))
+                            + "\",\"unit\":3,\"semesterNumber\":1}"))
                     .andExpect(status().isConflict());
 
             // Invalid unit (out of 1-10 range) rejected.
@@ -100,7 +101,16 @@ class CourseControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Bad Unit Course\",\"code\":\"BU101\",\"departmentId\":\"" + departmentAId
                             + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
-                            + "\",\"unit\":0}"))
+                            + "\",\"unit\":0,\"semesterNumber\":1}"))
+                    .andExpect(status().isBadRequest());
+
+            // Invalid semesterNumber (out of 1-2 range) rejected.
+            mockMvc.perform(post("/api/courses")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"Bad Semester Course\",\"code\":\"BS101\",\"departmentId\":\"" + departmentAId
+                            + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
+                            + "\",\"unit\":3,\"semesterNumber\":3}"))
                     .andExpect(status().isBadRequest());
 
             // Search by name and by code.
@@ -156,11 +166,11 @@ class CourseControllerTest {
             assertFalse(listForB.contains(courseId));
 
             // CSV import: one valid row, one missing-column row, one duplicate-code row, one bad-FK row.
-            String csv = "name,code,departmentId,schoolId,programLevelId,unit\n"
-                    + "General Studies,GST101," + departmentAId + "," + schoolAId + "," + levelAId + ",2\n"
-                    + ",NOCODE," + departmentAId + "," + schoolAId + "," + levelAId + ",2\n"
-                    + "Duplicate,MAT101," + departmentAId + "," + schoolAId + "," + levelAId + ",2\n"
-                    + "Bad FK,BADFK101,does-not-exist," + schoolAId + "," + levelAId + ",2\n";
+            String csv = "name,code,departmentId,schoolId,programLevelId,unit,semesterNumber\n"
+                    + "General Studies,GST101," + departmentAId + "," + schoolAId + "," + levelAId + ",2,1\n"
+                    + ",NOCODE," + departmentAId + "," + schoolAId + "," + levelAId + ",2,1\n"
+                    + "Duplicate,MAT101," + departmentAId + "," + schoolAId + "," + levelAId + ",2,1\n"
+                    + "Bad FK,BADFK101,does-not-exist," + schoolAId + "," + levelAId + ",2,1\n";
             MockMultipartFile csvFile = new MockMultipartFile(
                     "file", "courses.csv", "text/csv", csv.getBytes(StandardCharsets.UTF_8));
             mockMvc.perform(multipart("/api/courses/import")
@@ -195,7 +205,7 @@ class CourseControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Taught Course\",\"code\":\"TC101\",\"departmentId\":\"" + departmentAId
                             + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
-                            + "\",\"unit\":3,\"lecturerId\":\"does-not-exist\"}"))
+                            + "\",\"unit\":3,\"semesterNumber\":1,\"lecturerId\":\"does-not-exist\"}"))
                     .andExpect(status().isNotFound());
 
             String taughtCourseResponse = mockMvc.perform(post("/api/courses")
@@ -203,7 +213,7 @@ class CourseControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"Taught Course\",\"code\":\"TC101\",\"departmentId\":\"" + departmentAId
                             + "\",\"schoolId\":\"" + schoolAId + "\",\"programLevelId\":\"" + levelAId
-                            + "\",\"unit\":3,\"lecturerId\":\"" + lecturerId + "\"}"))
+                            + "\",\"unit\":3,\"semesterNumber\":1,\"lecturerId\":\"" + lecturerId + "\"}"))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.lecturerId").value(lecturerId))
                     .andReturn().getResponse().getContentAsString();
@@ -216,6 +226,49 @@ class CourseControllerTest {
                     .content("{\"lecturerId\":\"\"}"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.lecturerId").doesNotExist());
+
+            // Borrowed courses: department B's own department can register for institution A's
+            // "Pure Mathematics" course once an offering is granted — with its own unit override.
+            String departmentA2Id = createDepartment(tokenA, "Second Dept of Course Test A", facultyAId, schoolAId);
+
+            // Granting an offering to the course's own department is rejected.
+            mockMvc.perform(post("/api/courses/" + courseId + "/offerings")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"departmentId\":\"" + departmentAId + "\",\"compulsory\":true}"))
+                    .andExpect(status().isBadRequest());
+
+            String offeringResponse = mockMvc.perform(post("/api/courses/" + courseId + "/offerings")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"departmentId\":\"" + departmentA2Id + "\",\"unitOverride\":2,\"compulsory\":true}"))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.departmentId").value(departmentA2Id))
+                    .andExpect(jsonPath("$.unitOverride").value(2))
+                    .andReturn().getResponse().getContentAsString();
+            String offeringId = offeringResponse.split("\"id\":\"")[1].split("\"")[0];
+
+            // Granting the same department twice is rejected.
+            mockMvc.perform(post("/api/courses/" + courseId + "/offerings")
+                    .header("Authorization", "Bearer " + tokenA)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"departmentId\":\"" + departmentA2Id + "\",\"compulsory\":true}"))
+                    .andExpect(status().isConflict());
+
+            String offeringsList = mockMvc.perform(get("/api/courses/" + courseId + "/offerings")
+                    .header("Authorization", "Bearer " + tokenA))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertTrue(offeringsList.contains(departmentA2Id));
+
+            mockMvc.perform(delete("/api/courses/" + courseId + "/offerings/" + offeringId)
+                    .header("Authorization", "Bearer " + tokenA))
+                    .andExpect(status().isNoContent());
+            String offeringsAfterDelete = mockMvc.perform(get("/api/courses/" + courseId + "/offerings")
+                    .header("Authorization", "Bearer " + tokenA))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertFalse(offeringsAfterDelete.contains(offeringId));
 
             // Archive + restore round trip.
             mockMvc.perform(post("/api/courses/" + courseId + "/archive")
