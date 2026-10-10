@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   STAFF_DISCIPLINARY_ACTION_BADGE_CLASS,
   STAFF_DISCIPLINARY_STATUS_BADGE,
@@ -167,24 +168,10 @@ export function StaffDetailsDialog({
                         Archived
                       </Badge>
                     )}
-                    {staffMember.disciplinaryStatus &&
-                      STAFF_DISCIPLINARY_STATUS_BADGE[
-                        staffMember.disciplinaryStatus
-                      ] && (
-                        <Badge
-                          className={
-                            STAFF_DISCIPLINARY_STATUS_BADGE[
-                              staffMember.disciplinaryStatus
-                            ].className
-                          }
-                        >
-                          {
-                            STAFF_DISCIPLINARY_STATUS_BADGE[
-                              staffMember.disciplinaryStatus
-                            ].label
-                          }
-                        </Badge>
-                      )}
+                    <StatusBadge
+                      status={staffMember.disciplinaryStatus}
+                      map={STAFF_DISCIPLINARY_STATUS_BADGE}
+                    />
                   </div>
                   <p className="font-mono text-sm text-muted-foreground">
                     {staffMember.staffId}

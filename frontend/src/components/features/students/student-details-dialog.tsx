@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Mail, Phone, ShieldAlert, User, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -221,22 +222,10 @@ export function StudentDetailsDialog({
                         Hold for Review
                       </Badge>
                     )}
-                    {student.disciplinaryStatus &&
-                      DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus] && (
-                        <Badge
-                          className={
-                            DISCIPLINARY_STATUS_BADGE[
-                              student.disciplinaryStatus
-                            ].className
-                          }
-                        >
-                          {
-                            DISCIPLINARY_STATUS_BADGE[
-                              student.disciplinaryStatus
-                            ].label
-                          }
-                        </Badge>
-                      )}
+                    <StatusBadge
+                      status={student.disciplinaryStatus}
+                      map={DISCIPLINARY_STATUS_BADGE}
+                    />
                   </div>
                   <p className="font-mono text-sm text-muted-foreground">
                     {student.matricNo ??

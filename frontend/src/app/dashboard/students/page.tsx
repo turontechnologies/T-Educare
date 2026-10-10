@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { StudentDetailsDialog } from "@/components/features/students/student-details-dialog";
 import { StudentDialog } from "@/components/features/students/student-dialog";
 import { StudentIdentitySettingsDialog } from "@/components/features/students/student-identity-settings-dialog";
@@ -417,24 +418,14 @@ function StudentTable({
                     {levelName(student.programLevelId)}
                   </TableCell>
                   <TableCell>
-                    {student.disciplinaryStatus &&
-                    DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus] ? (
-                      <Badge
-                        className={
-                          DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]
-                            .className
-                        }
-                      >
-                        {
-                          DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]
-                            .label
-                        }
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-emerald-500/10 text-emerald-600">
-                        Good Standing
-                      </Badge>
-                    )}
+                    <StatusBadge
+                      status={student.disciplinaryStatus}
+                      map={DISCIPLINARY_STATUS_BADGE}
+                      fallback={{
+                        label: "Good Standing",
+                        className: "bg-emerald-500/10 text-emerald-600",
+                      }}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     {view === "active" ? (
