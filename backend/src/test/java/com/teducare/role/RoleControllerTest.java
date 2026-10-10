@@ -186,6 +186,29 @@ class RoleControllerTest {
                     .content("{\"name\":\"Bogus\",\"menuKeys\":[\"exams\"]}"))
                     .andExpect(status().isBadRequest());
 
+            // Regression: a nav item's real `key` (what the frontend's menu
+            // picker actually sends) must be accepted even where it differs
+            // from that same item's `moduleKey` — "lectures" (Lecture
+            // Management's key) vs. "lecturer" (its moduleKey), and a nested
+            // Academics child's dotted key, previously both rejected because
+            // validation wrongly reused the module-activation catalog.
+            mockMvc.perform(post("/api/roles")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"Admissions\",\"menuKeys\":[\"dashboard\",\"registration\",\"students\","
+                            + "\"lectures\",\"academics.sessions\"]}"))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.menuKeys.length()").value(5));
+
+            // The old moduleKey-shaped value ("lecturer") is NOT a valid
+            // menuKey — the two spaces are genuinely different, not just a
+            // widened allow-list.
+            mockMvc.perform(post("/api/roles")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"BadModuleKeyShape\",\"menuKeys\":[\"lecturer\"]}"))
+                    .andExpect(status().isBadRequest());
+
             // Duplicate name within the same institution is rejected.
             mockMvc.perform(post("/api/roles")
                     .header("Authorization", "Bearer " + token)

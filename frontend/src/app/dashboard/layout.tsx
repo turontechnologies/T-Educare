@@ -13,6 +13,7 @@ import { useAcademicSessions } from "@/hooks/use-academic-sessions";
 import { useCourseGrades } from "@/hooks/use-course-grades";
 import { useCourses } from "@/hooks/use-courses";
 import { useDepartments } from "@/hooks/use-departments";
+import { useElectiveGroups } from "@/hooks/use-elective-groups";
 import { useFaculties } from "@/hooks/use-faculties";
 import { useGradingScale } from "@/hooks/use-grading-scale";
 import { useInstitutions } from "@/hooks/use-institutions";
@@ -29,6 +30,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useCourseGradesStore } from "@/store/course-grades.store";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
+import { useElectiveGroupsStore } from "@/store/elective-groups.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
@@ -225,6 +227,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       setStudentIdentitySettings(studentIdentitySettingsData);
     }
   }, [studentIdentitySettingsData, setStudentIdentitySettings]);
+
+  const setElectiveGroups = useElectiveGroupsStore(
+    (state) => state.setElectiveGroups,
+  );
+  const { data: electiveGroupsData } = useElectiveGroups(true, {
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (electiveGroupsData) setElectiveGroups(electiveGroupsData);
+  }, [electiveGroupsData, setElectiveGroups]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,
