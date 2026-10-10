@@ -11,9 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.teducare.academics.AcademicSemester;
 import com.teducare.academics.AcademicSemesterService;
 import com.teducare.course.Course;
 import com.teducare.course.CourseService;
+import com.teducare.elective.ElectiveGroupResponse;
+import com.teducare.elective.ElectiveGroupService;
 import com.teducare.student.Student;
 import com.teducare.student.StudentService;
 
@@ -39,18 +42,21 @@ public class CourseRegistrationService {
     private final StudentService studentService;
     private final CourseService courseService;
     private final AcademicSemesterService academicSemesterService;
+    private final ElectiveGroupService electiveGroupService;
 
     public CourseRegistrationService(
             CourseRegistrationRepository repository,
             RegistrationSettingsService settingsService,
             StudentService studentService,
             CourseService courseService,
-            AcademicSemesterService academicSemesterService) {
+            AcademicSemesterService academicSemesterService,
+            ElectiveGroupService electiveGroupService) {
         this.repository = repository;
         this.settingsService = settingsService;
         this.studentService = studentService;
         this.courseService = courseService;
         this.academicSemesterService = academicSemesterService;
+        this.electiveGroupService = electiveGroupService;
     }
 
     public List<CourseRegistrationResponse> list(String institutionId, String studentId, String academicSemesterId) {
