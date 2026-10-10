@@ -8,6 +8,18 @@ export const STAFF_MARITAL_STATUSES = [
 ] as const;
 export type StaffMaritalStatus = (typeof STAFF_MARITAL_STATUSES)[number];
 
+export type StaffDisciplinaryStatus = "NONE" | "SUSPENDED" | "TERMINATED";
+
+export const STAFF_DISCIPLINARY_ACTION_TYPES = [
+  "WARNING",
+  "QUERY",
+  "SUSPENSION",
+  "TERMINATION",
+  "REINSTATEMENT",
+] as const;
+export type StaffDisciplinaryActionType =
+  (typeof STAFF_DISCIPLINARY_ACTION_TYPES)[number];
+
 /**
  * Full staff profile (API_CONTRACT.md §8.1). `roleId`/`designationId`/
  * `departmentId` are real, independently validated FKs — the original
@@ -48,7 +60,22 @@ export interface StaffMember {
   avatarUrl?: string;
   salaryAmount?: number;
   salaryCurrency?: string;
+  /** Cached current standing — see `StaffDisciplinaryRecord` for the append-only history behind it. */
+  disciplinaryStatus: StaffDisciplinaryStatus;
   createdAt: string;
   /** Nullable — soft-delete, same convention as every other admin table. */
   archivedAt: string | null;
+}
+
+/** Append-only — mirrors Student's disciplinaryStatus "cached value + immutable history" shape. */
+export interface StaffDisciplinaryRecord {
+  id: string;
+  staffId: string;
+  actionType: StaffDisciplinaryActionType;
+  reason: string;
+  startDate: string | null;
+  endDate: string | null;
+  /** The recording admin's id. */
+  actorId: string | null;
+  createdAt: string;
 }

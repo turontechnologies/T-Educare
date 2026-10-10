@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   staffMemberService,
   type AddStaffQualificationPayload,
+  type RecordStaffDisciplinaryActionPayload,
   type StaffMemberFormPayload,
   type StaffMembersListParams,
 } from "@/services/staff-member.service";
@@ -77,6 +78,36 @@ export function useExportStaffMembers() {
   return useMutation({
     mutationFn: (includeArchived: boolean) =>
       staffMemberService.export(includeArchived),
+  });
+}
+
+export function useStaffDisciplinaryRecords(
+  staffId: string | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: ["staff-disciplinary-records", staffId],
+    queryFn: () => staffMemberService.listDisciplinaryRecords(staffId!),
+    enabled: (options.enabled ?? true) && !!staffId,
+  });
+}
+
+export function useRecordStaffDisciplinaryAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      staffId,
+      payload,
+    }: {
+      staffId: string;
+      payload: RecordStaffDisciplinaryActionPayload;
+    }) => staffMemberService.recordDisciplinaryAction(staffId, payload),
+    onSuccess: (_data, { staffId }) => {
+      queryClient.invalidateQueries({ queryKey: [STAFF_MEMBERS_KEY] });
+      queryClient.invalidateQueries({
+        queryKey: ["staff-disciplinary-records", staffId],
+      });
+    },
   });
 }
 

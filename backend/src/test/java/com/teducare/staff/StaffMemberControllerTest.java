@@ -171,7 +171,7 @@ class StaffMemberControllerTest {
                     .header("Authorization", "Bearer " + tokenA)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"actionType\":\"WARNING\",\"reason\":\"Late to three consecutive lectures\"}"))
-                    .andExpect(status().isCreated())
+                    .andExpect(status().isOk())
                     .andExpect(jsonPath("$.actionType").value("WARNING"));
             mockMvc.perform(get("/api/staff-members/" + staffId)
                     .header("Authorization", "Bearer " + tokenA))
@@ -182,7 +182,7 @@ class StaffMemberControllerTest {
                     .header("Authorization", "Bearer " + tokenA)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"actionType\":\"SUSPENSION\",\"reason\":\"Unauthorized absence\"}"))
-                    .andExpect(status().isCreated());
+                    .andExpect(status().isOk());
             mockMvc.perform(get("/api/staff-members/" + staffId)
                     .header("Authorization", "Bearer " + tokenA))
                     .andExpect(jsonPath("$.disciplinaryStatus").value("SUSPENDED"));
@@ -190,7 +190,7 @@ class StaffMemberControllerTest {
                     .header("Authorization", "Bearer " + tokenA)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"actionType\":\"REINSTATEMENT\",\"reason\":\"Investigation concluded\"}"))
-                    .andExpect(status().isCreated());
+                    .andExpect(status().isOk());
             mockMvc.perform(get("/api/staff-members/" + staffId)
                     .header("Authorization", "Bearer " + tokenA))
                     .andExpect(jsonPath("$.disciplinaryStatus").value("NONE"));

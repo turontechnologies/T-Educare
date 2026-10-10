@@ -13,6 +13,7 @@ import {
   User,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,7 +51,7 @@ import {
   useImportStaffMembers,
   useRestoreStaffMember,
 } from "@/hooks/use-staff-members";
-import { fullName } from "@/lib/staff-members";
+import { STAFF_DISCIPLINARY_STATUS_BADGE, fullName } from "@/lib/staff-members";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useStaffStore } from "@/store/staff.store";
 import { useStaffMembersStore } from "@/store/staff-members.store";
@@ -368,6 +369,7 @@ function StaffTable({
                 <TableHead>Gender</TableHead>
                 <TableHead>Designation</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -424,6 +426,27 @@ function StaffTable({
                   <TableCell className="text-muted-foreground">
                     {departmentName(staff.departmentId)}
                   </TableCell>
+                  <TableCell>
+                    {staff.disciplinaryStatus !== "NONE" ? (
+                      <Badge
+                        className={
+                          STAFF_DISCIPLINARY_STATUS_BADGE[
+                            staff.disciplinaryStatus
+                          ].className
+                        }
+                      >
+                        {
+                          STAFF_DISCIPLINARY_STATUS_BADGE[
+                            staff.disciplinaryStatus
+                          ].label
+                        }
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-emerald-500/10 text-emerald-600">
+                        Good Standing
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     {view === "active" ? (
                       <DropdownMenu>
@@ -479,7 +502,7 @@ function StaffTable({
               {paginated.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={view === "active" ? 10 : 9}
+                    colSpan={view === "active" ? 11 : 10}
                     className="py-10 text-center text-muted-foreground"
                   >
                     {view === "archived"

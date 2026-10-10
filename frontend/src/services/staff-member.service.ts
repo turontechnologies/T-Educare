@@ -1,5 +1,7 @@
 import { apiClient } from "@/lib/axios";
 import type {
+  StaffDisciplinaryActionType,
+  StaffDisciplinaryRecord,
   StaffGender,
   StaffMaritalStatus,
   StaffMember,
@@ -32,6 +34,13 @@ export type StaffMemberFormPayload = {
   avatarUrl?: string;
   salaryAmount?: number;
   salaryCurrency?: string;
+};
+
+export type RecordStaffDisciplinaryActionPayload = {
+  actionType: StaffDisciplinaryActionType;
+  reason: string;
+  startDate?: string;
+  endDate?: string;
 };
 
 export type AddStaffQualificationPayload = {
@@ -92,6 +101,26 @@ export const staffMemberService = {
   async restore(id: string): Promise<StaffMember> {
     const { data } = await apiClient.post<StaffMember>(
       `/staff-members/${id}/restore`,
+    );
+    return data;
+  },
+
+  async listDisciplinaryRecords(
+    staffId: string,
+  ): Promise<StaffDisciplinaryRecord[]> {
+    const { data } = await apiClient.get<StaffDisciplinaryRecord[]>(
+      `/staff-members/${staffId}/disciplinary-records`,
+    );
+    return data;
+  },
+
+  async recordDisciplinaryAction(
+    staffId: string,
+    payload: RecordStaffDisciplinaryActionPayload,
+  ): Promise<StaffDisciplinaryRecord> {
+    const { data } = await apiClient.post<StaffDisciplinaryRecord>(
+      `/staff-members/${staffId}/disciplinary-records`,
+      payload,
     );
     return data;
   },

@@ -8,3 +8,27 @@ export function fullName(
     .filter(Boolean)
     .join(" ");
 }
+
+/** Badge for the cached `disciplinaryStatus` — mirrors students.ts's DISCIPLINARY_STATUS_BADGE. */
+export const STAFF_DISCIPLINARY_STATUS_BADGE: Record<
+  Exclude<StaffMember["disciplinaryStatus"], "NONE">,
+  { label: string; className: string }
+> = {
+  SUSPENDED: {
+    label: "Suspended",
+    className: "bg-amber-500/10 text-amber-600",
+  },
+  TERMINATED: {
+    label: "Terminated",
+    className: "bg-destructive/10 text-destructive",
+  },
+};
+
+/** Badge for each disciplinary action-type on the history list (distinct from the cached status badge above). */
+export const STAFF_DISCIPLINARY_ACTION_BADGE_CLASS: Record<string, string> = {
+  WARNING: "bg-orange-500/15 text-orange-600",
+  QUERY: "bg-amber-500/10 text-amber-600",
+  SUSPENSION: "bg-amber-500/10 text-amber-600",
+  TERMINATION: "bg-destructive/10 text-destructive",
+  REINSTATEMENT: "bg-emerald-500/10 text-emerald-600",
+};

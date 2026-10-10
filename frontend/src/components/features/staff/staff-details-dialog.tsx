@@ -6,6 +6,7 @@ import {
   Mail,
   Phone,
   Plus,
+  ShieldAlert,
   Trash2,
   User,
   X,
@@ -14,9 +15,14 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { fullName } from "@/lib/staff-members";
+import {
+  STAFF_DISCIPLINARY_ACTION_BADGE_CLASS,
+  STAFF_DISCIPLINARY_STATUS_BADGE,
+  fullName,
+} from "@/lib/staff-members";
 import {
   useDeleteStaffQualification,
+  useStaffDisciplinaryRecords,
   useStaffQualifications,
 } from "@/hooks/use-staff-members";
 import { useCoursesStore } from "@/store/courses.store";
@@ -24,6 +30,7 @@ import { useDepartmentsStore } from "@/store/departments.store";
 import { useStaffStore } from "@/store/staff.store";
 import type { StaffMember } from "@/types/staff-member";
 import { AddQualificationDialog } from "./add-qualification-dialog";
+import { RecordStaffDisciplinaryActionDialog } from "./record-staff-disciplinary-action-dialog";
 
 interface StaffDetailsDialogProps {
   open: boolean;
@@ -39,6 +46,15 @@ const dateOnlyLabel = (iso: string) =>
   })
     .format(new Date(iso))
     .replace(/ /g, "-");
+
+const dateTimeLabel = (iso: string) =>
+  new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -59,9 +75,14 @@ export function StaffDetailsDialog({
   const courses = useCoursesStore((state) => state.courses);
 
   const [addQualificationOpen, setAddQualificationOpen] = useState(false);
+  const [recordActionOpen, setRecordActionOpen] = useState(false);
   const { data: qualifications } = useStaffQualifications(staffMember?.id, {
     enabled: open,
   });
+  const { data: disciplinaryRecords } = useStaffDisciplinaryRecords(
+    staffMember?.id,
+    { enabled: open },
+  );
   const deleteQualification = useDeleteStaffQualification();
 
   const designationName = (id: string) =>
@@ -146,6 +167,21 @@ export function StaffDetailsDialog({
                         Archived
                       </Badge>
                     )}
+                    {staffMember.disciplinaryStatus !== "NONE" && (
+                      <Badge
+                        className={
+                          STAFF_DISCIPLINARY_STATUS_BADGE[
+                            staffMember.disciplinaryStatus
+                          ].className
+                        }
+                      >
+                        {
+                          STAFF_DISCIPLINARY_STATUS_BADGE[
+                            staffMember.disciplinaryStatus
+                          ].label
+                        }
+                      </Badge>
+                    )}
                   </div>
                   <p className="font-mono text-sm text-muted-foreground">
                     {staffMember.staffId}
@@ -160,6 +196,17 @@ export function StaffDetailsDialog({
                       {staffMember.phone}
                     </span>
                   </div>
+                </div>
+                <div className="flex shrink-0 flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setRecordActionOpen(true)}
+                  >
+                    <ShieldAlert className="size-3.5" />
+                    Record Action
+                  </Button>
                 </div>
               </div>
 
@@ -219,6 +266,44 @@ export function StaffDetailsDialog({
                         : undefined
                     }
                   />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-2 text-sm font-medium text-foreground">
+                  Disciplinary History
+                </h4>
+                <div className="space-y-2 rounded-md border border-border bg-muted/40 p-4 text-sm">
+                  {disciplinaryRecords && disciplinaryRecords.length > 0 ? (
+                    disciplinaryRecords.map((record) => (
+                      <div
+                        key={record.id}
+                        className="rounded-md border border-border bg-background px-3 py-2"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <Badge
+                            className={
+                              STAFF_DISCIPLINARY_ACTION_BADGE_CLASS[
+                                record.actionType
+                              ]
+                            }
+                          >
+                            {record.actionType}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {dateTimeLabel(record.createdAt)}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-foreground">
+                          {record.reason}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="py-2 text-center text-muted-foreground">
+                      No disciplinary actions on record.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -316,6 +401,11 @@ export function StaffDetailsDialog({
       <AddQualificationDialog
         open={addQualificationOpen}
         onOpenChange={setAddQualificationOpen}
+        staffMember={staffMember}
+      />
+      <RecordStaffDisciplinaryActionDialog
+        open={recordActionOpen}
+        onOpenChange={setRecordActionOpen}
         staffMember={staffMember}
       />
     </>
