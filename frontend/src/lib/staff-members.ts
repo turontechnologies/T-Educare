@@ -9,10 +9,19 @@ export function fullName(
     .join(" ");
 }
 
-/** Badge for the cached `disciplinaryStatus` — mirrors students.ts's DISCIPLINARY_STATUS_BADGE. */
-export const STAFF_DISCIPLINARY_STATUS_BADGE: Record<
-  Exclude<StaffMember["disciplinaryStatus"], "NONE">,
-  { label: string; className: string }
+/**
+ * Badge for the cached `disciplinaryStatus` — mirrors students.ts's
+ * DISCIPLINARY_STATUS_BADGE. `Partial` (rather than keying only on the
+ * non-"NONE" variants) is deliberate: it makes every lookup type as
+ * possibly-`undefined`, so a stale/unexpected value (e.g. a pre-migration
+ * cached record with no `disciplinaryStatus` at all) is a type error to
+ * use without a guard, not a runtime crash.
+ */
+export const STAFF_DISCIPLINARY_STATUS_BADGE: Partial<
+  Record<
+    StaffMember["disciplinaryStatus"],
+    { label: string; className: string }
+  >
 > = {
   SUSPENDED: {
     label: "Suspended",

@@ -9,10 +9,17 @@ export function fullName(
     .join(" ");
 }
 
-/** Badge for the cached `disciplinaryStatus` — the one place this is rendered, so the three non-NONE values stay visually distinct everywhere. */
-export const DISCIPLINARY_STATUS_BADGE: Record<
-  Exclude<Student["disciplinaryStatus"], "NONE">,
-  { label: string; className: string }
+/**
+ * Badge for the cached `disciplinaryStatus` — the one place this is
+ * rendered, so the three non-NONE values stay visually distinct
+ * everywhere. `Partial` (rather than keying only on the non-"NONE"
+ * variants) is deliberate: it makes every lookup type as
+ * possibly-`undefined`, so a stale/unexpected value is a type error to
+ * use without a guard, not a runtime crash (see the identical staff-side
+ * fix in lib/staff-members.ts for the real crash this caught).
+ */
+export const DISCIPLINARY_STATUS_BADGE: Partial<
+  Record<Student["disciplinaryStatus"], { label: string; className: string }>
 > = {
   SUSPENDED: {
     label: "Suspended",

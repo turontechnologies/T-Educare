@@ -167,21 +167,24 @@ export function StaffDetailsDialog({
                         Archived
                       </Badge>
                     )}
-                    {staffMember.disciplinaryStatus !== "NONE" && (
-                      <Badge
-                        className={
-                          STAFF_DISCIPLINARY_STATUS_BADGE[
-                            staffMember.disciplinaryStatus
-                          ].className
-                        }
-                      >
-                        {
-                          STAFF_DISCIPLINARY_STATUS_BADGE[
-                            staffMember.disciplinaryStatus
-                          ].label
-                        }
-                      </Badge>
-                    )}
+                    {staffMember.disciplinaryStatus &&
+                      STAFF_DISCIPLINARY_STATUS_BADGE[
+                        staffMember.disciplinaryStatus
+                      ] && (
+                        <Badge
+                          className={
+                            STAFF_DISCIPLINARY_STATUS_BADGE[
+                              staffMember.disciplinaryStatus
+                            ].className
+                          }
+                        >
+                          {
+                            STAFF_DISCIPLINARY_STATUS_BADGE[
+                              staffMember.disciplinaryStatus
+                            ].label
+                          }
+                        </Badge>
+                      )}
                   </div>
                   <p className="font-mono text-sm text-muted-foreground">
                     {staffMember.staffId}

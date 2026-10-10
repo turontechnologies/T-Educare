@@ -427,7 +427,10 @@ function StaffTable({
                     {departmentName(staff.departmentId)}
                   </TableCell>
                   <TableCell>
-                    {staff.disciplinaryStatus !== "NONE" ? (
+                    {staff.disciplinaryStatus &&
+                    STAFF_DISCIPLINARY_STATUS_BADGE[
+                      staff.disciplinaryStatus
+                    ] ? (
                       <Badge
                         className={
                           STAFF_DISCIPLINARY_STATUS_BADGE[
