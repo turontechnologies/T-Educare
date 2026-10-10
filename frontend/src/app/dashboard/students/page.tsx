@@ -417,7 +417,8 @@ function StudentTable({
                     {levelName(student.programLevelId)}
                   </TableCell>
                   <TableCell>
-                    {student.disciplinaryStatus !== "NONE" ? (
+                    {student.disciplinaryStatus &&
+                    DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus] ? (
                       <Badge
                         className={
                           DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]

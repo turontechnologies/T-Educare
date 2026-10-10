@@ -221,19 +221,22 @@ export function StudentDetailsDialog({
                         Hold for Review
                       </Badge>
                     )}
-                    {student.disciplinaryStatus !== "NONE" && (
-                      <Badge
-                        className={
-                          DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]
-                            .className
-                        }
-                      >
-                        {
-                          DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus]
-                            .label
-                        }
-                      </Badge>
-                    )}
+                    {student.disciplinaryStatus &&
+                      DISCIPLINARY_STATUS_BADGE[student.disciplinaryStatus] && (
+                        <Badge
+                          className={
+                            DISCIPLINARY_STATUS_BADGE[
+                              student.disciplinaryStatus
+                            ].className
+                          }
+                        >
+                          {
+                            DISCIPLINARY_STATUS_BADGE[
+                              student.disciplinaryStatus
+                            ].label
+                          }
+                        </Badge>
+                      )}
                   </div>
                   <p className="font-mono text-sm text-muted-foreground">
                     {student.matricNo ??

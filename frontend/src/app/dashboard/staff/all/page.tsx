@@ -13,7 +13,6 @@ import {
   User,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { StaffDetailsDialog } from "@/components/features/staff/staff-details-dialog";
 import { StaffMemberDialog } from "@/components/features/staff/staff-member-dialog";
 import {
@@ -427,28 +427,14 @@ function StaffTable({
                     {departmentName(staff.departmentId)}
                   </TableCell>
                   <TableCell>
-                    {staff.disciplinaryStatus &&
-                    STAFF_DISCIPLINARY_STATUS_BADGE[
-                      staff.disciplinaryStatus
-                    ] ? (
-                      <Badge
-                        className={
-                          STAFF_DISCIPLINARY_STATUS_BADGE[
-                            staff.disciplinaryStatus
-                          ].className
-                        }
-                      >
-                        {
-                          STAFF_DISCIPLINARY_STATUS_BADGE[
-                            staff.disciplinaryStatus
-                          ].label
-                        }
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-emerald-500/10 text-emerald-600">
-                        Good Standing
-                      </Badge>
-                    )}
+                    <StatusBadge
+                      status={staff.disciplinaryStatus}
+                      map={STAFF_DISCIPLINARY_STATUS_BADGE}
+                      fallback={{
+                        label: "Good Standing",
+                        className: "bg-emerald-500/10 text-emerald-600",
+                      }}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     {view === "active" ? (
