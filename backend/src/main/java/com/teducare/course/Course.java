@@ -52,6 +52,21 @@ public class Course {
     @Column(name = "unit", nullable = false)
     private int unit;
 
+    /**
+     * Which semester-of-the-year (1 or 2) this course is taken in — the
+     * same 100L department can have a completely different course list
+     * for its first vs. second semester. Matched against
+     * {@link com.teducare.academics.AcademicSemester#getSemesterNumber()}
+     * by {@link com.teducare.registration.CourseRegistrationService} so a
+     * 2nd-semester course never appears registrable while a 1st-semester
+     * instance is open, or vice versa. Nullable at the DB level only
+     * because a pre-existing course row has no sensible value to
+     * backfill with; every create/update through {@link CourseService}
+     * still requires it.
+     */
+    @Column(name = "semester_number")
+    private Integer semesterNumber;
+
     /** FK to StaffMember.id — nullable, a course doesn't require a lecturer assigned. Drives "how many courses is this staff member lecturing" on the Staff Management detail view. */
     @Column(name = "lecturer_id", length = 64)
     private String lecturerId;
@@ -74,6 +89,7 @@ public class Course {
             String schoolId,
             String programLevelId,
             int unit,
+            Integer semesterNumber,
             String lecturerId,
             Instant createdAt,
             Instant archivedAt) {
@@ -85,6 +101,7 @@ public class Course {
         this.schoolId = schoolId;
         this.programLevelId = programLevelId;
         this.unit = unit;
+        this.semesterNumber = semesterNumber;
         this.lecturerId = lecturerId;
         this.createdAt = createdAt;
         this.archivedAt = archivedAt;
