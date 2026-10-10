@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/axios";
 import type {
+  AdmissionMode,
   BloodGroup,
   CaseStatus,
   DisciplinaryActionType,
@@ -29,6 +30,8 @@ export type StudentsListParams = {
 export type StudentFormPayload = {
   /** Omit/blank for a pre-student (no matric number assigned yet). */
   matricNo?: string;
+  jambRegNumber?: string;
+  admissionMode: AdmissionMode;
   title: StudentTitle;
   firstName: string;
   middleName?: string;

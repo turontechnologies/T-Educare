@@ -193,6 +193,11 @@ export function StudentDetailsDialog({
                         Pre-Student
                       </Badge>
                     )}
+                    {student.admissionMode === "DIRECT_ENTRY" && (
+                      <Badge className="bg-purple-500/10 text-purple-600">
+                        Direct Entry
+                      </Badge>
+                    )}
                     {student.isGraduating && (
                       <Badge className="bg-secondary/10 text-secondary">
                         Graduating
@@ -223,7 +228,8 @@ export function StudentDetailsDialog({
                     )}
                   </div>
                   <p className="font-mono text-sm text-muted-foreground">
-                    {student.matricNo ?? "No matric number assigned yet"}
+                    {student.matricNo ??
+                      `No matric number assigned yet — Pre-ID: ${student.preAdmissionId}`}
                   </p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
@@ -325,6 +331,18 @@ export function StudentDetailsDialog({
                   <Field
                     label="Current Session"
                     value={sessionName(student.currentSessionId)}
+                  />
+                  <Field
+                    label="Admission Mode"
+                    value={
+                      student.admissionMode === "DIRECT_ENTRY"
+                        ? "Direct Entry"
+                        : "UTME"
+                    }
+                  />
+                  <Field
+                    label="JAMB Reg. Number"
+                    value={student.jambRegNumber}
                   />
                 </div>
               </div>

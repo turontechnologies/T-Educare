@@ -369,6 +369,14 @@ function StudentTable({
                         )}
                       </div>
                       <span className="font-medium">{fullName(student)}</span>
+                      {student.admissionMode === "DIRECT_ENTRY" && (
+                        <Badge
+                          className="bg-purple-500/10 text-purple-600"
+                          title="Direct Entry"
+                        >
+                          DE
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">

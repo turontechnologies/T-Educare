@@ -32,6 +32,7 @@ import {
   MARITAL_STATUSES,
   RELIGIONS,
   STUDENT_TITLES,
+  type AdmissionMode,
   type BloodGroup,
   type Genotype,
   type MaritalStatus,
@@ -40,6 +41,11 @@ import {
   type StudentGender,
   type StudentTitle,
 } from "@/types/student";
+
+const ADMISSION_MODE_OPTIONS: { label: string; value: AdmissionMode }[] = [
+  { label: "UTME", value: "UTME" },
+  { label: "Direct Entry", value: "DIRECT_ENTRY" },
+];
 
 const TITLE_OPTIONS = STUDENT_TITLES.map((value) => ({ label: value, value }));
 const GENDER_OPTIONS: { label: string; value: StudentGender }[] = [
@@ -73,6 +79,7 @@ const NIGERIAN_STATES = [
 
 interface StudentFormValues {
   matricNo: string;
+  jambRegNumber: string;
   firstName: string;
   middleName: string;
   lastName: string;
@@ -194,6 +201,9 @@ function StudentForm({
     student?.programLevelId ?? "",
   );
   const [sessionId, setSessionId] = useState(student?.currentSessionId ?? "");
+  const [admissionMode, setAdmissionMode] = useState<AdmissionMode | "">(
+    student?.admissionMode ?? "UTME",
+  );
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(
     student?.avatarUrl,
   );
@@ -203,6 +213,7 @@ function StudentForm({
   const { register, handleSubmit, formState } = useForm<StudentFormValues>({
     defaultValues: {
       matricNo: student?.matricNo ?? "",
+      jambRegNumber: student?.jambRegNumber ?? "",
       firstName: student?.firstName ?? "",
       middleName: student?.middleName ?? "",
       lastName: student?.lastName ?? "",
@@ -253,7 +264,8 @@ function StudentForm({
       !departmentId ||
       !programId ||
       !programLevelId ||
-      !sessionId
+      !sessionId ||
+      !admissionMode
     ) {
       toast.error("Fill in every required field before saving");
       return;
@@ -261,6 +273,8 @@ function StudentForm({
 
     const payload = {
       matricNo: values.matricNo.trim() || undefined,
+      jambRegNumber: values.jambRegNumber.trim() || undefined,
+      admissionMode,
       firstName: values.firstName,
       middleName: values.middleName.trim() || undefined,
       lastName: values.lastName,
@@ -492,6 +506,20 @@ function StudentForm({
             labelClassName="bg-popover"
             placeholder="e.g. UL-10044 — leave blank for a pre-student"
             {...register("matricNo")}
+          />
+          <NotchedSelectField
+            label="Admission Mode"
+            labelClassName="bg-popover"
+            value={admissionMode}
+            onValueChange={(value) => setAdmissionMode(value as AdmissionMode)}
+            options={ADMISSION_MODE_OPTIONS}
+            placeholder="Select admission mode"
+          />
+          <NotchedField
+            label="JAMB Reg. Number (optional)"
+            labelClassName="bg-popover"
+            placeholder="e.g. 12345678AB"
+            {...register("jambRegNumber")}
           />
           <NotchedSelectField
             label="School"
