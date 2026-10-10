@@ -21,6 +21,7 @@ import {
   useUpdateStaffMember,
 } from "@/hooks/use-staff-members";
 import { readFileAsDataUrl } from "@/lib/files";
+import { nextSequentialId } from "@/lib/sequential-id";
 import { fullName } from "@/lib/staff-members";
 import { cn } from "@/lib/utils";
 import { useDepartmentsStore } from "@/store/departments.store";
@@ -98,15 +99,20 @@ export function StaffMemberDialog({
   );
 }
 
+/**
+ * Suggests the next Staff ID by continuing whatever format/progression the
+ * admin's own most recent entry established (e.g. "XYZ-ST-1001" ->
+ * "XYZ-ST-1002") — the admin sets the very first one manually; after that,
+ * this field self-fills following their chosen format.
+ */
 function nextStaffId(existing: StaffMember[]) {
-  let n = 10000 + existing.length;
-  const taken = new Set(existing.map((s) => s.staffId));
-  let candidate = `UL-${n}`;
-  while (taken.has(candidate)) {
-    n++;
-    candidate = `UL-${n}`;
-  }
-  return candidate;
+  return (
+    nextSequentialId(
+      existing,
+      (s) => s.createdAt,
+      (s) => s.staffId,
+    ) ?? ""
+  );
 }
 
 function StaffMemberForm({

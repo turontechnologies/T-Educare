@@ -5,6 +5,14 @@ export type DisciplinaryStatus =
 /** UTME = standard JAMB-admission route; Direct Entry = already holds an OND/NCE/A-Level qualification, typically entering above 100L. Purely informational — doesn't auto-assign a level. */
 export type AdmissionMode = "UTME" | "DIRECT_ENTRY";
 
+/** Which identifier the UI treats as "primary" for a pre-student (matricNo == null) — both values always exist on the record regardless of this setting; it only controls display preference, not which fields are collected. */
+export type PreStudentIdentifierPreference =
+  "PRE_ADMISSION_ID" | "JAMB_REG_NUMBER";
+
+export interface StudentIdentitySettings {
+  preStudentIdentifierPreference: PreStudentIdentifierPreference;
+}
+
 export const STUDENT_TITLES = [
   "Mr",
   "Mrs",

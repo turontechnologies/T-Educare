@@ -22,6 +22,7 @@ import { usePrograms } from "@/hooks/use-programs";
 import { useSchools } from "@/hooks/use-schools";
 import { useStaffDesignations } from "@/hooks/use-staff-designations";
 import { useStaffMembers } from "@/hooks/use-staff-members";
+import { useStudentIdentitySettings } from "@/hooks/use-student-identity-settings";
 import { useStudents } from "@/hooks/use-students";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useAuthStore } from "@/store/auth.store";
@@ -35,6 +36,7 @@ import { useProgramsStore } from "@/store/programs.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import { useStaffMembersStore } from "@/store/staff-members.store";
 import { useStaffStore } from "@/store/staff.store";
+import { useStudentIdentitySettingsStore } from "@/store/student-identity-settings.store";
 import { useStudentsStore } from "@/store/students.store";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -211,6 +213,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (staffMembersData) setStaffMembers(staffMembersData);
   }, [staffMembersData, setStaffMembers]);
+
+  const setStudentIdentitySettings = useStudentIdentitySettingsStore(
+    (state) => state.setSettings,
+  );
+  const { data: studentIdentitySettingsData } = useStudentIdentitySettings({
+    enabled: hasHydrated && !!token && user?.role === "institution_admin",
+  });
+  useEffect(() => {
+    if (studentIdentitySettingsData) {
+      setStudentIdentitySettings(studentIdentitySettingsData);
+    }
+  }, [studentIdentitySettingsData, setStudentIdentitySettings]);
 
   const liveInstitution = institutions.find(
     (i) => i.id === user?.institutionId,

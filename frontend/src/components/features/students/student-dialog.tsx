@@ -17,6 +17,7 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { readFileAsDataUrl } from "@/lib/files";
+import { nextSequentialId } from "@/lib/sequential-id";
 import { fullName } from "@/lib/students";
 import { cn } from "@/lib/utils";
 import { useCreateStudent, useUpdateStudent } from "@/hooks/use-students";
@@ -26,6 +27,7 @@ import { useFacultiesStore } from "@/store/faculties.store";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useProgramsStore } from "@/store/programs.store";
 import { useSchoolsStore } from "@/store/schools.store";
+import { useStudentsStore } from "@/store/students.store";
 import {
   BLOOD_GROUPS,
   GENOTYPES,
@@ -170,6 +172,12 @@ function StudentForm({
   const departments = useDepartmentsStore((state) => state.departments);
   const programs = useProgramsStore((state) => state.programs);
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
+  const students = useStudentsStore((state) => state.students);
+  const suggestedMatricNo = nextSequentialId(
+    students,
+    (s) => s.createdAt,
+    (s) => s.matricNo,
+  );
 
   const [title, setTitle] = useState<StudentTitle | "">(student?.title ?? "");
   const [gender, setGender] = useState<StudentGender | "">(
@@ -504,7 +512,11 @@ function StudentForm({
           <NotchedField
             label="Matric No. (optional)"
             labelClassName="bg-popover"
-            placeholder="e.g. UL-10044 — leave blank for a pre-student"
+            placeholder={
+              !student && suggestedMatricNo
+                ? `Suggested next: ${suggestedMatricNo} — leave blank for a pre-student`
+                : "e.g. UL-10044 — leave blank for a pre-student"
+            }
             {...register("matricNo")}
           />
           <NotchedSelectField
