@@ -23,6 +23,8 @@ export interface AuthenticatedUser {
    * already-open session without a re-login.
    */
   menuKeys?: string[];
+  /** institution_admin only — links this login to a real Lecturer record (see types/lecturer.ts). Present only for a lecturer's own account; drives Lecture Management's self-service "My Lectures" view instead of the admin table. */
+  lecturerId?: string;
 }
 
 export interface LoginRequest {

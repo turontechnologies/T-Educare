@@ -43,3 +43,53 @@ export interface Lecturer {
   /** Nullable — soft-delete, same convention as every other admin table. */
   archivedAt: string | null;
 }
+
+export const DAYS_OF_WEEK = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+] as const;
+export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
+
+export interface TimetableSlot {
+  id: string;
+  lectureAssignmentId: string;
+  dayOfWeek: DayOfWeek;
+  /** "HH:mm", 24-hour. */
+  startTime: string;
+  endTime: string;
+  venue: string;
+  createdAt: string;
+}
+
+/** "Lectures" — which Lecturer teaches which Course, for a given academic session, plus its weekly timetable slots. */
+export interface LectureAssignment {
+  id: string;
+  lecturerId: string;
+  courseId: string;
+  academicSessionId: string;
+  createdAt: string;
+  archivedAt: string | null;
+  timetableSlots: TimetableSlot[];
+}
+
+export type TimetableChangeRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+/** A lecturer's own request to move one of their timetable slots to a different day/time/venue. */
+export interface TimetableChangeRequest {
+  id: string;
+  timetableSlotId: string;
+  requestedByLecturerId: string;
+  proposedDayOfWeek: DayOfWeek;
+  proposedStartTime: string;
+  proposedEndTime: string;
+  proposedVenue?: string;
+  reason: string;
+  status: TimetableChangeRequestStatus;
+  createdAt: string;
+  resolvedAt: string | null;
+}

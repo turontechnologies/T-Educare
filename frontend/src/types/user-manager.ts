@@ -19,6 +19,8 @@ export interface UserManagerAccount {
   avatarUrl?: string;
   /** Real Role.id (see types/role.ts) this account is restricted to — absent/null means unrestricted (the institution's own root admin behaves this way by default). */
   roleId?: string | null;
+  /** Real Lecturer.id (see types/lecturer.ts) this login is linked to — present only for a lecturer's own account, driving Lecture Management's self-service "My Lectures" view instead of the admin table. */
+  lecturerId?: string | null;
   status: UserManagerStatus;
   createdAt: string;
   /** Soft-delete — archived accounts are hidden from the main list but never destroyed. ISO timestamp, or null if active. */

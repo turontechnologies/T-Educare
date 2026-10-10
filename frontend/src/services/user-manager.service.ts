@@ -31,6 +31,8 @@ export type UserManagerFormPayload = {
   avatarUrl?: string;
   /** Omit to leave unchanged; "" clears back to unrestricted; otherwise a real Role.id (see hooks/use-roles.ts). */
   roleId?: string;
+  /** Omit to leave unchanged; "" unlinks; otherwise a real Lecturer.id (see types/lecturer.ts) — links this login to that lecturer's self-service view. */
+  lecturerId?: string;
 };
 
 export const userManagerService = {
