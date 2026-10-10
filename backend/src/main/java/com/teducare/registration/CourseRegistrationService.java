@@ -73,7 +73,8 @@ public class CourseRegistrationService {
     @Transactional
     public List<CourseRegistrationResponse> replace(String institutionId, ReplaceCourseRegistrationsRequest request) {
         Student student = studentService.requireOwnStudent(institutionId, request.studentId());
-        academicSemesterService.requireOwnSemester(institutionId, request.academicSemesterId());
+        AcademicSemester semester =
+                academicSemesterService.requireOwnSemester(institutionId, request.academicSemesterId());
         RegistrationSettingsResponse settings = settingsService.get(institutionId);
         Set<String> outstandingCarryoverIds =
                 Set.copyOf(studentService.latestCarryoverCourseIds(institutionId, request.studentId()));
@@ -83,12 +84,17 @@ public class CourseRegistrationService {
             courses.add(courseService.requireOwnCourse(institutionId, courseId));
         }
 
-        // Every selected course must belong to the student's own department.
-        // A non-carryover course must also match the student's current
-        // level — a carryover course is exempt from the level check since
-        // it's from an earlier level by definition.
+        // Every selected course must be registrable by the student's own
+        // department — either as that department's own (home) course, or
+        // via a borrowed CourseDepartmentOffering grant. A non-carryover
+        // course must also match the student's current level — a
+        // carryover course is exempt from the level check since it's from
+        // an earlier level by definition. The semester-of-year check
+        // applies regardless of carryover status: a 1st-semester course
+        // (carryover or not) can only ever be registered while a
+        // 1st-semester instance is open.
         for (Course course : courses) {
-            if (!course.getDepartmentId().equals(student.getDepartmentId())) {
+            if (!courseService.isEligibleForDepartment(institutionId, course, student.getDepartmentId())) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Course " + course.getCode() + " is not offered for this student's department.");
@@ -98,6 +104,13 @@ public class CourseRegistrationService {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Course " + course.getCode() + " is not offered at this student's current level.");
+            }
+            if (course.getSemesterNumber() != null && semester.getSemesterNumber() != null
+                    && !course.getSemesterNumber().equals(semester.getSemesterNumber())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Course " + course.getCode() + " is a semester " + course.getSemesterNumber()
+                                + " course and is not offered in this semester.");
             }
         }
 
@@ -114,7 +127,25 @@ public class CourseRegistrationService {
             }
         }
 
-        int totalUnits = courses.stream().mapToInt(Course::getUnit).sum();
+        // "Choose N of these courses" requirements (API_CONTRACT.md's
+        // elective-group model) — every applicable group for this
+        // student's department+level must have between minSelect and
+        // maxSelect of its own member courses present in this submission.
+        List<ElectiveGroupResponse> applicableGroups = electiveGroupService.findApplicable(
+                institutionId, student.getDepartmentId(), student.getProgramLevelId());
+        for (ElectiveGroupResponse group : applicableGroups) {
+            long selectedFromGroup = request.courseIds().stream().filter(group.courseIds()::contains).count();
+            if (selectedFromGroup < group.minSelect() || selectedFromGroup > group.maxSelect()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Elective group \"" + group.name() + "\" requires choosing between " + group.minSelect()
+                                + " and " + group.maxSelect() + " course(s) — " + selectedFromGroup + " selected.");
+            }
+        }
+
+        int totalUnits = courses.stream()
+                .mapToInt(course -> courseService.resolveEffectiveUnit(institutionId, course, student.getDepartmentId()))
+                .sum();
         if (totalUnits > settings.maxUnitsPerSemester()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -133,7 +164,7 @@ public class CourseRegistrationService {
                     request.studentId(),
                     course.getId(),
                     request.academicSemesterId(),
-                    course.getUnit(),
+                    courseService.resolveEffectiveUnit(institutionId, course, student.getDepartmentId()),
                     outstandingCarryoverIds.contains(course.getId()),
                     Instant.now())));
         }
