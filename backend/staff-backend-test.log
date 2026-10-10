@@ -134,3 +134,11 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
 [INFO] Running com.teducare.role.RoleControllerTest
 2026-10-10T10:26:04.776Z  INFO 81 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.role.RoleControllerTest]: RoleControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
 2026-10-10T10:26:06.049Z  INFO 81 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.role.RoleControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.880 s -- in com.teducare.role.RoleControllerTest
+[INFO] Running com.teducare.school.SchoolControllerTest
+2026-10-10T10:26:08.687Z  INFO 81 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.school.SchoolControllerTest]: SchoolControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-10T10:26:10.190Z  INFO 81 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.school.SchoolControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.625 s -- in com.teducare.school.SchoolControllerTest
+[INFO] Running com.teducare.staff.StaffMemberControllerTest
+2026-10-10T10:26:12.301Z  INFO 81 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.staff.StaffMemberControllerTest]: StaffMemberControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-10T10:26:13.272Z  INFO 81 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.staff.StaffMemberControllerTest
