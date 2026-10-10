@@ -144,8 +144,4 @@ public class RoleService {
             }
         }
     }
-
-    private static Set<String> concat(Set<String> keys, String extra) {
-        return Stream.concat(keys.stream(), Stream.of(extra)).collect(Collectors.toUnmodifiableSet());
-    }
 }
