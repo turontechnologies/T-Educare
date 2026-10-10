@@ -2,6 +2,8 @@ export type StudentGender = "Male" | "Female" | "Other";
 export type StudentStatus = "active" | "inactive";
 export type DisciplinaryStatus =
   "NONE" | "SUSPENDED" | "RUSTICATED" | "EXPELLED";
+/** UTME = standard JAMB-admission route; Direct Entry = already holds an OND/NCE/A-Level qualification, typically entering above 100L. Purely informational — doesn't auto-assign a level. */
+export type AdmissionMode = "UTME" | "DIRECT_ENTRY";
 
 export const STUDENT_TITLES = [
   "Mr",
@@ -64,10 +66,17 @@ export type CaseStatus = "open" | "resolved" | "dismissed";
  * `currentLevel` union with real ids. `matricNo` is nullable — a student
  * with none yet is a "pre-student" (just admitted, not yet matriculated);
  * assigning one via a normal edit is how they become a full student.
+ * `preAdmissionId` is always present (auto-generated server-side at
+ * creation, derived from the student's own id) — the fallback identifier
+ * for a pre-student before a matric number exists; `jambRegNumber` is a
+ * second, optional, real-world identifier an admin can record on top.
  */
 export interface Student {
   id: string;
   matricNo: string | null;
+  preAdmissionId: string;
+  jambRegNumber?: string;
+  admissionMode: AdmissionMode;
   title: StudentTitle;
   firstName: string;
   middleName?: string;
