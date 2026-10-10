@@ -15,5 +15,6 @@ public record UpdateCourseRequest(
         String schoolId,
         String programLevelId,
         Integer unit,
+        Integer semesterNumber,
         String lecturerId) {
 }
