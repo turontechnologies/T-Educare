@@ -3,6 +3,7 @@ package com.teducare.course;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import com.teducare.staff.StaffMemberService;
 public class CourseService {
 
     private final CourseRepository repository;
+    private final CourseDepartmentOfferingRepository offeringRepository;
     private final DepartmentService departmentService;
     private final SchoolService schoolService;
     private final ProgramLevelService programLevelService;
@@ -25,11 +27,13 @@ public class CourseService {
 
     public CourseService(
             CourseRepository repository,
+            CourseDepartmentOfferingRepository offeringRepository,
             DepartmentService departmentService,
             SchoolService schoolService,
             ProgramLevelService programLevelService,
             StaffMemberService staffMemberService) {
         this.repository = repository;
+        this.offeringRepository = offeringRepository;
         this.departmentService = departmentService;
         this.schoolService = schoolService;
         this.programLevelService = programLevelService;
@@ -200,6 +204,71 @@ public class CourseService {
     public Course requireOwnCourse(String institutionId, String id) {
         return repository.findByIdAndInstitutionId(id, institutionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found."));
+    }
+
+    public List<CourseDepartmentOfferingResponse> listOfferings(String institutionId, String courseId) {
+        requireOwnCourse(institutionId, courseId);
+        return offeringRepository.findByInstitutionIdAndCourseId(institutionId, courseId).stream()
+                .map(CourseDepartmentOfferingResponse::from)
+                .toList();
+    }
+
+    /** Grants another ("borrowing") department the right to register students for this course — see {@link CourseDepartmentOffering} for why this isn't just a flag on Course itself. */
+    public CourseDepartmentOfferingResponse addOffering(
+            String institutionId, String courseId, AddCourseDepartmentOfferingRequest request) {
+        Course course = requireOwnCourse(institutionId, courseId);
+        if (request.departmentId().equals(course.getDepartmentId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "This is already the course's own department.");
+        }
+        departmentService.requireOwnDepartment(institutionId, request.departmentId());
+        if (offeringRepository
+                .findByInstitutionIdAndCourseIdAndDepartmentId(institutionId, courseId, request.departmentId())
+                .isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "That department already borrows this course.");
+        }
+
+        CourseDepartmentOffering offering = new CourseDepartmentOffering(
+                "course-offering-" + UUID.randomUUID(),
+                institutionId,
+                courseId,
+                request.departmentId(),
+                request.unitOverride(),
+                request.compulsory(),
+                Instant.now());
+        return CourseDepartmentOfferingResponse.from(offeringRepository.save(offering));
+    }
+
+    public void removeOffering(String institutionId, String courseId, String offeringId) {
+        requireOwnCourse(institutionId, courseId);
+        CourseDepartmentOffering offering = offeringRepository
+                .findByIdAndInstitutionIdAndCourseId(offeringId, institutionId, courseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Offering not found."));
+        offeringRepository.delete(offering);
+    }
+
+    /** True if `departmentId` may register students for `course` — either as its own (home) department, or via a borrowed {@link CourseDepartmentOffering} grant. Public — reused by CourseRegistrationService. */
+    public boolean isEligibleForDepartment(String institutionId, Course course, String departmentId) {
+        if (course.getDepartmentId().equals(departmentId)) {
+            return true;
+        }
+        return offeringRepository
+                .findByInstitutionIdAndCourseIdAndDepartmentId(institutionId, course.getId(), departmentId)
+                .isPresent();
+    }
+
+    /** The credit-unit load `departmentId` actually carries for `course` — the course's own base unit for its home department, or a borrowing department's own override if one was set (otherwise still the base unit). Public — reused by CourseRegistrationService. */
+    public int resolveEffectiveUnit(String institutionId, Course course, String departmentId) {
+        if (course.getDepartmentId().equals(departmentId)) {
+            return course.getUnit();
+        }
+        Optional<CourseDepartmentOffering> offering =
+                offeringRepository.findByInstitutionIdAndCourseIdAndDepartmentId(
+                        institutionId, course.getId(), departmentId);
+        return offering.map(CourseDepartmentOffering::getUnitOverride)
+                .filter(override -> override != null)
+                .orElse(course.getUnit());
     }
 
     private void validateUniqueCode(String institutionId, String code, String excludingId) {

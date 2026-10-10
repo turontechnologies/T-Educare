@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -70,6 +71,27 @@ public class CourseController {
     @PostMapping("/{id}/restore")
     public CourseResponse restore(Authentication authentication, @PathVariable String id) {
         return service.restore(requireInstitutionId(authentication), id);
+    }
+
+    @GetMapping("/{id}/offerings")
+    public List<CourseDepartmentOfferingResponse> offerings(Authentication authentication, @PathVariable String id) {
+        return service.listOfferings(requireInstitutionId(authentication), id);
+    }
+
+    @PostMapping("/{id}/offerings")
+    public ResponseEntity<CourseDepartmentOfferingResponse> addOffering(
+            Authentication authentication,
+            @PathVariable String id,
+            @Valid @RequestBody AddCourseDepartmentOfferingRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.addOffering(requireInstitutionId(authentication), id, request));
+    }
+
+    @DeleteMapping("/{id}/offerings/{offeringId}")
+    public ResponseEntity<Void> removeOffering(
+            Authentication authentication, @PathVariable String id, @PathVariable String offeringId) {
+        service.removeOffering(requireInstitutionId(authentication), id, offeringId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping(value = "/import", consumes = "multipart/form-data")
