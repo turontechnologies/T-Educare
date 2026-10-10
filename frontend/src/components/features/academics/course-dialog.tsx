@@ -16,10 +16,12 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { useCreateCourse, useUpdateCourse } from "@/hooks/use-courses";
+import { fullName } from "@/lib/staff-members";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useSchoolsStore } from "@/store/schools.store";
+import { useStaffMembersStore } from "@/store/staff-members.store";
 import type { Course } from "@/types/course";
 
 interface CourseFormValues {
@@ -82,6 +84,7 @@ function CourseForm({
   const departments = useDepartmentsStore((state) => state.departments);
   const schools = useSchoolsStore((state) => state.schools);
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
+  const staffMembers = useStaffMembersStore((state) => state.staffMembers);
   const activeDepartments = useMemo(
     () => departments.filter((d) => !d.archivedAt),
     [departments],
@@ -94,12 +97,17 @@ function CourseForm({
     () => programLevels.filter((l) => !l.archivedAt),
     [programLevels],
   );
+  const activeStaffMembers = useMemo(
+    () => staffMembers.filter((s) => !s.archivedAt),
+    [staffMembers],
+  );
 
   const [departmentId, setDepartmentId] = useState(course?.departmentId ?? "");
   const [schoolId, setSchoolId] = useState(course?.schoolId ?? "");
   const [programLevelId, setProgramLevelId] = useState(
     course?.programLevelId ?? "",
   );
+  const [lecturerId, setLecturerId] = useState(course?.lecturerId ?? "");
 
   const { register, handleSubmit, formState } = useForm<CourseFormValues>({
     defaultValues: {
@@ -133,6 +141,7 @@ function CourseForm({
       schoolId,
       programLevelId,
       unit: Number(values.unit),
+      lecturerId,
     };
 
     try {
@@ -207,6 +216,17 @@ function CourseForm({
           min={1}
           max={10}
           {...register("unit", { required: true, valueAsNumber: true })}
+        />
+        <NotchedSelectField
+          label="Lecturer (optional)"
+          labelClassName="bg-popover"
+          value={lecturerId}
+          onValueChange={setLecturerId}
+          options={activeStaffMembers.map((s) => ({
+            label: `${fullName(s)} (${s.staffId})`,
+            value: s.id,
+          }))}
+          placeholder="Unassigned"
         />
       </form>
 

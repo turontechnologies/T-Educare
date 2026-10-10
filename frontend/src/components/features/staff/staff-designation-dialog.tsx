@@ -15,6 +15,10 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import {
+  useCreateStaffDesignation,
+  useUpdateStaffDesignation,
+} from "@/hooks/use-staff-designations";
 import { useStaffStore } from "@/store/staff.store";
 import type {
   StaffCategory,
@@ -80,8 +84,8 @@ function DesignationForm({
   onDone: () => void;
 }) {
   const designations = useStaffStore((state) => state.designations);
-  const createDesignation = useStaffStore((state) => state.createDesignation);
-  const updateDesignation = useStaffStore((state) => state.updateDesignation);
+  const createDesignation = useCreateStaffDesignation();
+  const updateDesignation = useUpdateStaffDesignation();
 
   const [category, setCategory] = useState<StaffCategory | "">(
     designation?.category ?? "",
@@ -94,7 +98,7 @@ function DesignationForm({
     },
   });
 
-  const onSubmit = (values: DesignationFormValues) => {
+  const onSubmit = async (values: DesignationFormValues) => {
     if (!category) {
       toast.error("Select a designation category");
       return;
@@ -113,14 +117,20 @@ function DesignationForm({
 
     const payload = { name, description: values.description.trim(), category };
 
-    if (designation) {
-      updateDesignation(designation.id, payload);
-      toast.success(`${name} updated`);
-    } else {
-      const created = createDesignation(payload);
-      toast.success(`${created.name} added`);
+    try {
+      if (designation) {
+        await updateDesignation.mutateAsync({ id: designation.id, payload });
+        toast.success(`${name} updated`);
+      } else {
+        await createDesignation.mutateAsync(payload);
+        toast.success(`${name} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save designation",
+      );
     }
-    onDone();
   };
 
   return (

@@ -16,6 +16,10 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import {
+  useCreateStaffMember,
+  useUpdateStaffMember,
+} from "@/hooks/use-staff-members";
 import { readFileAsDataUrl } from "@/lib/files";
 import { fullName } from "@/lib/staff-members";
 import { cn } from "@/lib/utils";
@@ -49,6 +53,8 @@ interface StaffMemberFormValues {
   emergencyContact: string;
   contactAddress: string;
   middleName: string;
+  salaryAmount: string;
+  salaryCurrency: string;
 }
 
 interface StaffMemberDialogProps {
@@ -111,12 +117,8 @@ function StaffMemberForm({
   onDone: () => void;
 }) {
   const staffMembers = useStaffMembersStore((state) => state.staffMembers);
-  const createStaffMember = useStaffMembersStore(
-    (state) => state.createStaffMember,
-  );
-  const updateStaffMember = useStaffMembersStore(
-    (state) => state.updateStaffMember,
-  );
+  const createStaffMember = useCreateStaffMember();
+  const updateStaffMember = useUpdateStaffMember();
   const designations = useStaffStore((state) => state.designations);
   const departments = useDepartmentsStore((state) => state.departments);
   const activeDesignations = useMemo(
@@ -128,9 +130,9 @@ function StaffMemberForm({
     [departments],
   );
 
-  const [role, setRole] = useState(staffMember?.role ?? "");
-  const [designation, setDesignation] = useState(
-    staffMember?.designation ?? "",
+  const [roleId, setRoleId] = useState(staffMember?.roleId ?? "");
+  const [designationId, setDesignationId] = useState(
+    staffMember?.designationId ?? "",
   );
   const [departmentId, setDepartmentId] = useState(
     staffMember?.departmentId ?? "",
@@ -166,6 +168,11 @@ function StaffMemberForm({
       phone: staffMember?.phone ?? "",
       emergencyContact: staffMember?.emergencyContact ?? "",
       contactAddress: staffMember?.contactAddress ?? "",
+      salaryAmount:
+        staffMember?.salaryAmount != null
+          ? String(staffMember.salaryAmount)
+          : "",
+      salaryCurrency: staffMember?.salaryCurrency ?? "NGN",
     },
   });
 
@@ -177,10 +184,10 @@ function StaffMemberForm({
     setAvatarPreview(await readFileAsDataUrl(file));
   };
 
-  const onSubmit = (values: StaffMemberFormValues) => {
+  const onSubmit = async (values: StaffMemberFormValues) => {
     if (
-      !role ||
-      !designation ||
+      !roleId ||
+      !designationId ||
       !departmentId ||
       !gender ||
       !maritalStatus ||
@@ -201,30 +208,50 @@ function StaffMemberForm({
       toast.error(`Staff ID "${staffId}" is already in use`);
       return;
     }
+    const salaryAmount = values.salaryAmount.trim();
+    if (salaryAmount && Number.isNaN(Number(salaryAmount))) {
+      toast.error("Salary must be a number");
+      return;
+    }
 
     const payload = {
-      ...values,
       staffId,
+      firstName: values.firstName,
+      lastName: values.lastName,
       middleName: values.middleName.trim() || undefined,
       otherName: values.otherName.trim() || undefined,
-      role,
-      designation,
+      email: values.email,
+      phone: values.phone,
+      emergencyContact: values.emergencyContact,
+      contactAddress: values.contactAddress,
+      roleId,
+      designationId,
       departmentId,
       gender,
       maritalStatus,
       dateOfBirth: new Date(dateOfBirth).toISOString(),
       employmentStartDate: new Date(employmentStartDate).toISOString(),
       avatarUrl: avatarPreview,
+      salaryAmount: salaryAmount ? Number(salaryAmount) : undefined,
+      salaryCurrency: salaryAmount
+        ? values.salaryCurrency.trim() || "NGN"
+        : undefined,
     };
 
-    if (staffMember) {
-      updateStaffMember(staffMember.id, payload);
-      toast.success(`${fullName(payload)} updated`);
-    } else {
-      const created = createStaffMember(payload);
-      toast.success(`${fullName(created)} added`);
+    try {
+      if (staffMember) {
+        await updateStaffMember.mutateAsync({ id: staffMember.id, payload });
+        toast.success(`${fullName(payload)} updated`);
+      } else {
+        await createStaffMember.mutateAsync(payload);
+        toast.success(`${fullName(payload)} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save staff member",
+      );
     }
-    onDone();
   };
 
   return (
@@ -244,22 +271,22 @@ function StaffMemberForm({
           <NotchedSelectField
             label="Role"
             labelClassName="bg-popover"
-            value={role}
-            onValueChange={setRole}
+            value={roleId}
+            onValueChange={setRoleId}
             options={activeDesignations.map((d) => ({
               label: d.name,
-              value: d.name,
+              value: d.id,
             }))}
             placeholder="Select role"
           />
           <NotchedSelectField
             label="Designation"
             labelClassName="bg-popover"
-            value={designation}
-            onValueChange={setDesignation}
+            value={designationId}
+            onValueChange={setDesignationId}
             options={activeDesignations.map((d) => ({
               label: d.name,
-              value: d.name,
+              value: d.id,
             }))}
             placeholder="Select designation"
           />
@@ -349,6 +376,21 @@ function StaffMemberForm({
             labelClassName="bg-popover"
             className="sm:col-span-2"
             {...register("contactAddress", { required: true })}
+          />
+
+          <NotchedField
+            label="Salary Amount"
+            labelClassName="bg-popover"
+            type="number"
+            step="0.01"
+            placeholder="e.g. 450000"
+            {...register("salaryAmount")}
+          />
+          <NotchedField
+            label="Salary Currency"
+            labelClassName="bg-popover"
+            placeholder="e.g. NGN"
+            {...register("salaryCurrency")}
           />
 
           <div className="col-span-full">

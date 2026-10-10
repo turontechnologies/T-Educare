@@ -38,6 +38,10 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { StaffDesignationDialog } from "@/components/features/staff/staff-designation-dialog";
+import {
+  useArchiveStaffDesignation,
+  useRestoreStaffDesignation,
+} from "@/hooks/use-staff-designations";
 import { useStaffStore } from "@/store/staff.store";
 import type { StaffDesignation } from "@/types/staff-designation";
 
@@ -97,8 +101,8 @@ function DesignationTable({
   onEdit: (designation: StaffDesignation) => void;
 }) {
   const designations = useStaffStore((state) => state.designations);
-  const archiveDesignation = useStaffStore((state) => state.archiveDesignation);
-  const restoreDesignation = useStaffStore((state) => state.restoreDesignation);
+  const archiveDesignation = useArchiveStaffDesignation();
+  const restoreDesignation = useRestoreStaffDesignation();
 
   const [view, setView] = useState<"active" | "archived">("active");
   const [search, setSearch] = useState("");
@@ -257,9 +261,19 @@ function DesignationTable({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreDesignation(designation.id);
-                          toast.success(`${designation.name} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreDesignation.mutateAsync(
+                              designation.id,
+                            );
+                            toast.success(`${designation.name} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore designation",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -329,10 +343,18 @@ function DesignationTable({
         description={`Are you sure you want to delete ${pendingArchive?.name}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveDesignation(pendingArchive.id);
-          toast.success(`${pendingArchive.name} deleted`);
+          try {
+            await archiveDesignation.mutateAsync(pendingArchive.id);
+            toast.success(`${pendingArchive.name} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete designation",
+            );
+          }
         }}
       />
     </>
