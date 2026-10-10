@@ -141,7 +141,7 @@ class AcademicSessionControllerTest {
                     .header("Authorization", "Bearer " + token)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
-                            {"sessionId":"does-not-exist","name":"Bogus",
+                            {"sessionId":"does-not-exist","name":"Bogus","semesterNumber":1,
                              "from":"2025-09-01T00:00:00Z","to":"2026-01-15T00:00:00Z"}
                             """))
                     .andExpect(status().isNotFound());
