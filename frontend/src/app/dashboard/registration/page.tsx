@@ -28,6 +28,7 @@ import { useStudentAcademicHistory } from "@/hooks/use-students";
 import { useAcademicsStore } from "@/store/academics.store";
 import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
+import { useElectiveGroupsStore } from "@/store/elective-groups.store";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useStudentsStore } from "@/store/students.store";
 
@@ -45,7 +46,12 @@ export default function RegistrationPage() {
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const electiveGroups = useElectiveGroupsStore(
+    (state) => state.electiveGroups,
+  );
+
   const student = students.find((s) => s.id === studentId && !s.archivedAt);
+  const selectedSemester = semesters.find((s) => s.id === semesterId);
   const departmentName = (id?: string) =>
     departments.find((d) => d.id === id)?.name ?? "—";
   const levelName = (id?: string) =>
@@ -68,18 +74,45 @@ export default function RegistrationPage() {
   }, [academicHistory]);
 
   const eligibleCourses = useMemo(() => {
-    if (!student) return [];
+    if (!student || !selectedSemester) return [];
     return courses.filter(
       (c) =>
         !c.archivedAt &&
         c.departmentId === student.departmentId &&
-        c.programLevelId === student.programLevelId,
+        c.programLevelId === student.programLevelId &&
+        c.semesterNumber === selectedSemester.semesterNumber,
     );
-  }, [courses, student]);
+  }, [courses, student, selectedSemester]);
 
   const carryoverCourses = useMemo(
     () => courses.filter((c) => outstandingCarryoverIds.has(c.id)),
     [courses, outstandingCarryoverIds],
+  );
+
+  // "Choose N of these courses" groups applicable to this student's own
+  // department+level — their member courses are pulled out of the plain
+  // compulsory list below and rendered as their own pick-one-or-more block.
+  const applicableElectiveGroups = useMemo(() => {
+    if (!student) return [];
+    return electiveGroups.filter(
+      (group) =>
+        !group.archivedAt &&
+        group.departmentId === student.departmentId &&
+        group.programLevelId === student.programLevelId &&
+        group.courseIds.some((id) =>
+          eligibleCourses.some((course) => course.id === id),
+        ),
+    );
+  }, [electiveGroups, student, eligibleCourses]);
+
+  const electiveCourseIds = useMemo(
+    () => new Set(applicableElectiveGroups.flatMap((group) => group.courseIds)),
+    [applicableElectiveGroups],
+  );
+
+  const compulsoryCourses = useMemo(
+    () => eligibleCourses.filter((c) => !electiveCourseIds.has(c.id)),
+    [eligibleCourses, electiveCourseIds],
   );
 
   // Reset the selection whenever the student/semester changes, seeding it
@@ -279,14 +312,22 @@ export default function RegistrationPage() {
               <p className="mb-2 text-xs font-semibold tracking-wide text-secondary uppercase">
                 {levelName(student.programLevelId)} Courses —{" "}
                 {departmentName(student.departmentId)}
+                {selectedSemester
+                  ? ` (${selectedSemester.semesterNumber === 2 ? "2nd" : "1st"} Semester)`
+                  : ""}
               </p>
-              {eligibleCourses.length === 0 ? (
+              {!selectedSemester ? (
                 <p className="text-sm text-muted-foreground">
-                  No courses have been set up yet for this department/level.
+                  Select a semester to see the courses available for it.
+                </p>
+              ) : compulsoryCourses.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No courses have been set up yet for this
+                  department/level/semester.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {eligibleCourses.map((course) => (
+                  {compulsoryCourses.map((course) => (
                     <label
                       key={course.id}
                       className="flex cursor-pointer items-center justify-between rounded-md border border-border p-3 text-sm hover:bg-muted/50"
@@ -315,6 +356,87 @@ export default function RegistrationPage() {
                 </div>
               )}
             </div>
+
+            {applicableElectiveGroups.map((group) => {
+              const groupCourses = group.courseIds
+                .map((id) => courses.find((c) => c.id === id))
+                .filter((c): c is NonNullable<typeof c> => !!c);
+              const selectedInGroup = groupCourses.filter((c) =>
+                selectedCourseIds.has(c.id),
+              ).length;
+              const satisfied =
+                selectedInGroup >= group.minSelect &&
+                selectedInGroup <= group.maxSelect;
+              const isSingleChoice =
+                group.minSelect === 1 && group.maxSelect === 1;
+
+              return (
+                <div key={group.id}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold tracking-wide text-secondary uppercase">
+                      {group.name} — choose{" "}
+                      {group.minSelect === group.maxSelect
+                        ? group.minSelect
+                        : `${group.minSelect}–${group.maxSelect}`}
+                    </p>
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        satisfied ? "text-emerald-600" : "text-amber-600",
+                      )}
+                    >
+                      {selectedInGroup} selected
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {groupCourses.map((course) => (
+                      <label
+                        key={course.id}
+                        className="flex cursor-pointer items-center justify-between rounded-md border border-border p-3 text-sm hover:bg-muted/50"
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <input
+                            type={isSingleChoice ? "radio" : "checkbox"}
+                            name={
+                              isSingleChoice
+                                ? `elective-${group.id}`
+                                : undefined
+                            }
+                            checked={selectedCourseIds.has(course.id)}
+                            onChange={() => {
+                              if (isSingleChoice) {
+                                setSelectedCourseIds((prev) => {
+                                  const next = new Set(prev);
+                                  groupCourses.forEach((c) =>
+                                    next.delete(c.id),
+                                  );
+                                  next.add(course.id);
+                                  return next;
+                                });
+                              } else {
+                                toggleCourse(course.id);
+                              }
+                            }}
+                            className="size-4 accent-primary"
+                          />
+                          <span>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {course.code}
+                            </span>{" "}
+                            <span className="font-medium text-foreground">
+                              {course.name}
+                            </span>
+                          </span>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {course.unit} unit(s)
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
 
             <div className="flex items-center justify-between border-t border-border pt-4">
               <p className="text-sm text-muted-foreground">
