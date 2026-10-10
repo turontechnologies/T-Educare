@@ -7,7 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { DISCIPLINARY_STATUS_BADGE, fullName } from "@/lib/students";
+import {
+  DISCIPLINARY_STATUS_BADGE,
+  fullName,
+  primaryPreStudentIdentifier,
+} from "@/lib/students";
+import { useStudentIdentitySettingsStore } from "@/store/student-identity-settings.store";
 import {
   useResolveCase,
   useStudentAcademicHistory,
@@ -90,6 +95,9 @@ export function StudentDetailsDialog({
   const programs = useProgramsStore((state) => state.programs);
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
   const courses = useCoursesStore((state) => state.courses);
+  const identityPreference = useStudentIdentitySettingsStore(
+    (state) => state.settings.preStudentIdentifierPreference,
+  );
 
   const [disciplinaryDialogOpen, setDisciplinaryDialogOpen] = useState(false);
   const [reportCaseDialogOpen, setReportCaseDialogOpen] = useState(false);
@@ -229,7 +237,12 @@ export function StudentDetailsDialog({
                   </div>
                   <p className="font-mono text-sm text-muted-foreground">
                     {student.matricNo ??
-                      `No matric number assigned yet — Pre-ID: ${student.preAdmissionId}`}
+                      `No matric number assigned yet — ${
+                        identityPreference === "JAMB_REG_NUMBER" &&
+                        student.jambRegNumber
+                          ? "JAMB"
+                          : "Pre-ID"
+                      }: ${primaryPreStudentIdentifier(student, identityPreference)}`}
                   </p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">

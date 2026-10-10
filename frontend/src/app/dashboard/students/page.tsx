@@ -45,7 +45,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StudentDetailsDialog } from "@/components/features/students/student-details-dialog";
 import { StudentDialog } from "@/components/features/students/student-dialog";
 import { StudentIdentitySettingsDialog } from "@/components/features/students/student-identity-settings-dialog";
-import { DISCIPLINARY_STATUS_BADGE, fullName } from "@/lib/students";
+import {
+  DISCIPLINARY_STATUS_BADGE,
+  fullName,
+  primaryPreStudentIdentifier,
+} from "@/lib/students";
 import { useArchiveStudent, useRestoreStudent } from "@/hooks/use-students";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useProgramsStore } from "@/store/programs.store";
