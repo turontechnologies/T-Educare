@@ -147,6 +147,7 @@ function SessionForm({
         await createSemester.mutateAsync({
           sessionId: created.id,
           name: "First Semester",
+          semesterNumber: 1,
           description: `First semester of the ${name} academic session.`,
           from: created.from,
           to: midpoint.toISOString(),
@@ -154,6 +155,7 @@ function SessionForm({
         await createSemester.mutateAsync({
           sessionId: created.id,
           name: "Second Semester",
+          semesterNumber: 2,
           description: `Second semester of the ${name} academic session.`,
           from: midpoint.toISOString(),
           to: created.to,
