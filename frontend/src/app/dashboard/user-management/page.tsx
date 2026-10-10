@@ -524,7 +524,7 @@ function UsersTable({
   onEdit: (user: UserManagerAccount) => void;
 }) {
   const { data: usersData, isLoading } = useUserManagers({ perPage: 1000 });
-  const users = usersData?.data ?? [];
+  const users = useMemo(() => usersData?.data ?? [], [usersData]);
   const { data: roles = [] } = useRoles();
   const archiveUser = useArchiveUserManager();
   const restoreUser = useRestoreUserManager();
