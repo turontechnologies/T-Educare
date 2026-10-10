@@ -1,4 +1,4 @@
-import type { Student } from "@/types/student";
+import type { PreStudentIdentifierPreference, Student } from "@/types/student";
 
 /** The one place a student's display name is assembled — never string-concat firstName/lastName ad hoc elsewhere. */
 export function fullName(
@@ -24,3 +24,20 @@ export const DISCIPLINARY_STATUS_BADGE: Record<
     className: "bg-destructive/10 text-destructive",
   },
 };
+
+/**
+ * The institution's configured "primary" identifier for a pre-student (no
+ * matric number yet) — the one place this preference is applied, so the
+ * list table and the details dialog never disagree. Falls back to the
+ * always-present `preAdmissionId` when the preferred value (a JAMB number)
+ * hasn't actually been entered for this particular student.
+ */
+export function primaryPreStudentIdentifier(
+  student: Pick<Student, "preAdmissionId" | "jambRegNumber">,
+  preference: PreStudentIdentifierPreference,
+) {
+  if (preference === "JAMB_REG_NUMBER" && student.jambRegNumber) {
+    return student.jambRegNumber;
+  }
+  return student.preAdmissionId;
+}

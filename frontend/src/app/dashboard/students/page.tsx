@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Settings,
   Trash2,
   User,
 } from "lucide-react";
@@ -43,11 +44,13 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { StudentDetailsDialog } from "@/components/features/students/student-details-dialog";
 import { StudentDialog } from "@/components/features/students/student-dialog";
+import { StudentIdentitySettingsDialog } from "@/components/features/students/student-identity-settings-dialog";
 import { DISCIPLINARY_STATUS_BADGE, fullName } from "@/lib/students";
 import { useArchiveStudent, useRestoreStudent } from "@/hooks/use-students";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useProgramsStore } from "@/store/programs.store";
 import { useSchoolsStore } from "@/store/schools.store";
+import { useStudentIdentitySettingsStore } from "@/store/student-identity-settings.store";
 import { useStudentsStore } from "@/store/students.store";
 import type { Student } from "@/types/student";
 
@@ -83,6 +86,7 @@ export default function StudentManagementPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | undefined>();
   const [viewingStudent, setViewingStudent] = useState<Student | undefined>();
+  const [identitySettingsOpen, setIdentitySettingsOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -106,7 +110,20 @@ export default function StudentManagementPage() {
             Add New
           </Button>
           <ExportButton />
+          <Button
+            variant="outline"
+            className="gap-1.5 rounded-md"
+            onClick={() => setIdentitySettingsOpen(true)}
+          >
+            <Settings className="size-4" />
+            Pre-Student ID Settings
+          </Button>
         </div>
+
+        <StudentIdentitySettingsDialog
+          open={identitySettingsOpen}
+          onOpenChange={setIdentitySettingsOpen}
+        />
 
         <div className="mt-6">
           <StudentTable
@@ -176,6 +193,9 @@ function StudentTable({
   const schools = useSchoolsStore((state) => state.schools);
   const programs = useProgramsStore((state) => state.programs);
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
+  const identityPreference = useStudentIdentitySettingsStore(
+    (state) => state.settings.preStudentIdentifierPreference,
+  );
 
   const [cohort, setCohort] = useState<"students" | "pre-students">("students");
   const [view, setView] = useState<"active" | "archived">("active");
@@ -352,7 +372,8 @@ function StudentTable({
                     {rangeStart + index}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {student.matricNo ?? "—"}
+                    {student.matricNo ??
+                      primaryPreStudentIdentifier(student, identityPreference)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2.5">
