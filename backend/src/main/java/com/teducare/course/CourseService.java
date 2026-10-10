@@ -161,18 +161,21 @@ public class CourseService {
             String schoolId = row.getOrDefault("schoolid", "").trim();
             String programLevelId = row.getOrDefault("programlevelid", "").trim();
             String unitText = row.getOrDefault("unit", "").trim();
+            String semesterNumberText = row.getOrDefault("semesternumber", "").trim();
 
             if (name.isEmpty() || code.isEmpty() || departmentId.isEmpty() || schoolId.isEmpty()
-                    || programLevelId.isEmpty() || unitText.isEmpty()
+                    || programLevelId.isEmpty() || unitText.isEmpty() || semesterNumberText.isEmpty()
                     || repository.existsByInstitutionIdAndCodeIgnoreCaseAndArchivedAtIsNull(institutionId, code)) {
                 skipped++;
                 continue;
             }
 
             int unit;
+            int semesterNumber;
             try {
                 unit = Integer.parseInt(unitText);
-                if (unit < 1 || unit > 10) {
+                semesterNumber = Integer.parseInt(semesterNumberText);
+                if (unit < 1 || unit > 10 || semesterNumber < 1 || semesterNumber > 2) {
                     skipped++;
                     continue;
                 }
@@ -192,7 +195,7 @@ public class CourseService {
 
             Course course = new Course(
                     "course-" + UUID.randomUUID(), institutionId, name, code, departmentId, schoolId,
-                    programLevelId, unit, null, Instant.now(), null);
+                    programLevelId, unit, semesterNumber, null, Instant.now(), null);
             repository.save(course);
             imported++;
         }

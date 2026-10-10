@@ -46,7 +46,8 @@ final class CourseCsv {
     static String write(List<Course> courses) {
         StringBuilder sb = new StringBuilder();
         sb.append(csvLine(List.of(
-                "id", "name", "code", "departmentId", "schoolId", "programLevelId", "unit", "createdAt", "archivedAt")));
+                "id", "name", "code", "departmentId", "schoolId", "programLevelId", "unit", "semesterNumber",
+                "createdAt", "archivedAt")));
         for (Course course : courses) {
             sb.append(csvLine(List.of(
                     course.getId(),
@@ -56,6 +57,7 @@ final class CourseCsv {
                     course.getSchoolId(),
                     course.getProgramLevelId(),
                     String.valueOf(course.getUnit()),
+                    course.getSemesterNumber() == null ? "" : String.valueOf(course.getSemesterNumber()),
                     String.valueOf(course.getCreatedAt()),
                     course.getArchivedAt() == null ? "" : String.valueOf(course.getArchivedAt()))));
         }
