@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/axios";
-import type { Course } from "@/types/course";
+import type { Course, CourseDepartmentOffering } from "@/types/course";
 
 export type CourseFormPayload = {
   name: string;
@@ -8,8 +8,15 @@ export type CourseFormPayload = {
   schoolId: string;
   programLevelId: string;
   unit: number;
+  semesterNumber: 1 | 2;
   /** Omit/blank to leave unassigned; an explicit "" on update clears an existing lecturer. */
   lecturerId?: string;
+};
+
+export type AddCourseDepartmentOfferingPayload = {
+  departmentId: string;
+  unitOverride?: number;
+  compulsory: boolean;
 };
 
 export interface CourseImportResult {
@@ -71,5 +78,27 @@ export const courseService = {
       responseType: "blob",
     });
     return data;
+  },
+
+  async listOfferings(courseId: string): Promise<CourseDepartmentOffering[]> {
+    const { data } = await apiClient.get<CourseDepartmentOffering[]>(
+      `/courses/${courseId}/offerings`,
+    );
+    return data;
+  },
+
+  async addOffering(
+    courseId: string,
+    payload: AddCourseDepartmentOfferingPayload,
+  ): Promise<CourseDepartmentOffering> {
+    const { data } = await apiClient.post<CourseDepartmentOffering>(
+      `/courses/${courseId}/offerings`,
+      payload,
+    );
+    return data;
+  },
+
+  async removeOffering(courseId: string, offeringId: string): Promise<void> {
+    await apiClient.delete(`/courses/${courseId}/offerings/${offeringId}`);
   },
 };

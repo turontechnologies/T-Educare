@@ -1,0 +1,62 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.teducare:teducare-backend >--------------------
+[INFO] Building teducare-backend 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ teducare-backend ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 24 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ teducare-backend ---
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 208 source files with javac [debug parameters release 21] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ teducare-backend ---
+[INFO] skip non existing resourceDirectory /workspace/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ teducare-backend ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 24 source files with javac [debug parameters release 21] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ teducare-backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.teducare.academics.AcademicSessionControllerTest
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+16:06:05.429 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.teducare.academics.AcademicSessionControllerTest]: AcademicSessionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+16:06:08.735 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.academics.AcademicSessionControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-10-10T16:06:12.428Z  INFO 94 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : Starting AcademicSessionControllerTest using Java 21.0.12.1 with PID 94 (started by root in /workspace)
+2026-10-10T16:06:12.434Z  INFO 94 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : No active profile set, falling back to 1 default profile: "default"
+2026-10-10T16:06:24.234Z  INFO 94 --- [teducare-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-10T16:06:28.956Z  INFO 94 --- [teducare-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 4690 ms. Found 28 JPA repository interfaces.
+2026-10-10T16:06:37.005Z  INFO 94 --- [teducare-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-10T16:06:39.373Z  INFO 94 --- [teducare-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection ConnectionID:1 ClientConnectionId: 7a8b4dee-b343-4f0a-a559-c04baa35ca55
+2026-10-10T16:06:39.397Z  INFO 94 --- [teducare-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-10T16:06:39.747Z  INFO 94 --- [teducare-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlserver://sqlserver:1433;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=teducare_db;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite; (Microsoft SQL Server 16.0)
+2026-10-10T16:06:40.700Z  INFO 94 --- [teducare-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 24 migrations (execution time 00:00.745s)
+2026-10-10T16:06:40.792Z  INFO 94 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema [dbo]: 23
+2026-10-10T16:06:40.965Z  INFO 94 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "24 - course semesters offerings electives"
+2026-10-10T16:06:41.196Z  INFO 94 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema [dbo], now at version v24 (execution time 00:00.146s)
+2026-10-10T16:06:42.381Z  INFO 94 --- [teducare-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-10T16:06:43.087Z  INFO 94 --- [teducare-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-10-10T16:06:43.449Z  INFO 94 --- [teducare-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-10T16:06:46.396Z  INFO 94 --- [teducare-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-10T16:06:47.384Z  WARN 94 --- [teducare-backend] [           main] org.hibernate.orm.deprecation            : HHH90000025: SQLServerDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-10-10T16:06:57.474Z  INFO 94 --- [teducare-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-10T16:06:57.491Z  INFO 94 --- [teducare-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-10T16:07:01.962Z  INFO 94 --- [teducare-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.

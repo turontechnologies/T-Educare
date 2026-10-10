@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   courseService,
+  type AddCourseDepartmentOfferingPayload,
   type CourseFormPayload,
 } from "@/services/course.service";
 
@@ -74,5 +75,56 @@ export function useExportCourses() {
   return useMutation({
     mutationFn: (includeArchived: boolean) =>
       courseService.export(includeArchived),
+  });
+}
+
+export function useCourseOfferings(
+  courseId: string | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: ["course-offerings", courseId],
+    queryFn: () => courseService.listOfferings(courseId!),
+    enabled: (options.enabled ?? true) && !!courseId,
+  });
+}
+
+export function useAddCourseOffering() {
+  const queryClient = useQueryClient();
+  const invalidateCourses = useInvalidateCourses();
+  return useMutation({
+    mutationFn: ({
+      courseId,
+      payload,
+    }: {
+      courseId: string;
+      payload: AddCourseDepartmentOfferingPayload;
+    }) => courseService.addOffering(courseId, payload),
+    onSuccess: (_data, { courseId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["course-offerings", courseId],
+      });
+      invalidateCourses();
+    },
+  });
+}
+
+export function useRemoveCourseOffering() {
+  const queryClient = useQueryClient();
+  const invalidateCourses = useInvalidateCourses();
+  return useMutation({
+    mutationFn: ({
+      courseId,
+      offeringId,
+    }: {
+      courseId: string;
+      offeringId: string;
+    }) => courseService.removeOffering(courseId, offeringId),
+    onSuccess: (_data, { courseId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["course-offerings", courseId],
+      });
+      invalidateCourses();
+    },
   });
 }

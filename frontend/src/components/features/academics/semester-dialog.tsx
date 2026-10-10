@@ -86,6 +86,9 @@ function SemesterForm({
   );
 
   const [sessionId, setSessionId] = useState(semester?.sessionId ?? "");
+  const [semesterNumber, setSemesterNumber] = useState<"1" | "2" | "">(
+    semester ? (String(semester.semesterNumber) as "1" | "2") : "",
+  );
   const [from, setFrom] = useState(
     semester?.from ? semester.from.slice(0, 10) : "",
   );
@@ -107,10 +110,15 @@ function SemesterForm({
       toast.error("Set both a start and end date");
       return;
     }
+    if (!semesterNumber) {
+      toast.error("Select whether this is the 1st or 2nd semester");
+      return;
+    }
 
     const payload = {
       sessionId,
       name: values.name,
+      semesterNumber: Number(semesterNumber) as 1 | 2,
       description: values.description,
       from: new Date(from).toISOString(),
       to: new Date(to).toISOString(),
@@ -159,6 +167,17 @@ function SemesterForm({
           labelClassName="bg-popover"
           placeholder="e.g. First Semester"
           {...register("name", { required: true })}
+        />
+        <NotchedSelectField
+          label="Semester Number"
+          labelClassName="bg-popover"
+          value={semesterNumber}
+          onValueChange={(value) => setSemesterNumber(value as "1" | "2")}
+          options={[
+            { label: "1st Semester", value: "1" },
+            { label: "2nd Semester", value: "2" },
+          ]}
+          placeholder="Select semester number"
         />
         <NotchedField
           label="Description"

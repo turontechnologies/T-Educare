@@ -27,6 +27,8 @@ export interface AcademicSemester {
   /** FK to `AcademicSession.id`. */
   sessionId: string;
   name: string;
+  /** 1 or 2 — which semester-of-the-year this is, distinct from `name` (free text). Matched against `Course.semesterNumber` by the registration system, so a 2nd-semester course never appears registrable in a 1st-semester instance. */
+  semesterNumber: 1 | 2;
   description: string;
   /** ISO date */
   from: string;

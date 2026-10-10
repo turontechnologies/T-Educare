@@ -4,6 +4,7 @@ import type { AcademicSemester } from "@/types/academics";
 export type AcademicSemesterFormPayload = {
   sessionId: string;
   name: string;
+  semesterNumber: 1 | 2;
   description?: string;
   from: string;
   to: string;
