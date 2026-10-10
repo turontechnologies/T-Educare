@@ -12,5 +12,7 @@ public record CreateCourseRequest(
         @NotBlank(message = "School is required.") String schoolId,
         @NotBlank(message = "Program level is required.") String programLevelId,
         @NotNull(message = "Unit is required.") @Min(value = 1, message = "Unit must be at least 1.")
-        @Max(value = 10, message = "Unit must be at most 10.") Integer unit) {
+        @Max(value = 10, message = "Unit must be at most 10.") Integer unit,
+        /** Nullable — a course doesn't require a lecturer assigned up front. */
+        String lecturerId) {
 }

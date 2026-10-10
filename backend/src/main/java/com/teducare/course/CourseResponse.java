@@ -11,6 +11,7 @@ public record CourseResponse(
         String schoolId,
         String programLevelId,
         int unit,
+        String lecturerId,
         Instant createdAt,
         Instant archivedAt) {
 
@@ -24,6 +25,7 @@ public record CourseResponse(
                 course.getSchoolId(),
                 course.getProgramLevelId(),
                 course.getUnit(),
+                course.getLecturerId(),
                 course.getCreatedAt(),
                 course.getArchivedAt());
     }

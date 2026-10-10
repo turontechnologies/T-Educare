@@ -94,7 +94,8 @@ public class StudentService {
                 .filter(s -> isBlank(programLevelId) || programLevelId.equals(s.getProgramLevelId()))
                 .filter(s -> isBlank(currentSessionId) || currentSessionId.equals(s.getCurrentSessionId()))
                 .filter(s -> query == null || query.isBlank()
-                        || s.getMatricNo().toLowerCase().contains(query)
+                        // Pre-students (matricNo == null) must not NPE a search — they simply never match on matricNo.
+                        || (s.getMatricNo() != null && s.getMatricNo().toLowerCase().contains(query))
                         || s.getFirstName().toLowerCase().contains(query)
                         || s.getLastName().toLowerCase().contains(query)
                         || s.getEmail().toLowerCase().contains(query))

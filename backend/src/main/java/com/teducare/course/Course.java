@@ -52,6 +52,10 @@ public class Course {
     @Column(name = "unit", nullable = false)
     private int unit;
 
+    /** FK to StaffMember.id — nullable, a course doesn't require a lecturer assigned. Drives "how many courses is this staff member lecturing" on the Staff Management detail view. */
+    @Column(name = "lecturer_id", length = 64)
+    private String lecturerId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -70,6 +74,7 @@ public class Course {
             String schoolId,
             String programLevelId,
             int unit,
+            String lecturerId,
             Instant createdAt,
             Instant archivedAt) {
         this.id = id;
@@ -80,6 +85,7 @@ public class Course {
         this.schoolId = schoolId;
         this.programLevelId = programLevelId;
         this.unit = unit;
+        this.lecturerId = lecturerId;
         this.createdAt = createdAt;
         this.archivedAt = archivedAt;
     }
@@ -138,6 +144,14 @@ public class Course {
 
     public void setUnit(int unit) {
         this.unit = unit;
+    }
+
+    public String getLecturerId() {
+        return lecturerId;
+    }
+
+    public void setLecturerId(String lecturerId) {
+        this.lecturerId = lecturerId;
     }
 
     public Instant getCreatedAt() {

@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.teducare.department.DepartmentService;
 import com.teducare.programlevel.ProgramLevelService;
 import com.teducare.school.SchoolService;
+import com.teducare.staff.StaffMemberService;
 
 @Service
 public class CourseService {
@@ -20,16 +21,19 @@ public class CourseService {
     private final DepartmentService departmentService;
     private final SchoolService schoolService;
     private final ProgramLevelService programLevelService;
+    private final StaffMemberService staffMemberService;
 
     public CourseService(
             CourseRepository repository,
             DepartmentService departmentService,
             SchoolService schoolService,
-            ProgramLevelService programLevelService) {
+            ProgramLevelService programLevelService,
+            StaffMemberService staffMemberService) {
         this.repository = repository;
         this.departmentService = departmentService;
         this.schoolService = schoolService;
         this.programLevelService = programLevelService;
+        this.staffMemberService = staffMemberService;
     }
 
     public List<CourseResponse> list(
@@ -55,6 +59,9 @@ public class CourseService {
         schoolService.requireOwnSchool(institutionId, request.schoolId());
         programLevelService.requireOwnProgramLevel(institutionId, request.programLevelId());
         validateUniqueCode(institutionId, request.code(), null);
+        if (isPresent(request.lecturerId())) {
+            staffMemberService.requireOwnStaffMember(institutionId, request.lecturerId());
+        }
 
         Course course = new Course(
                 "course-" + UUID.randomUUID(),
@@ -65,6 +72,7 @@ public class CourseService {
                 request.schoolId(),
                 request.programLevelId(),
                 request.unit(),
+                isPresent(request.lecturerId()) ? request.lecturerId() : null,
                 Instant.now(),
                 null);
         return CourseResponse.from(repository.save(course));
@@ -97,6 +105,15 @@ public class CourseService {
         }
         if (isPresent(request.name())) {
             course.setName(request.name());
+        }
+        // Unlike every other field here, a non-null-but-blank lecturerId is meaningful: it explicitly unassigns the lecturer, rather than "no change".
+        if (request.lecturerId() != null) {
+            if (request.lecturerId().isBlank()) {
+                course.setLecturerId(null);
+            } else {
+                staffMemberService.requireOwnStaffMember(institutionId, request.lecturerId());
+                course.setLecturerId(request.lecturerId());
+            }
         }
 
         return CourseResponse.from(repository.save(course));
@@ -164,7 +181,7 @@ public class CourseService {
 
             Course course = new Course(
                     "course-" + UUID.randomUUID(), institutionId, name, code, departmentId, schoolId,
-                    programLevelId, unit, Instant.now(), null);
+                    programLevelId, unit, null, Instant.now(), null);
             repository.save(course);
             imported++;
         }
