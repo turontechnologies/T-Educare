@@ -220,12 +220,17 @@ function CourseForm({
         <NotchedSelectField
           label="Lecturer (optional)"
           labelClassName="bg-popover"
-          value={lecturerId}
-          onValueChange={setLecturerId}
-          options={activeStaffMembers.map((s) => ({
-            label: `${fullName(s)} (${s.staffId})`,
-            value: s.id,
-          }))}
+          value={lecturerId || "none"}
+          onValueChange={(value) =>
+            setLecturerId(value === "none" ? "" : value)
+          }
+          options={[
+            { label: "Unassigned", value: "none" },
+            ...activeStaffMembers.map((s) => ({
+              label: `${fullName(s)} (${s.staffId})`,
+              value: s.id,
+            })),
+          ]}
           placeholder="Unassigned"
         />
       </form>
