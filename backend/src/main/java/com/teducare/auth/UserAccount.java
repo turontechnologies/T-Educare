@@ -65,6 +65,10 @@ public class UserAccount {
     @Column(name = "is_primary_admin", nullable = false)
     private boolean isPrimaryAdmin;
 
+    /** Links this login to a real Lecturer record (see com.teducare.lecturer) — set only for a staff account meant to use Lecture Management's self-service "My Lectures" view. Null for every other account. */
+    @Column(name = "lecturer_id", length = 64)
+    private String lecturerId;
+
     @Column(name = "status", nullable = false, length = 30)
     private String status;
 
@@ -95,6 +99,7 @@ public class UserAccount {
             String otherName,
             String gender,
             boolean isPrimaryAdmin,
+            String lecturerId,
             String status,
             Instant createdAt,
             Instant archivedAt) {
@@ -115,6 +120,7 @@ public class UserAccount {
         this.otherName = otherName;
         this.gender = gender;
         this.isPrimaryAdmin = isPrimaryAdmin;
+        this.lecturerId = lecturerId;
         this.status = status;
         this.createdAt = createdAt;
         this.archivedAt = archivedAt;
@@ -238,6 +244,14 @@ public class UserAccount {
 
     public void setPrimaryAdmin(boolean primaryAdmin) {
         this.isPrimaryAdmin = primaryAdmin;
+    }
+
+    public String getLecturerId() {
+        return lecturerId;
+    }
+
+    public void setLecturerId(String lecturerId) {
+        this.lecturerId = lecturerId;
     }
 
     public String getStatus() {

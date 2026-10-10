@@ -15,5 +15,7 @@ public record UpdateUserManagerRequest(
         Boolean isPrimaryAdmin,
         String avatarUrl,
         /** Left out entirely keeps the current value (same convention as phone/avatarUrl); an explicit blank string clears it back to unrestricted. */
-        String roleId) {
+        String roleId,
+        /** Links this login to a real Lecturer record for Lecture Management's self-service view. Left out keeps the current value; an explicit blank string unlinks it. */
+        String lecturerId) {
 }

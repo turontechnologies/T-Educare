@@ -125,7 +125,8 @@ public class AuthDirectory {
                                                 resolveMenuKeys(entity.getRoleId()),
                                                 entity.getPhone(),
                                                 entity.getAvatarUrl(),
-                                                institutionLogoUrl),
+                                                institutionLogoUrl,
+                                                entity.getLecturerId()),
                                 entity.getStatus(),
                                 entity.getArchivedAt());
         }

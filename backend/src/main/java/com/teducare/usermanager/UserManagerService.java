@@ -16,6 +16,7 @@ import com.teducare.auth.UserAccount;
 import com.teducare.auth.UserAccountRepository;
 import com.teducare.institution.Institution;
 import com.teducare.institution.InstitutionRepository;
+import com.teducare.lecturer.LecturerService;
 import com.teducare.notification.NotificationService;
 import com.teducare.role.Role;
 import com.teducare.role.RoleRepository;
@@ -31,6 +32,7 @@ public class UserManagerService {
     private final UserAccountRepository repository;
     private final InstitutionRepository institutionRepository;
     private final RoleRepository roleRepository;
+    private final LecturerService lecturerService;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
@@ -38,11 +40,13 @@ public class UserManagerService {
             UserAccountRepository repository,
             InstitutionRepository institutionRepository,
             RoleRepository roleRepository,
+            LecturerService lecturerService,
             PasswordEncoder passwordEncoder,
             NotificationService notificationService) {
         this.repository = repository;
         this.institutionRepository = institutionRepository;
         this.roleRepository = roleRepository;
+        this.lecturerService = lecturerService;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
     }
@@ -101,6 +105,7 @@ public class UserManagerService {
                 request.otherName() == null ? "" : request.otherName(),
                 request.gender(),
                 request.isPrimaryAdmin(),
+                null,
                 "active",
                 Instant.now(),
                 null);
@@ -174,6 +179,14 @@ public class UserManagerService {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "That role has been archived.");
                 }
                 account.setRoleId(role.getId());
+            }
+        }
+        if (request.lecturerId() != null) {
+            if (request.lecturerId().isBlank()) {
+                account.setLecturerId(null);
+            } else {
+                lecturerService.requireOwnLecturer(account.getInstitutionId(), request.lecturerId());
+                account.setLecturerId(request.lecturerId());
             }
         }
 

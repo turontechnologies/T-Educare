@@ -14,5 +14,7 @@ public record AuthenticatedUserDto(
                 List<String> menuKeys,
                 String phone,
                 String avatarUrl,
-                String institutionLogoUrl) {
+                String institutionLogoUrl,
+                /** Links this account to a real Lecturer record (see com.teducare.lecturer) — null for every account except a lecturer's own login. */
+                String lecturerId) {
 }

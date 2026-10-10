@@ -48,6 +48,7 @@ public class ProfileService {
         profile.put("institutionName", user.institutionName());
         profile.put("institutionLogoUrl", user.institutionLogoUrl() == null ? "" : user.institutionLogoUrl());
         profile.put("roleId", user.roleId());
+        profile.put("lecturerId", user.lecturerId() == null ? "" : user.lecturerId());
         profile.put("phone", user.phone() == null ? "" : user.phone());
         profile.put("avatarUrl", user.avatarUrl() == null ? "" : user.avatarUrl());
         profile.put("menuKeys", user.menuKeys() == null ? List.of() : user.menuKeys());

@@ -45,6 +45,7 @@ public class DemoAccountSeeder {
                         null,
                         null,
                         false,
+                        null,
                         "active",
                         Instant.parse("2026-01-01T00:00:00Z"),
                         null),
@@ -71,6 +72,7 @@ public class DemoAccountSeeder {
                         "",
                         "Male",
                         true,
+                        null,
                         "active",
                         Instant.parse("2026-01-01T00:00:00Z"),
                         null),
@@ -92,6 +94,7 @@ public class DemoAccountSeeder {
                         "",
                         "Female",
                         false,
+                        null,
                         "active",
                         Instant.parse("2026-01-06T00:00:00Z"),
                         null)));
