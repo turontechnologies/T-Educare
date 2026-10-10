@@ -103,7 +103,7 @@ class AcademicSessionControllerTest {
                     .header("Authorization", "Bearer " + token)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
-                            {"sessionId":"%s","name":"First Semester","description":"Test",
+                            {"sessionId":"%s","name":"First Semester","semesterNumber":1,"description":"Test",
                              "from":"2025-09-01T00:00:00Z","to":"2026-01-15T00:00:00Z"}
                             """.formatted(secondSessionId)))
                     .andExpect(status().isCreated())
@@ -114,7 +114,7 @@ class AcademicSessionControllerTest {
                     .header("Authorization", "Bearer " + token)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
-                            {"sessionId":"%s","name":"Second Semester","description":"Test",
+                            {"sessionId":"%s","name":"Second Semester","semesterNumber":2,"description":"Test",
                              "from":"2026-02-01T00:00:00Z","to":"2026-07-31T00:00:00Z"}
                             """.formatted(secondSessionId)))
                     .andExpect(status().isCreated())
