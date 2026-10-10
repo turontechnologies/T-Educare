@@ -11,6 +11,8 @@ export interface Course {
   programLevelId: string;
   /** Credit unit — drives the registration system's total-unit cap. */
   unit: number;
+  /** FK to `StaffMember.id` — nullable, a course doesn't require a lecturer assigned. Drives "how many courses is this staff member lecturing" on the Staff Management detail view (filter the courses store by this id, no separate endpoint). */
+  lecturerId?: string;
   createdAt: string;
   /** Nullable — soft-delete, same convention as every other admin table. */
   archivedAt: string | null;

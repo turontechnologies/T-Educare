@@ -8,6 +8,8 @@ export type CourseFormPayload = {
   schoolId: string;
   programLevelId: string;
   unit: number;
+  /** Omit/blank to leave unassigned; an explicit "" on update clears an existing lecturer. */
+  lecturerId?: string;
 };
 
 export interface CourseImportResult {

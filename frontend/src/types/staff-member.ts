@@ -8,13 +8,26 @@ export const STAFF_MARITAL_STATUSES = [
 ] as const;
 export type StaffMaritalStatus = (typeof STAFF_MARITAL_STATUSES)[number];
 
+/**
+ * Full staff profile (API_CONTRACT.md §8.1). `roleId`/`designationId`/
+ * `departmentId` are real, independently validated FKs — the original
+ * mock had `role`/`designation` as free text (both checked against the
+ * same Staff Designation list by name); these are now both real FKs
+ * into `StaffDesignation.id`, matching how every other multi-FK
+ * resource in this app (Students, Courses) was upgraded off free text.
+ * `salaryAmount`/`salaryCurrency` are nullable — not every institution
+ * tracks pay through this screen. Qualifications (degrees/alma mater)
+ * and the courses a staff member lectures are NOT embedded here — see
+ * `StaffQualification` (its own CRUD list) and `Course.lecturerId`
+ * (filter the courses store by this staff member's id).
+ */
 export interface StaffMember {
   id: string;
   /** Display code, e.g. "UL-10010" — unique among non-archived staff. */
   staffId: string;
-  /** Designation name — a separate field from `designation` per the source record, both sourced from the same Staff Designation list. */
-  role: string;
-  designation: string;
+  /** FK to `StaffDesignation.id` — a separate field from `designationId` per the source record, both sourced from the same Staff Designation list. */
+  roleId: string;
+  designationId: string;
   /** FK to `Department.id`. */
   departmentId: string;
   gender: StaffGender;
@@ -33,6 +46,8 @@ export interface StaffMember {
   contactAddress: string;
   /** Nullable — same convention as institution logo/user manager avatar (see `readFileAsDataUrl`). */
   avatarUrl?: string;
+  salaryAmount?: number;
+  salaryCurrency?: string;
   createdAt: string;
   /** Nullable — soft-delete, same convention as every other admin table. */
   archivedAt: string | null;
