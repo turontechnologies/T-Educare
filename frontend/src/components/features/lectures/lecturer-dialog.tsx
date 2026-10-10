@@ -16,6 +16,7 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { fullName } from "@/lib/lecturers";
+import { useCreateLecturer, useUpdateLecturer } from "@/hooks/use-lecturers";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useLecturersStore } from "@/store/lecturers.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -114,8 +115,8 @@ function LecturerForm({
   onDone: () => void;
 }) {
   const lecturers = useLecturersStore((state) => state.lecturers);
-  const createLecturer = useLecturersStore((state) => state.createLecturer);
-  const updateLecturer = useLecturersStore((state) => state.updateLecturer);
+  const createLecturer = useCreateLecturer();
+  const updateLecturer = useUpdateLecturer();
   const schools = useSchoolsStore((state) => state.schools);
   const faculties = useFacultiesStore((state) => state.faculties);
   const activeSchools = useMemo(
@@ -159,22 +160,12 @@ function LecturerForm({
     },
   });
 
-  const onSubmit = (values: LecturerFormValues) => {
+  const onSubmit = async (values: LecturerFormValues) => {
     if (!position || !assignmentType || !assignmentId || !gender) {
       toast.error("Select a position, gender, and school/faculty assignment");
       return;
     }
     const username = values.username.trim();
-    const duplicate = lecturers.some(
-      (l) =>
-        l.id !== lecturer?.id &&
-        !l.archivedAt &&
-        l.username.toLowerCase() === username.toLowerCase(),
-    );
-    if (duplicate) {
-      toast.error(`Username "${username}" is already in use`);
-      return;
-    }
 
     const payload = {
       ...values,
@@ -187,14 +178,23 @@ function LecturerForm({
       gender,
     };
 
-    if (lecturer) {
-      updateLecturer(lecturer.id, payload);
-      toast.success(`${fullName(payload)} updated`);
-    } else {
-      const created = createLecturer(payload);
-      toast.success(`${fullName(created)} added`);
+    try {
+      if (lecturer) {
+        const updated = await updateLecturer.mutateAsync({
+          id: lecturer.id,
+          payload,
+        });
+        toast.success(`${fullName(updated)} updated`);
+      } else {
+        const created = await createLecturer.mutateAsync(payload);
+        toast.success(`${fullName(created)} added`);
+      }
+      onDone();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save lecturer",
+      );
     }
-    onDone();
   };
 
   return (
@@ -303,7 +303,11 @@ function LecturerForm({
         <Button
           type="submit"
           form="lecturer-form"
-          disabled={formState.isSubmitting}
+          disabled={
+            formState.isSubmitting ||
+            createLecturer.isPending ||
+            updateLecturer.isPending
+          }
           className="gap-2 rounded-full px-6 transition-transform hover:scale-[1.03] active:scale-[0.98]"
         >
           Save
