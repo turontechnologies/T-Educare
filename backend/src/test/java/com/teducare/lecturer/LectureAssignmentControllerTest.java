@@ -1,17 +1,22 @@
 package com.teducare.lecturer;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -174,6 +179,96 @@ class LectureAssignmentControllerTest {
             mockMvc.perform(post("/api/institutions/" + institutionId + "/archive")
                     .header("Authorization", "Bearer " + superToken));
             mockMvc.perform(post("/api/institutions/" + institutionBId + "/archive")
+                    .header("Authorization", "Bearer " + superToken));
+        }
+    }
+
+    @Test
+    void importAndExportTimetableCsv() throws Exception {
+        String superToken = loginAs("super_admin", "Super@2024");
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String institutionId = createInstitution(superToken, "Timetable CSV Test University " + suffix);
+        String username = "timetablecsv_admin_" + suffix;
+        String userManagerId = null;
+
+        try {
+            userManagerId = createUserManager(superToken, institutionId, username, "timetablecsv_" + suffix);
+            String token = loginAs(username, "LectureAssignTest@2026");
+
+            String schoolId = createSchool(token, "School of Timetable CSV Test");
+            String facultyId = createFaculty(token, "Faculty of Timetable CSV Test", schoolId);
+            String departmentId = createDepartment(token, "Dept of Timetable CSV Test", facultyId, schoolId);
+            String levelId = createProgramLevel(token, "100L-csv-" + suffix);
+            String courseId = createCourse(token, "TTC101", departmentId, schoolId, levelId);
+            String sessionId = createAcademicSession(token, "csv-" + suffix);
+            String lecturerId = createLecturer(token, "csv-" + suffix, schoolId);
+
+            String lecturerUsername = "UL-csv-" + suffix;
+            String sessionName = "LAT csv-" + suffix;
+
+            String csv = "lecturerUsername,courseCode,academicSession,dayOfWeek,startTime,endTime,venue\n"
+                    + lecturerUsername + ",TTC101," + sessionName + ",MONDAY,09:00,11:00,Room 9\n"
+                    + "unknown-lecturer,TTC101," + sessionName + ",MONDAY,09:00,11:00,Room 9\n"
+                    + lecturerUsername + ",UNKNOWNCODE," + sessionName + ",MONDAY,09:00,11:00,Room 9\n"
+                    + lecturerUsername + ",TTC101," + sessionName + ",NOTADAY,09:00,11:00,Room 9\n";
+            MockMultipartFile csvFile = new MockMultipartFile(
+                    "file", "timetable.csv", "text/csv", csv.getBytes(StandardCharsets.UTF_8));
+
+            mockMvc.perform(multipart("/api/lecture-assignments/import")
+                    .file(csvFile)
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.imported").value(1))
+                    .andExpect(jsonPath("$.skipped").value(3));
+
+            // Re-importing the exact same valid row is a duplicate slot — skipped, not re-imported.
+            MockMultipartFile reimport = new MockMultipartFile(
+                    "file", "timetable.csv", "text/csv",
+                    ("lecturerUsername,courseCode,academicSession,dayOfWeek,startTime,endTime,venue\n"
+                            + lecturerUsername + ",TTC101," + sessionName + ",MONDAY,09:00,11:00,Room 9\n")
+                            .getBytes(StandardCharsets.UTF_8));
+            mockMvc.perform(multipart("/api/lecture-assignments/import")
+                    .file(reimport)
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.imported").value(0))
+                    .andExpect(jsonPath("$.skipped").value(1));
+
+            // Full export contains the imported row.
+            String fullExport = mockMvc.perform(get("/api/lecture-assignments/export")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(result -> assertTrue(
+                            result.getResponse().getContentType().startsWith("text/csv")))
+                    .andReturn().getResponse().getContentAsString();
+            assertTrue(fullExport.contains(lecturerUsername));
+            assertTrue(fullExport.contains("TTC101"));
+            assertTrue(fullExport.contains("Room 9"));
+
+            // Department-scoped export still contains it (same department); a different, empty department excludes it.
+            String deptExport = mockMvc.perform(get("/api/lecture-assignments/export")
+                    .param("departmentId", departmentId)
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertTrue(deptExport.contains("TTC101"));
+
+            String otherDepartmentId = createDepartment(token, "Other Dept Timetable CSV Test", facultyId, schoolId);
+            String emptyDeptExport = mockMvc.perform(get("/api/lecture-assignments/export")
+                    .param("departmentId", otherDepartmentId)
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertTrue(!emptyDeptExport.contains("TTC101"));
+
+            // Sanity: the course/session/lecturer created above are the ones actually referenced.
+            assertTrue(courseId != null && sessionId != null && lecturerId != null);
+        } finally {
+            if (userManagerId != null) {
+                mockMvc.perform(post("/api/user-managers/" + userManagerId + "/archive")
+                        .header("Authorization", "Bearer " + superToken));
+            }
+            mockMvc.perform(post("/api/institutions/" + institutionId + "/archive")
                     .header("Authorization", "Bearer " + superToken));
         }
     }
