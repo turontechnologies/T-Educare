@@ -78,3 +78,656 @@ WARNING: Dynamic loading of agents will be disallowed by default in a future rel
 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.097 s -- in com.teducare.course.CourseControllerTest
 [INFO] Running com.teducare.coursegrade.CourseGradeControllerTest
 2026-10-11T14:28:39.915Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.coursegrade.CourseGradeControllerTest]: CourseGradeControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:40.641Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.coursegrade.CourseGradeControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.369 s -- in com.teducare.coursegrade.CourseGradeControllerTest
+[INFO] Running com.teducare.dashboard.DashboardControllerTest
+2026-10-11T14:28:43.278Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.dashboard.DashboardControllerTest]: DashboardControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:43.738Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.dashboard.DashboardControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.264 s -- in com.teducare.dashboard.DashboardControllerTest
+[INFO] Running com.teducare.department.DepartmentControllerTest
+2026-10-11T14:28:44.544Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.department.DepartmentControllerTest]: DepartmentControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:45.043Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.department.DepartmentControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.468 s -- in com.teducare.department.DepartmentControllerTest
+[INFO] Running com.teducare.elective.ElectiveGroupControllerTest
+2026-10-11T14:28:46.015Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.elective.ElectiveGroupControllerTest]: ElectiveGroupControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:46.450Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.elective.ElectiveGroupControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.790 s -- in com.teducare.elective.ElectiveGroupControllerTest
+[INFO] Running com.teducare.faculty.FacultyControllerTest
+2026-10-11T14:28:47.806Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.faculty.FacultyControllerTest]: FacultyControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:48.257Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.faculty.FacultyControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.324 s -- in com.teducare.faculty.FacultyControllerTest
+[INFO] Running com.teducare.institution.InstitutionControllerTest
+2026-10-11T14:28:49.127Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.institution.InstitutionControllerTest]: InstitutionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:49.696Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.institution.InstitutionControllerTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.783 s -- in com.teducare.institution.InstitutionControllerTest
+[INFO] Running com.teducare.institution.InstitutionLicenseControllerTest
+2026-10-11T14:28:50.913Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.institution.InstitutionLicenseControllerTest]: InstitutionLicenseControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:50.921Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.institution.InstitutionLicenseControllerTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.890 s -- in com.teducare.institution.InstitutionLicenseControllerTest
+[INFO] Running com.teducare.lecturer.LectureAssignmentControllerTest
+2026-10-11T14:28:52.806Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.lecturer.LectureAssignmentControllerTest]: LectureAssignmentControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:53.479Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.lecturer.LectureAssignmentControllerTest
+2026-10-11T14:28:56.692Z  WARN 82 --- [teducare-backend] [           main] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 2628, SQLState: S0001
+2026-10-11T14:28:56.693Z ERROR 82 --- [teducare-backend] [           main] o.h.engine.jdbc.spi.SqlExceptionHelper   : String or binary data would be truncated in table 'teducare_db.dbo.program_levels', column 'level_code'. Truncated value: '100L-csv-17917289362'.
+2026-10-11T14:28:56.758Z ERROR 82 --- [teducare-backend] [           main] c.t.common.GlobalExceptionHandler        : Unhandled exception
+
+org.springframework.dao.InvalidDataAccessResourceUsageException: could not execute statement [String or binary data would be truncated in table 'teducare_db.dbo.program_levels', column 'level_code'. Truncated value: '100L-csv-17917289362'.] [insert into dbo.program_levels (archived_at,created_at,description,institution_id,level_code,id) values (?,?,?,?,?,?)]; SQL [insert into dbo.program_levels (archived_at,created_at,description,institution_id,level_code,id) values (?,?,?,?,?,?)]
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.convertHibernateAccessException(HibernateJpaDialect.java:277) ~[spring-orm-6.1.14.jar:6.1.14]
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.translateExceptionIfPossible(HibernateJpaDialect.java:241) ~[spring-orm-6.1.14.jar:6.1.14]
+	at org.springframework.orm.jpa.JpaTransactionManager.doCommit(JpaTransactionManager.java:566) ~[spring-orm-6.1.14.jar:6.1.14]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:795) ~[spring-tx-6.1.14.jar:6.1.14]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:758) ~[spring-tx-6.1.14.jar:6.1.14]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:663) ~[spring-tx-6.1.14.jar:6.1.14]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:413) ~[spring-tx-6.1.14.jar:6.1.14]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.1.14.jar:6.1.14]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.14.jar:6.1.14]
+	at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:138) ~[spring-tx-6.1.14.jar:6.1.14]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.14.jar:6.1.14]
+	at org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke(CrudMethodMetadataPostProcessor.java:165) ~[spring-data-jpa-3.3.5.jar:3.3.5]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.14.jar:6.1.14]
+	at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:97) ~[spring-aop-6.1.14.jar:6.1.14]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.14.jar:6.1.14]
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:223) ~[spring-aop-6.1.14.jar:6.1.14]
+	at jdk.proxy2/jdk.proxy2.$Proxy154.save(Unknown Source) ~[na:na]
+	at com.teducare.programlevel.ProgramLevelService.create(ProgramLevelService.java:37) ~[classes/:na]
+	at com.teducare.programlevel.ProgramLevelController.create(ProgramLevelController.java:46) ~[classes/:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.31.jar:6.0]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.test.web.servlet.TestDispatcherServlet.service(TestDispatcherServlet.java:72) ~[spring-test-6.1.14.jar:6.1.14]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.31.jar:6.0]
+	at org.springframework.mock.web.MockFilterChain$ServletFilterProxy.doFilter(MockFilterChain.java:165) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:132) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:110) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.test.web.servlet.setup.MockMvcFilterDecorator.doFilter(MockMvcFilterDecorator.java:151) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:132) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:100) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at com.teducare.config.JwtAuthenticationFilter.doFilterInternal(JwtAuthenticationFilter.java:47) ~[classes/:na]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191) ~[spring-security-web-6.3.4.jar:6.3.4]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$3(HandlerMappingIntrospector.java:195) ~[spring-webmvc-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:230) ~[spring-security-config-6.3.4.jar:6.3.4]
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:362) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:278) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.test.web.servlet.setup.MockMvcFilterDecorator.doFilter(MockMvcFilterDecorator.java:151) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:132) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.test.web.servlet.setup.MockMvcFilterDecorator.doFilter(MockMvcFilterDecorator.java:151) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:132) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.test.web.servlet.setup.MockMvcFilterDecorator.doFilter(MockMvcFilterDecorator.java:151) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:132) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.1.14.jar:6.1.14]
+	at org.springframework.test.web.servlet.setup.MockMvcFilterDecorator.doFilter(MockMvcFilterDecorator.java:151) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.mock.web.MockFilterChain.doFilter(MockFilterChain.java:132) ~[spring-test-6.1.14.jar:6.1.14]
+	at org.springframework.test.web.servlet.MockMvc.perform(MockMvc.java:201) ~[spring-test-6.1.14.jar:6.1.14]
+	at com.teducare.lecturer.LectureAssignmentControllerTest.createProgramLevel(LectureAssignmentControllerTest.java:358) ~[test-classes/:na]
+	at com.teducare.lecturer.LectureAssignmentControllerTest.importAndExportTimetableCsv(LectureAssignmentControllerTest.java:201) ~[test-classes/:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:728) ~[junit-platform-commons-1.10.5.jar:1.10.5]
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:60) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:131) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:156) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:147) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:103) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:93) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:106) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:64) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:45) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:37) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:92) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:86) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$7(TestMethodTestDescriptor.java:218) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:214) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:139) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:69) ~[junit-jupiter-engine-5.10.5.jar:5.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:156) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[na:na]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[na:na]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:35) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:57) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:54) ~[junit-platform-engine-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:198) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:169) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:93) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:58) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:141) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:57) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:103) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:85) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) ~[junit-platform-launcher-1.10.5.jar:1.10.5]
+	at org.apache.maven.surefire.junitplatform.LazyLauncher.execute(LazyLauncher.java:56) ~[surefire-junit-platform-3.2.5.jar:3.2.5]
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:184) ~[surefire-junit-platform-3.2.5.jar:3.2.5]
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:148) ~[surefire-junit-platform-3.2.5.jar:3.2.5]
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:122) ~[surefire-junit-platform-3.2.5.jar:3.2.5]
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385) ~[surefire-booter-3.2.5.jar:3.2.5]
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162) ~[surefire-booter-3.2.5.jar:3.2.5]
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507) ~[surefire-booter-3.2.5.jar:3.2.5]
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495) ~[surefire-booter-3.2.5.jar:3.2.5]
+Caused by: org.hibernate.exception.SQLGrammarException: could not execute statement [String or binary data would be truncated in table 'teducare_db.dbo.program_levels', column 'level_code'. Truncated value: '100L-csv-17917289362'.] [insert into dbo.program_levels (archived_at,created_at,description,institution_id,level_code,id) values (?,?,?,?,?,?)]
+	at org.hibernate.exception.internal.SQLStateConversionDelegate.convert(SQLStateConversionDelegate.java:91) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:58) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:108) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate(ResultSetReturnImpl.java:197) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.performNonBatchedMutation(AbstractMutationExecutor.java:134) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleNonBatched.performNonBatchedOperations(MutationExecutorSingleNonBatched.java:55) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.execute(AbstractMutationExecutor.java:55) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.persister.entity.mutation.InsertCoordinatorStandard.doStaticInserts(InsertCoordinatorStandard.java:194) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.persister.entity.mutation.InsertCoordinatorStandard.coordinateInsert(InsertCoordinatorStandard.java:132) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.persister.entity.mutation.InsertCoordinatorStandard.insert(InsertCoordinatorStandard.java:104) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.action.internal.EntityInsertAction.execute(EntityInsertAction.java:110) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:633) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:500) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.event.internal.AbstractFlushingEventListener.performExecutions(AbstractFlushingEventListener.java:385) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.event.internal.DefaultFlushEventListener.onFlush(DefaultFlushEventListener.java:41) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.event.service.internal.EventListenerGroupImpl.fireEventOnEachListener(EventListenerGroupImpl.java:127) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.internal.SessionImpl.doFlush(SessionImpl.java:1425) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.internal.SessionImpl.managedFlush(SessionImpl.java:487) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.internal.SessionImpl.flushBeforeTransactionCompletion(SessionImpl.java:2324) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.internal.SessionImpl.beforeTransactionCompletion(SessionImpl.java:1981) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.jdbc.internal.JdbcCoordinatorImpl.beforeTransactionCompletion(JdbcCoordinatorImpl.java:439) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl.beforeCompletionCallback(JdbcResourceLocalTransactionCoordinatorImpl.java:169) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorImpl$TransactionDriverControlImpl.commit(JdbcResourceLocalTransactionCoordinatorImpl.java:267) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.hibernate.engine.transaction.internal.TransactionImpl.commit(TransactionImpl.java:101) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	at org.springframework.orm.jpa.JpaTransactionManager.doCommit(JpaTransactionManager.java:562) ~[spring-orm-6.1.14.jar:6.1.14]
+	... 171 common frames omitted
+Caused by: com.microsoft.sqlserver.jdbc.SQLServerException: String or binary data would be truncated in table 'teducare_db.dbo.program_levels', column 'level_code'. Truncated value: '100L-csv-17917289362'.
+	at com.microsoft.sqlserver.jdbc.SQLServerException.makeFromDatabaseError(SQLServerException.java:261) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.getNextResult(SQLServerStatement.java:1709) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.doExecutePreparedStatement(SQLServerPreparedStatement.java:663) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement$PrepStmtExecCmd.doExecute(SQLServerPreparedStatement.java:582) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.microsoft.sqlserver.jdbc.TDSCommand.execute(IOBuffer.java:7718) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.microsoft.sqlserver.jdbc.SQLServerConnection.executeCommand(SQLServerConnection.java:4393) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeCommand(SQLServerStatement.java:276) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.microsoft.sqlserver.jdbc.SQLServerStatement.executeStatement(SQLServerStatement.java:246) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.microsoft.sqlserver.jdbc.SQLServerPreparedStatement.executeUpdate(SQLServerPreparedStatement.java:525) ~[mssql-jdbc-12.6.4.jre11.jar:na]
+	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeUpdate(ProxyPreparedStatement.java:61) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeUpdate(HikariProxyPreparedStatement.java) ~[HikariCP-5.1.0.jar:na]
+	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate(ResultSetReturnImpl.java:194) ~[hibernate-core-6.5.3.Final.jar:6.5.3.Final]
+	... 192 common frames omitted
+
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/auth/login
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"50"]
+             Body = {"username":"super_admin","password":"Super@2024"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.auth.AuthController
+           Method = com.teducare.auth.AuthController#login(LoginRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"user":{"id":"demo-super-admin","firstName":"Adetunji","lastName":"Aderinwale","email":"ade.adetunji@turontech.com","role":"super_admin","phone":"08012345678","avatarUrl":"","institutionLogoUrl":""},"token":"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTE3Mjg5MzYsImV4cCI6MTc5MTgxNTMzNn0.-uwaCP9gvTvEZu1bkIoqGgPwXbLMybDw103Lb7ZF2Xw"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/institutions
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTE3Mjg5MzYsImV4cCI6MTc5MTgxNTMzNn0.-uwaCP9gvTvEZu1bkIoqGgPwXbLMybDw103Lb7ZF2Xw", Content-Length:"169"]
+             Body = {"name":"Timetable CSV Test University 1791728936250","institutionType":"University",
+ "adminUser":"Test Admin","adminEmail":"admin@lectureassigntestuniversity.edu.ng"}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.institution.InstitutionController
+           Method = com.teducare.institution.InstitutionController#create(Authentication, CreateInstitutionRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","code":"1413","name":"Timetable CSV Test University 1791728936250","institutionType":"University","adminUser":"Test Admin","adminEmail":"admin@lectureassigntestuniversity.edu.ng","moduleKeys":[],"modulesCount":0,"studentCount":0,"revenue":0,"licenseType":"Basic","tokenKey":"1L0J-6FRD-ZQ43-93Z9","status":"active","licenseStatus":"ACTIVE","createdAt":"2026-10-11T14:28:56.260923162Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/user-managers
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTE3Mjg5MzYsImV4cCI6MTc5MTgxNTMzNn0.-uwaCP9gvTvEZu1bkIoqGgPwXbLMybDw103Lb7ZF2Xw", Content-Length:"265"]
+             Body = {"firstName":"LectureAssign","lastName":"Test","email":"timetablecsv_1791728936250@example.com",
+ "username":"timetablecsv_admin_1791728936250","password":"LectureAssignTest@2026",
+ "institutionId":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","isPrimaryAdmin":true}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.usermanager.UserManagerController
+           Method = com.teducare.usermanager.UserManagerController#create(Authentication, CreateUserManagerRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"um-6a7d77d8-412c-40b4-bffa-6f15c9498290","code":"1134","firstName":"LectureAssign","otherName":"","lastName":"Test","email":"timetablecsv_1791728936250@example.com","username":"timetablecsv_admin_1791728936250","institutionId":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","institutionName":"Timetable CSV Test University 1791728936250","isPrimaryAdmin":true,"avatarUrl":"","status":"active","createdAt":"2026-10-11T14:28:56.403052875Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/auth/login
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"83"]
+             Body = {"username":"timetablecsv_admin_1791728936250","password":"LectureAssignTest@2026"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.auth.AuthController
+           Method = com.teducare.auth.AuthController#login(LoginRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"user":{"id":"um-6a7d77d8-412c-40b4-bffa-6f15c9498290","firstName":"LectureAssign","lastName":"Test","email":"timetablecsv_1791728936250@example.com","role":"institution_admin","institutionId":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","institutionName":"Timetable CSV Test University 1791728936250","avatarUrl":"","institutionLogoUrl":""},"token":"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS02YTdkNzdkOC00MTJjLTQwYjQtYmZmYS02ZjE1Yzk0OTgyOTAiLCJzdWIiOiJ0aW1ldGFibGVjc3ZfYWRtaW5fMTc5MTcyODkzNjI1MCIsImlhdCI6MTc5MTcyODkzNiwiZXhwIjoxNzkxODE1MzM2fQ.e2WI4gESEIi4Sb8_o5rSOR5im6dqKWSIQ2oR-NI12Dg"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/schools
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS02YTdkNzdkOC00MTJjLTQwYjQtYmZmYS02ZjE1Yzk0OTgyOTAiLCJzdWIiOiJ0aW1ldGFibGVjc3ZfYWRtaW5fMTc5MTcyODkzNjI1MCIsImlhdCI6MTc5MTcyODkzNiwiZXhwIjoxNzkxODE1MzM2fQ.e2WI4gESEIi4Sb8_o5rSOR5im6dqKWSIQ2oR-NI12Dg", Content-Length:"80"]
+             Body = {"name":"School of Timetable CSV Test","headName":"Someone","designation":"HOD"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.school.SchoolController
+           Method = com.teducare.school.SchoolController#create(Authentication, CreateSchoolRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"school-7323c588-9d2d-4e10-a5b2-8e83c5f424c1","institutionId":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","name":"School of Timetable CSV Test","headName":"Someone","designation":"HOD","createdAt":"2026-10-11T14:28:56.581719258Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/faculties
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS02YTdkNzdkOC00MTJjLTQwYjQtYmZmYS02ZjE1Yzk0OTgyOTAiLCJzdWIiOiJ0aW1ldGFibGVjc3ZfYWRtaW5fMTc5MTcyODkzNjI1MCIsImlhdCI6MTc5MTcyODkzNiwiZXhwIjoxNzkxODE1MzM2fQ.e2WI4gESEIi4Sb8_o5rSOR5im6dqKWSIQ2oR-NI12Dg", Content-Length:"118"]
+             Body = {"name":"Faculty of Timetable CSV Test","deanName":"Someone","schoolId":"school-7323c588-9d2d-4e10-a5b2-8e83c5f424c1"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.faculty.FacultyController
+           Method = com.teducare.faculty.FacultyController#create(Authentication, CreateFacultyRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"faculty-630ddc5e-7026-4eba-96ce-41346749a7ae","institutionId":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","name":"Faculty of Timetable CSV Test","deanName":"Someone","schoolId":"school-7323c588-9d2d-4e10-a5b2-8e83c5f424c1","createdAt":"2026-10-11T14:28:56.609514522Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/departments
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS02YTdkNzdkOC00MTJjLTQwYjQtYmZmYS02ZjE1Yzk0OTgyOTAiLCJzdWIiOiJ0aW1ldGFibGVjc3ZfYWRtaW5fMTc5MTcyODkzNjI1MCIsImlhdCI6MTc5MTcyODkzNiwiZXhwIjoxNzkxODE1MzM2fQ.e2WI4gESEIi4Sb8_o5rSOR5im6dqKWSIQ2oR-NI12Dg", Content-Length:"173"]
+             Body = {"name":"Dept of Timetable CSV Test","hodName":"Someone","facultyId":"faculty-630ddc5e-7026-4eba-96ce-41346749a7ae","schoolId":"school-7323c588-9d2d-4e10-a5b2-8e83c5f424c1"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.department.DepartmentController
+           Method = com.teducare.department.DepartmentController#create(Authentication, CreateDepartmentRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"department-716602eb-6cf1-435a-8d38-ad9f96e6b813","institutionId":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","name":"Dept of Timetable CSV Test","hodName":"Someone","facultyId":"faculty-630ddc5e-7026-4eba-96ce-41346749a7ae","schoolId":"school-7323c588-9d2d-4e10-a5b2-8e83c5f424c1","createdAt":"2026-10-11T14:28:56.641249550Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/program-levels
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS02YTdkNzdkOC00MTJjLTQwYjQtYmZmYS02ZjE1Yzk0OTgyOTAiLCJzdWIiOiJ0aW1ldGFibGVjc3ZfYWRtaW5fMTc5MTcyODkzNjI1MCIsImlhdCI6MTc5MTcyODkzNiwiZXhwIjoxNzkxODE1MzM2fQ.e2WI4gESEIi4Sb8_o5rSOR5im6dqKWSIQ2oR-NI12Dg", Content-Length:"89"]
+             Body = {"levelCode":"100L-csv-1791728936250","description":"100L-csv-1791728936250 description"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.programlevel.ProgramLevelController
+           Method = com.teducare.programlevel.ProgramLevelController#create(Authentication, CreateProgramLevelRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = org.springframework.dao.InvalidDataAccessResourceUsageException
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 500
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"error":"Something went wrong."}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/user-managers/um-6a7d77d8-412c-40b4-bffa-6f15c9498290/archive
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTE3Mjg5MzYsImV4cCI6MTc5MTgxNTMzNn0.-uwaCP9gvTvEZu1bkIoqGgPwXbLMybDw103Lb7ZF2Xw"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.usermanager.UserManagerController
+           Method = com.teducare.usermanager.UserManagerController#archive(Authentication, String)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"um-6a7d77d8-412c-40b4-bffa-6f15c9498290","code":"1134","firstName":"LectureAssign","otherName":"","lastName":"Test","email":"timetablecsv_1791728936250@example.com","username":"timetablecsv_admin_1791728936250","institutionId":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","institutionName":"Timetable CSV Test University 1791728936250","isPrimaryAdmin":true,"avatarUrl":"","status":"active","createdAt":"2026-10-11T14:28:56.403052900Z","archivedAt":"2026-10-11T14:28:56.806103459Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/institutions/inst-217d2823-cffd-43c5-986c-4eb3651754f4/archive
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTE3Mjg5MzYsImV4cCI6MTc5MTgxNTMzNn0.-uwaCP9gvTvEZu1bkIoqGgPwXbLMybDw103Lb7ZF2Xw"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.institution.InstitutionController
+           Method = com.teducare.institution.InstitutionController#archive(Authentication, String)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"inst-217d2823-cffd-43c5-986c-4eb3651754f4","code":"1413","name":"Timetable CSV Test University 1791728936250","institutionType":"University","adminUser":"Test Admin","adminEmail":"admin@lectureassigntestuniversity.edu.ng","moduleKeys":[],"modulesCount":0,"studentCount":0,"revenue":0,"licenseType":"Basic","tokenKey":"1L0J-6FRD-ZQ43-93Z9","status":"active","licenseStatus":"ACTIVE","createdAt":"2026-10-11T14:28:56.260923200Z","archivedAt":"2026-10-11T14:28:56.840203305Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+[ERROR] Tests run: 2, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 4.100 s <<< FAILURE! -- in com.teducare.lecturer.LectureAssignmentControllerTest
+[ERROR] com.teducare.lecturer.LectureAssignmentControllerTest.importAndExportTimetableCsv -- Time elapsed: 0.759 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<201> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.teducare.lecturer.LectureAssignmentControllerTest.createProgramLevel(LectureAssignmentControllerTest.java:362)
+	at com.teducare.lecturer.LectureAssignmentControllerTest.importAndExportTimetableCsv(LectureAssignmentControllerTest.java:201)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running com.teducare.lecturer.LecturerControllerTest
+2026-10-11T14:28:56.908Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.lecturer.LecturerControllerTest]: LecturerControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:56.918Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.lecturer.LecturerControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.973 s -- in com.teducare.lecturer.LecturerControllerTest
+[INFO] Running com.teducare.module.ModuleControllerTest
+2026-10-11T14:28:57.879Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.module.ModuleControllerTest]: ModuleControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:58.421Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.module.ModuleControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.833 s -- in com.teducare.module.ModuleControllerTest
+[INFO] Running com.teducare.notification.NotificationControllerTest
+2026-10-11T14:28:58.754Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.notification.NotificationControllerTest]: NotificationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:28:59.531Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.notification.NotificationControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.055 s -- in com.teducare.notification.NotificationControllerTest
+[INFO] Running com.teducare.profile.ProfileControllerTest
+2026-10-11T14:29:01.815Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.profile.ProfileControllerTest]: ProfileControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:29:02.719Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.profile.ProfileControllerTest
