@@ -24,6 +24,8 @@ interface RequestTimeChangeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   slot?: TimetableSlot;
+  /** e.g. "CSC101 — Introduction to Computer Science · 3 units" — shown above the proposed-time fields for context. */
+  contextLabel?: string;
 }
 
 const DAY_OPTIONS = DAYS_OF_WEEK.map((day) => ({
@@ -36,6 +38,7 @@ export function RequestTimeChangeDialog({
   open,
   onOpenChange,
   slot,
+  contextLabel,
 }: RequestTimeChangeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -61,6 +64,7 @@ export function RequestTimeChangeDialog({
           <RequestForm
             key={slot.id}
             slot={slot}
+            contextLabel={contextLabel}
             onDone={() => onOpenChange(false)}
           />
         )}
@@ -71,9 +75,11 @@ export function RequestTimeChangeDialog({
 
 function RequestForm({
   slot,
+  contextLabel,
   onDone,
 }: {
   slot: TimetableSlot;
+  contextLabel?: string;
   onDone: () => void;
 }) {
   const requestChange = useRequestTimetableChange();
@@ -109,6 +115,9 @@ function RequestForm({
 
   return (
     <div className="space-y-5 p-6">
+      {contextLabel && (
+        <p className="text-sm font-medium text-foreground">{contextLabel}</p>
+      )}
       <p className="text-xs text-muted-foreground">
         Currently {DAY_LABELS[slot.dayOfWeek]}, {slot.startTime}–{slot.endTime}{" "}
         at {slot.venue}. Propose a replacement below.

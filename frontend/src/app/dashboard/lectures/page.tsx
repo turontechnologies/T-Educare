@@ -5,6 +5,7 @@ import {
   ArchiveRestore,
   CalendarClock,
   Download,
+  Eye,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -43,11 +44,16 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { ChangeRequestsPanel } from "@/components/features/lectures/change-requests-panel";
+import { LectureAssignmentDetailsDialog } from "@/components/features/lectures/lecture-assignment-details-dialog";
 import { LectureAssignmentDialog } from "@/components/features/lectures/lecture-assignment-dialog";
 import { LecturerDetailsDialog } from "@/components/features/lectures/lecturer-details-dialog";
 import { LecturerDialog } from "@/components/features/lectures/lecturer-dialog";
 import { MyLecturesView } from "@/components/features/lectures/my-lectures-view";
 import { TimetableSlotsDialog } from "@/components/features/lectures/timetable-slots-dialog";
+import {
+  WeeklyTimetableGrid,
+  type TimetableBlock,
+} from "@/components/features/lectures/weekly-timetable-grid";
 import {
   useArchiveLectureAssignment,
   useLectureAssignments,
@@ -619,6 +625,9 @@ function LecturesTab() {
   const [timetableFor, setTimetableFor] = useState<
     LectureAssignment | undefined
   >();
+  const [viewingAssignment, setViewingAssignment] = useState<
+    LectureAssignment | undefined
+  >();
   const [view, setView] = useState<"active" | "archived">("active");
 
   const lecturerName = (id: string) =>
@@ -629,13 +638,36 @@ function LecturesTab() {
     const course = courses.find((c) => c.id === id);
     return course ? `${course.code} — ${course.name}` : "—";
   };
+  const courseUnit = (id: string) => courses.find((c) => c.id === id)?.unit;
 
   const filtered = (assignments ?? []).filter((a) =>
     view === "archived" ? a.archivedAt : !a.archivedAt,
   );
 
+  const blocks: TimetableBlock[] = (assignments ?? [])
+    .filter((a) => !a.archivedAt)
+    .flatMap((assignment) => {
+      const unit = courseUnit(assignment.courseId);
+      return assignment.timetableSlots.map((slot) => ({
+        id: slot.id,
+        dayOfWeek: slot.dayOfWeek,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        title: courseLabel(assignment.courseId),
+        subtitle: `${lecturerName(assignment.lecturerId)}${unit !== undefined ? ` · ${unit} unit${unit === 1 ? "" : "s"}` : ""}`,
+        onClick: () => setViewingAssignment(assignment),
+      }));
+    });
+
   return (
-    <div>
+    <div className="space-y-6">
+      <div>
+        <h3 className="mb-2 text-sm font-medium text-foreground">
+          Institution Timetable
+        </h3>
+        <WeeklyTimetableGrid blocks={blocks} />
+      </div>
+
       <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
@@ -681,6 +713,14 @@ function LecturesTab() {
                 <div className="flex shrink-0 items-center gap-1.5">
                   {view === "active" ? (
                     <>
+                      <button
+                        type="button"
+                        onClick={() => setViewingAssignment(assignment)}
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
+                      >
+                        <Eye className="size-3.5" />
+                        View
+                      </button>
                       <button
                         type="button"
                         onClick={() => setTimetableFor(assignment)}
@@ -745,6 +785,11 @@ function LecturesTab() {
         open={!!timetableFor}
         onOpenChange={(open) => !open && setTimetableFor(undefined)}
         assignment={timetableFor}
+      />
+      <LectureAssignmentDetailsDialog
+        open={!!viewingAssignment}
+        onOpenChange={(open) => !open && setViewingAssignment(undefined)}
+        assignment={viewingAssignment}
       />
     </div>
   );

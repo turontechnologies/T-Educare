@@ -51,18 +51,23 @@ export function MyLecturesView({ lecturerId }: { lecturerId: string }) {
     const course = courses.find((c) => c.id === courseId);
     return course ? `${course.code} — ${course.name}` : courseId;
   };
+  const courseUnit = (courseId: string) =>
+    courses.find((c) => c.id === courseId)?.unit;
 
   const blocks: TimetableBlock[] = useMemo(
     () =>
-      schedule.map(({ assignment, slot }) => ({
-        id: slot.id,
-        dayOfWeek: slot.dayOfWeek,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        title: courseLabel(assignment.courseId),
-        subtitle: slot.venue,
-        onClick: () => setRequestingSlot(slot),
-      })),
+      schedule.map(({ assignment, slot }) => {
+        const unit = courseUnit(assignment.courseId);
+        return {
+          id: slot.id,
+          dayOfWeek: slot.dayOfWeek,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          title: courseLabel(assignment.courseId),
+          subtitle: `${slot.venue}${unit !== undefined ? ` · ${unit} unit${unit === 1 ? "" : "s"}` : ""}`,
+          onClick: () => setRequestingSlot(slot),
+        };
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [schedule, courses],
   );
@@ -87,6 +92,8 @@ export function MyLecturesView({ lecturerId }: { lecturerId: string }) {
                   {DAY_LABELS[next.slot.dayOfWeek]} ·{" "}
                   {formatTimeRange(next.slot.startTime, next.slot.endTime)} ·{" "}
                   {next.slot.venue}
+                  {courseUnit(next.assignment.courseId) !== undefined &&
+                    ` · ${courseUnit(next.assignment.courseId)} unit${courseUnit(next.assignment.courseId) === 1 ? "" : "s"}`}
                 </p>
               </>
             ) : (
@@ -103,44 +110,12 @@ export function MyLecturesView({ lecturerId }: { lecturerId: string }) {
           <p className="text-sm font-medium text-foreground">
             Your Weekly Timetable
           </p>
+          <p className="text-xs text-muted-foreground">
+            Click a lecture to request a different day, time, or venue.
+          </p>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {schedule.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No lectures assigned to you yet.
-            </p>
-          ) : (
-            schedule.map(({ assignment, slot }) => (
-              <div
-                key={slot.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-border p-3 text-sm"
-              >
-                <div>
-                  <p className="font-medium text-foreground">
-                    {courseLabel(assignment.courseId)}
-                  </p>
-                  <p className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="size-3.5" />
-                      {DAY_LABELS[slot.dayOfWeek]},{" "}
-                      {formatTimeRange(slot.startTime, slot.endTime)}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="size-3.5" />
-                      {slot.venue}
-                    </span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRequestingSlot(slot)}
-                  className="shrink-0 cursor-pointer rounded-md border border-border px-2.5 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
-                >
-                  Request a different time
-                </button>
-              </div>
-            ))
-          )}
+        <CardContent>
+          <WeeklyTimetableGrid blocks={blocks} />
         </CardContent>
       </Card>
 
@@ -180,6 +155,12 @@ export function MyLecturesView({ lecturerId }: { lecturerId: string }) {
         open={!!requestingSlot}
         onOpenChange={(open) => !open && setRequestingSlot(undefined)}
         slot={requestingSlot}
+        contextLabel={(() => {
+          const entry = schedule.find((e) => e.slot.id === requestingSlot?.id);
+          if (!entry) return undefined;
+          const unit = courseUnit(entry.assignment.courseId);
+          return `${courseLabel(entry.assignment.courseId)}${unit !== undefined ? ` · ${unit} unit${unit === 1 ? "" : "s"}` : ""}`;
+        })()}
       />
     </div>
   );
