@@ -621,8 +621,12 @@ function LecturesTab() {
   const { data: assignments } = useLectureAssignments({});
   const lecturers = useLecturersStore((state) => state.lecturers);
   const courses = useCoursesStore((state) => state.courses);
+  const departments = useDepartmentsStore((state) => state.departments);
   const archiveAssignment = useArchiveLectureAssignment();
   const restoreAssignment = useRestoreLectureAssignment();
+  const importTimetable = useImportTimetable();
+  const exportTimetable = useExportTimetable();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [timetableFor, setTimetableFor] = useState<
@@ -632,6 +636,7 @@ function LecturesTab() {
     LectureAssignment | undefined
   >();
   const [view, setView] = useState<"active" | "archived">("active");
+  const [departmentFilter, setDepartmentFilter] = useState("");
 
   const lecturerName = (id: string) =>
     fullName(
@@ -642,32 +647,132 @@ function LecturesTab() {
     return course ? `${course.code} — ${course.name}` : "—";
   };
   const courseUnit = (id: string) => courses.find((c) => c.id === id)?.unit;
+  const courseDepartmentId = (id: string) =>
+    courses.find((c) => c.id === id)?.departmentId;
 
-  const filtered = (assignments ?? []).filter((a) =>
-    view === "archived" ? a.archivedAt : !a.archivedAt,
-  );
+  const filtered = (assignments ?? [])
+    .filter((a) => (view === "archived" ? a.archivedAt : !a.archivedAt))
+    .filter(
+      (a) =>
+        !departmentFilter ||
+        courseDepartmentId(a.courseId) === departmentFilter,
+    );
 
-  const blocks: TimetableBlock[] = (assignments ?? [])
-    .filter((a) => !a.archivedAt)
-    .flatMap((assignment) => {
-      const unit = courseUnit(assignment.courseId);
-      return assignment.timetableSlots.map((slot) => ({
-        id: slot.id,
-        dayOfWeek: slot.dayOfWeek,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        title: courseLabel(assignment.courseId),
-        subtitle: `${lecturerName(assignment.lecturerId)}${unit !== undefined ? ` · ${unit} unit${unit === 1 ? "" : "s"}` : ""}`,
-        onClick: () => setViewingAssignment(assignment),
-      }));
-    });
+  const blocks: TimetableBlock[] = filtered.flatMap((assignment) => {
+    const unit = courseUnit(assignment.courseId);
+    return assignment.timetableSlots.map((slot) => ({
+      id: slot.id,
+      dayOfWeek: slot.dayOfWeek,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      title: courseLabel(assignment.courseId),
+      subtitle: `${lecturerName(assignment.lecturerId)}${unit !== undefined ? ` · ${unit} unit${unit === 1 ? "" : "s"}` : ""}`,
+      onClick: () => setViewingAssignment(assignment),
+    }));
+  });
+
+  const handleImportFile = async (file: File) => {
+    try {
+      const result = await importTimetable.mutateAsync(file);
+      toast.success(
+        `${result.imported} timetable slot${result.imported === 1 ? "" : "s"} imported${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to import timetable",
+      );
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportTimetable.mutateAsync(
+        departmentFilter || undefined,
+      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const departmentName = departments.find(
+        (d) => d.id === departmentFilter,
+      )?.name;
+      link.download = `timetable${departmentName ? `-${departmentName.replace(/\s+/g, "-").toLowerCase()}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Timetable exported");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to export timetable",
+      );
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-2 text-sm font-medium text-foreground">
-          Institution Timetable
-        </h3>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-sm font-medium text-foreground">
+            Institution Timetable
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={departmentFilter || null}
+              onValueChange={(value) => setDepartmentFilter(value ?? "")}
+              items={[
+                { label: "All Departments", value: "" },
+                ...departments
+                  .filter((d) => !d.archivedAt)
+                  .map((d) => ({ label: d.name, value: d.id })),
+              ]}
+            >
+              <SelectTrigger size="sm" className="w-48">
+                <SelectValue placeholder="All Departments" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Departments</SelectItem>
+                {departments
+                  .filter((d) => !d.archivedAt)
+                  .map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-md"
+              disabled={importTimetable.isPending}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Download className="size-3.5" />
+              Import
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-md"
+              disabled={exportTimetable.isPending}
+              onClick={handleExport}
+            >
+              <Upload className="size-3.5" />
+              Export
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) handleImportFile(file);
+                event.target.value = "";
+              }}
+              className="sr-only"
+            />
+          </div>
+        </div>
         <WeeklyTimetableGrid blocks={blocks} />
       </div>
 
