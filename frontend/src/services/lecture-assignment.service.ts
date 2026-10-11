@@ -126,9 +126,15 @@ export const lectureAssignmentService = {
     return data;
   },
 
-  async exportTimetable(departmentId?: string): Promise<Blob> {
+  async exportTimetable(
+    departmentId?: string,
+    programLevelId?: string,
+  ): Promise<Blob> {
     const { data } = await apiClient.get("/lecture-assignments/export", {
-      params: departmentId ? { departmentId } : undefined,
+      params: {
+        departmentId: departmentId || undefined,
+        programLevelId: programLevelId || undefined,
+      },
       responseType: "blob",
     });
     return data;

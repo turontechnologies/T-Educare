@@ -73,6 +73,7 @@ import { useCoursesStore } from "@/store/courses.store";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useLecturersStore } from "@/store/lecturers.store";
+import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Lecturer, LectureAssignment } from "@/types/lecturer";
 
@@ -622,6 +623,7 @@ function LecturesTab() {
   const lecturers = useLecturersStore((state) => state.lecturers);
   const courses = useCoursesStore((state) => state.courses);
   const departments = useDepartmentsStore((state) => state.departments);
+  const programLevels = useProgramLevelsStore((state) => state.programLevels);
   const archiveAssignment = useArchiveLectureAssignment();
   const restoreAssignment = useRestoreLectureAssignment();
   const importTimetable = useImportTimetable();
@@ -637,6 +639,7 @@ function LecturesTab() {
   >();
   const [view, setView] = useState<"active" | "archived">("active");
   const [departmentFilter, setDepartmentFilter] = useState("");
+  const [levelFilter, setLevelFilter] = useState("");
 
   const lecturerName = (id: string) =>
     fullName(
@@ -649,6 +652,8 @@ function LecturesTab() {
   const courseUnit = (id: string) => courses.find((c) => c.id === id)?.unit;
   const courseDepartmentId = (id: string) =>
     courses.find((c) => c.id === id)?.departmentId;
+  const courseProgramLevelId = (id: string) =>
+    courses.find((c) => c.id === id)?.programLevelId;
 
   const filtered = (assignments ?? [])
     .filter((a) => (view === "archived" ? a.archivedAt : !a.archivedAt))
@@ -656,6 +661,9 @@ function LecturesTab() {
       (a) =>
         !departmentFilter ||
         courseDepartmentId(a.courseId) === departmentFilter,
+    )
+    .filter(
+      (a) => !levelFilter || courseProgramLevelId(a.courseId) === levelFilter,
     );
 
   const blocks: TimetableBlock[] = filtered.flatMap((assignment) => {
@@ -686,16 +694,24 @@ function LecturesTab() {
 
   const handleExport = async () => {
     try {
-      const blob = await exportTimetable.mutateAsync(
-        departmentFilter || undefined,
-      );
+      const blob = await exportTimetable.mutateAsync({
+        departmentId: departmentFilter || undefined,
+        programLevelId: levelFilter || undefined,
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       const departmentName = departments.find(
         (d) => d.id === departmentFilter,
       )?.name;
-      link.download = `timetable${departmentName ? `-${departmentName.replace(/\s+/g, "-").toLowerCase()}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`;
+      const levelCode = programLevels.find(
+        (l) => l.id === levelFilter,
+      )?.levelCode;
+      const slug = [departmentName, levelCode]
+        .filter(Boolean)
+        .map((part) => part!.replace(/\s+/g, "-").toLowerCase())
+        .join("-");
+      link.download = `timetable${slug ? `-${slug}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -736,6 +752,30 @@ function LecturesTab() {
                   .map((d) => (
                     <SelectItem key={d.id} value={d.id}>
                       {d.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={levelFilter || null}
+              onValueChange={(value) => setLevelFilter(value ?? "")}
+              items={[
+                { label: "All Levels", value: "" },
+                ...programLevels
+                  .filter((l) => !l.archivedAt)
+                  .map((l) => ({ label: l.levelCode, value: l.id })),
+              ]}
+            >
+              <SelectTrigger size="sm" className="w-36">
+                <SelectValue placeholder="All Levels" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Levels</SelectItem>
+                {programLevels
+                  .filter((l) => !l.archivedAt)
+                  .map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.levelCode}
                     </SelectItem>
                   ))}
               </SelectContent>

@@ -125,8 +125,10 @@ public class LectureAssignmentController {
 
     @GetMapping("/export")
     public ResponseEntity<byte[]> export(
-            Authentication authentication, @RequestParam(required = false) String departmentId) {
-        String csv = service.exportCsv(requireInstitutionId(authentication), departmentId);
+            Authentication authentication,
+            @RequestParam(required = false) String departmentId,
+            @RequestParam(required = false) String programLevelId) {
+        String csv = service.exportCsv(requireInstitutionId(authentication), departmentId, programLevelId);
         byte[] body = csv.getBytes(StandardCharsets.UTF_8);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))

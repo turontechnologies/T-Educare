@@ -62,14 +62,16 @@ final class LectureAssignmentCsv {
     static String write(List<TimetableExportRow> rows) {
         StringBuilder sb = new StringBuilder();
         sb.append(csvLine(List.of(
-                "lecturerUsername", "lecturerName", "courseCode", "courseName", "academicSession",
-                "dayOfWeek", "startTime", "endTime", "venue")));
+                "lecturerUsername", "lecturerName", "courseCode", "courseName", "programLevel", "department",
+                "academicSession", "dayOfWeek", "startTime", "endTime", "venue")));
         for (TimetableExportRow r : rows) {
             sb.append(csvLine(List.of(
                     r.lecturerUsername(),
                     r.lecturerName(),
                     r.courseCode(),
                     r.courseName(),
+                    r.programLevel(),
+                    r.department(),
                     r.academicSession(),
                     r.dayOfWeek(),
                     r.startTime(),
@@ -84,6 +86,8 @@ final class LectureAssignmentCsv {
             String lecturerName,
             String courseCode,
             String courseName,
+            String programLevel,
+            String department,
             String academicSession,
             String dayOfWeek,
             String startTime,

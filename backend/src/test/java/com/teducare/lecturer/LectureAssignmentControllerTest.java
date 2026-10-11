@@ -198,13 +198,13 @@ class LectureAssignmentControllerTest {
             String schoolId = createSchool(token, "School of Timetable CSV Test");
             String facultyId = createFaculty(token, "Faculty of Timetable CSV Test", schoolId);
             String departmentId = createDepartment(token, "Dept of Timetable CSV Test", facultyId, schoolId);
-            String levelId = createProgramLevel(token, "100L-csv-" + suffix);
+            String levelId = createProgramLevel(token, "100L-" + suffix);
             String courseId = createCourse(token, "TTC101", departmentId, schoolId, levelId);
-            String sessionId = createAcademicSession(token, "csv-" + suffix);
+            String sessionId = createAcademicSession(token, suffix);
             String lecturerId = createLecturer(token, "csv-" + suffix, schoolId);
 
             String lecturerUsername = "UL-csv-" + suffix;
-            String sessionName = "LAT csv-" + suffix;
+            String sessionName = "LAT " + suffix;
 
             String csv = "lecturerUsername,courseCode,academicSession,dayOfWeek,startTime,endTime,venue\n"
                     + lecturerUsername + ",TTC101," + sessionName + ",MONDAY,09:00,11:00,Room 9\n"

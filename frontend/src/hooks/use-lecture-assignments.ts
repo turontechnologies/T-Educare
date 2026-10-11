@@ -138,7 +138,13 @@ export function useImportTimetable() {
 
 export function useExportTimetable() {
   return useMutation({
-    mutationFn: (departmentId: string | undefined) =>
-      lectureAssignmentService.exportTimetable(departmentId),
+    mutationFn: ({
+      departmentId,
+      programLevelId,
+    }: {
+      departmentId?: string;
+      programLevelId?: string;
+    }) =>
+      lectureAssignmentService.exportTimetable(departmentId, programLevelId),
   });
 }

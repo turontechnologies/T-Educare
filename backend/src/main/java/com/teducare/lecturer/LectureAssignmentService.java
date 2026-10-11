@@ -15,6 +15,10 @@ import com.teducare.academics.AcademicSessionResponse;
 import com.teducare.academics.AcademicSessionService;
 import com.teducare.course.CourseResponse;
 import com.teducare.course.CourseService;
+import com.teducare.department.DepartmentResponse;
+import com.teducare.department.DepartmentService;
+import com.teducare.programlevel.ProgramLevelResponse;
+import com.teducare.programlevel.ProgramLevelService;
 
 /**
  * "Lectures" (which {@link Lecturer} teaches which Course) and their weekly
@@ -37,6 +41,8 @@ public class LectureAssignmentService {
     private final LecturerService lecturerService;
     private final CourseService courseService;
     private final AcademicSessionService academicSessionService;
+    private final DepartmentService departmentService;
+    private final ProgramLevelService programLevelService;
 
     public LectureAssignmentService(
             LectureAssignmentRepository repository,
@@ -44,11 +50,15 @@ public class LectureAssignmentService {
             TimetableChangeRequestRepository changeRequestRepository,
             LecturerService lecturerService,
             CourseService courseService,
-            AcademicSessionService academicSessionService) {
+            AcademicSessionService academicSessionService,
+            DepartmentService departmentService,
+            ProgramLevelService programLevelService) {
         this.repository = repository;
         this.slotRepository = slotRepository;
         this.changeRequestRepository = changeRequestRepository;
         this.lecturerService = lecturerService;
+        this.departmentService = departmentService;
+        this.programLevelService = programLevelService;
         this.courseService = courseService;
         this.academicSessionService = academicSessionService;
     }
@@ -283,16 +293,23 @@ public class LectureAssignmentService {
         return new TimetableImportResult(imported, skipped);
     }
 
-    /** `departmentId` null/blank exports the whole institution's timetable; otherwise only that department's courses. */
-    public String exportCsv(String institutionId, String departmentId) {
+    /**
+     * `departmentId`/`programLevelId` null/blank export everything on that axis; given together, a course must
+     * match both to be included — e.g. "Computer Science, 300 Level" pulls only that department's 300L courses,
+     * even though the same department also runs 100L-700L courses with their own, different timetables.
+     */
+    public String exportCsv(String institutionId, String departmentId, String programLevelId) {
         List<LecturerResponse> lecturers = lecturerService.list(institutionId, null, true);
         List<CourseResponse> allCourses = courseService.list(institutionId, null, null, null, true);
-        Set<String> allowedCourseIds = (departmentId == null || departmentId.isBlank())
-                ? allCourses.stream().map(CourseResponse::id).collect(java.util.stream.Collectors.toSet())
-                : courseService.list(institutionId, departmentId, null, null, true).stream()
-                        .map(CourseResponse::id)
-                        .collect(java.util.stream.Collectors.toSet());
+        Set<String> allowedCourseIds = allCourses.stream()
+                .filter(c -> (departmentId == null || departmentId.isBlank() || departmentId.equals(c.departmentId()))
+                        && (programLevelId == null || programLevelId.isBlank()
+                                || programLevelId.equals(c.programLevelId())))
+                .map(CourseResponse::id)
+                .collect(java.util.stream.Collectors.toSet());
         List<AcademicSessionResponse> sessions = academicSessionService.list(institutionId, true);
+        List<DepartmentResponse> departments = departmentService.list(institutionId, null, null, true);
+        List<ProgramLevelResponse> programLevels = programLevelService.list(institutionId, true);
 
         List<LectureAssignmentCsv.TimetableExportRow> exportRows = new ArrayList<>();
         for (LectureAssignment assignment : repository.findByInstitutionIdOrderByCreatedAtAsc(institutionId)) {
@@ -308,6 +325,12 @@ public class LectureAssignmentService {
             if (lecturer == null || course == null || session == null) {
                 continue;
             }
+            String departmentName = departments.stream()
+                    .filter(d -> d.id().equals(course.departmentId())).findFirst()
+                    .map(DepartmentResponse::name).orElse("");
+            String levelCode = programLevels.stream()
+                    .filter(l -> l.id().equals(course.programLevelId())).findFirst()
+                    .map(ProgramLevelResponse::levelCode).orElse("");
 
             for (TimetableSlot slot : slotRepository.findByLectureAssignmentIdOrderByCreatedAtAsc(assignment.getId())) {
                 exportRows.add(new LectureAssignmentCsv.TimetableExportRow(
@@ -315,6 +338,8 @@ public class LectureAssignmentService {
                         lecturer.firstName() + " " + lecturer.lastName(),
                         course.code(),
                         course.name(),
+                        levelCode,
+                        departmentName,
                         session.session(),
                         slot.getDayOfWeek(),
                         slot.getStartTime(),
