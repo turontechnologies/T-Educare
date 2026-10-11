@@ -751,3 +751,54 @@ java.lang.AssertionError: Status expected:<201> but was:<500>
 [INFO] Running com.teducare.role.RoleControllerTest
 2026-10-11T14:29:13.940Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.role.RoleControllerTest]: RoleControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
 2026-10-11T14:29:14.917Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.role.RoleControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.586 s -- in com.teducare.role.RoleControllerTest
+[INFO] Running com.teducare.school.SchoolControllerTest
+2026-10-11T14:29:16.517Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.school.SchoolControllerTest]: SchoolControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:29:16.964Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.school.SchoolControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.869 s -- in com.teducare.school.SchoolControllerTest
+[INFO] Running com.teducare.staff.StaffMemberControllerTest
+2026-10-11T14:29:18.392Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.staff.StaffMemberControllerTest]: StaffMemberControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:29:19.031Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.staff.StaffMemberControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.317 s -- in com.teducare.staff.StaffMemberControllerTest
+[INFO] Running com.teducare.staffdesignation.StaffDesignationControllerTest
+2026-10-11T14:29:20.716Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.staffdesignation.StaffDesignationControllerTest]: StaffDesignationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:29:21.353Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.staffdesignation.StaffDesignationControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.781 s -- in com.teducare.staffdesignation.StaffDesignationControllerTest
+[INFO] Running com.teducare.student.StudentControllerTest
+2026-10-11T14:29:23.501Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.student.StudentControllerTest]: StudentControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:29:24.635Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.student.StudentControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.408 s -- in com.teducare.student.StudentControllerTest
+[INFO] Running com.teducare.studentsettings.StudentIdentitySettingsControllerTest
+2026-10-11T14:29:25.902Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.studentsettings.StudentIdentitySettingsControllerTest]: StudentIdentitySettingsControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:29:26.406Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.studentsettings.StudentIdentitySettingsControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.285 s -- in com.teducare.studentsettings.StudentIdentitySettingsControllerTest
+[INFO] Running com.teducare.usermanager.UserManagerControllerTest
+2026-10-11T14:29:27.187Z  INFO 82 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.usermanager.UserManagerControllerTest]: UserManagerControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-11T14:29:27.653Z  INFO 82 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.usermanager.UserManagerControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.196 s -- in com.teducare.usermanager.UserManagerControllerTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   LectureAssignmentControllerTest.importAndExportTimetableCsv:201->createProgramLevel:362 Status expected:<201> but was:<500>
+[INFO] 
+[ERROR] Tests run: 61, Failures: 1, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  02:06 min
+[INFO] Finished at: 2026-10-11T14:29:29Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project teducare-backend: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /workspace/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+EXIT:1
