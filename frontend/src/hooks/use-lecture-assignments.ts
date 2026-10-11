@@ -127,3 +127,18 @@ export function useRejectTimetableChange() {
     onSuccess: invalidate,
   });
 }
+
+export function useImportTimetable() {
+  const invalidate = useInvalidateAssignments();
+  return useMutation({
+    mutationFn: (file: File) => lectureAssignmentService.importTimetable(file),
+    onSuccess: invalidate,
+  });
+}
+
+export function useExportTimetable() {
+  return useMutation({
+    mutationFn: (departmentId: string | undefined) =>
+      lectureAssignmentService.exportTimetable(departmentId),
+  });
+}

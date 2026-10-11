@@ -113,4 +113,24 @@ export const lectureAssignmentService = {
     );
     return data;
   },
+
+  async importTimetable(
+    file: File,
+  ): Promise<{ imported: number; skipped: number }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await apiClient.post<{
+      imported: number;
+      skipped: number;
+    }>("/lecture-assignments/import", formData);
+    return data;
+  },
+
+  async exportTimetable(departmentId?: string): Promise<Blob> {
+    const { data } = await apiClient.get("/lecture-assignments/export", {
+      params: departmentId ? { departmentId } : undefined,
+      responseType: "blob",
+    });
+    return data;
+  },
 };

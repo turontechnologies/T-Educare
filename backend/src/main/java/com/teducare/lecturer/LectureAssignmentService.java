@@ -1,6 +1,7 @@
 package com.teducare.lecturer;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -10,7 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.teducare.academics.AcademicSessionResponse;
 import com.teducare.academics.AcademicSessionService;
+import com.teducare.course.CourseResponse;
 import com.teducare.course.CourseService;
 
 /**
@@ -201,6 +204,125 @@ public class LectureAssignmentService {
         request.setStatus(approve ? "APPROVED" : "REJECTED");
         request.setResolvedAt(Instant.now());
         return TimetableChangeRequestResponse.from(changeRequestRepository.save(request));
+    }
+
+    // --- CSV import/export (the full institution timetable, optionally scoped to one department) ---
+
+    /** Resolves each row's lecturer (by username), course (by code), and session (by name) — finds-or-creates the assignment, then adds the slot. Skips a row that's missing a field, names something unresolvable, has invalid day/time, or would duplicate a slot already on that assignment. */
+    public TimetableImportResult importCsv(String institutionId, String csvText) {
+        List<LectureAssignmentCsv.Row> rows = LectureAssignmentCsv.parse(csvText);
+        List<LecturerResponse> lecturers = lecturerService.list(institutionId, null, false);
+        List<CourseResponse> courses = courseService.list(institutionId, null, null, null, false);
+        List<AcademicSessionResponse> sessions = academicSessionService.list(institutionId, false);
+
+        int imported = 0;
+        int skipped = 0;
+
+        for (LectureAssignmentCsv.Row row : rows) {
+            if (row.lecturerUsername().isEmpty() || row.courseCode().isEmpty() || row.academicSession().isEmpty()
+                    || row.dayOfWeek().isEmpty() || row.startTime().isEmpty() || row.endTime().isEmpty()
+                    || row.venue().isEmpty()) {
+                skipped++;
+                continue;
+            }
+
+            LecturerResponse lecturer = lecturers.stream()
+                    .filter(l -> l.username().equalsIgnoreCase(row.lecturerUsername()))
+                    .findFirst().orElse(null);
+            CourseResponse course = courses.stream()
+                    .filter(c -> c.code().equalsIgnoreCase(row.courseCode()))
+                    .findFirst().orElse(null);
+            AcademicSessionResponse session = sessions.stream()
+                    .filter(s -> s.session().equalsIgnoreCase(row.academicSession()))
+                    .findFirst().orElse(null);
+            if (lecturer == null || course == null || session == null
+                    || !DAYS_OF_WEEK.contains(row.dayOfWeek())
+                    || !TIME_PATTERN.matcher(row.startTime()).matches()
+                    || !TIME_PATTERN.matcher(row.endTime()).matches()
+                    || row.startTime().compareTo(row.endTime()) >= 0) {
+                skipped++;
+                continue;
+            }
+
+            LectureAssignment assignment = repository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
+                    .filter(a -> a.getArchivedAt() == null
+                            && a.getLecturerId().equals(lecturer.id())
+                            && a.getCourseId().equals(course.id())
+                            && a.getAcademicSessionId().equals(session.id()))
+                    .findFirst()
+                    .orElseGet(() -> repository.save(new LectureAssignment(
+                            "lectassign-" + UUID.randomUUID(),
+                            institutionId,
+                            lecturer.id(),
+                            course.id(),
+                            session.id(),
+                            Instant.now(),
+                            null)));
+
+            boolean duplicateSlot = slotRepository.findByLectureAssignmentIdOrderByCreatedAtAsc(assignment.getId())
+                    .stream()
+                    .anyMatch(s -> s.getDayOfWeek().equals(row.dayOfWeek())
+                            && s.getStartTime().equals(row.startTime())
+                            && s.getEndTime().equals(row.endTime()));
+            if (duplicateSlot) {
+                skipped++;
+                continue;
+            }
+
+            slotRepository.save(new TimetableSlot(
+                    "slot-" + UUID.randomUUID(),
+                    assignment.getId(),
+                    row.dayOfWeek(),
+                    row.startTime(),
+                    row.endTime(),
+                    row.venue(),
+                    Instant.now()));
+            imported++;
+        }
+
+        return new TimetableImportResult(imported, skipped);
+    }
+
+    /** `departmentId` null/blank exports the whole institution's timetable; otherwise only that department's courses. */
+    public String exportCsv(String institutionId, String departmentId) {
+        List<LecturerResponse> lecturers = lecturerService.list(institutionId, null, true);
+        List<CourseResponse> allCourses = courseService.list(institutionId, null, null, null, true);
+        Set<String> allowedCourseIds = (departmentId == null || departmentId.isBlank())
+                ? allCourses.stream().map(CourseResponse::id).collect(java.util.stream.Collectors.toSet())
+                : courseService.list(institutionId, departmentId, null, null, true).stream()
+                        .map(CourseResponse::id)
+                        .collect(java.util.stream.Collectors.toSet());
+        List<AcademicSessionResponse> sessions = academicSessionService.list(institutionId, true);
+
+        List<LectureAssignmentCsv.TimetableExportRow> exportRows = new ArrayList<>();
+        for (LectureAssignment assignment : repository.findByInstitutionIdOrderByCreatedAtAsc(institutionId)) {
+            if (assignment.getArchivedAt() != null || !allowedCourseIds.contains(assignment.getCourseId())) {
+                continue;
+            }
+            LecturerResponse lecturer = lecturers.stream()
+                    .filter(l -> l.id().equals(assignment.getLecturerId())).findFirst().orElse(null);
+            CourseResponse course = allCourses.stream()
+                    .filter(c -> c.id().equals(assignment.getCourseId())).findFirst().orElse(null);
+            AcademicSessionResponse session = sessions.stream()
+                    .filter(s -> s.id().equals(assignment.getAcademicSessionId())).findFirst().orElse(null);
+            if (lecturer == null || course == null || session == null) {
+                continue;
+            }
+
+            for (TimetableSlot slot : slotRepository.findByLectureAssignmentIdOrderByCreatedAtAsc(assignment.getId())) {
+                exportRows.add(new LectureAssignmentCsv.TimetableExportRow(
+                        lecturer.username(),
+                        lecturer.firstName() + " " + lecturer.lastName(),
+                        course.code(),
+                        course.name(),
+                        session.session(),
+                        slot.getDayOfWeek(),
+                        slot.getStartTime(),
+                        slot.getEndTime(),
+                        slot.getVenue()));
+            }
+        }
+        return LectureAssignmentCsv.write(exportRows);
     }
 
     private LectureAssignment requireOwnAssignment(String institutionId, String id) {

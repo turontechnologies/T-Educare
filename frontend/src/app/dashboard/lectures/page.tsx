@@ -56,6 +56,8 @@ import {
 } from "@/components/features/lectures/weekly-timetable-grid";
 import {
   useArchiveLectureAssignment,
+  useExportTimetable,
+  useImportTimetable,
   useLectureAssignments,
   useRestoreLectureAssignment,
 } from "@/hooks/use-lecture-assignments";
@@ -68,6 +70,7 @@ import {
 import { fullName } from "@/lib/lecturers";
 import { useAuthStore } from "@/store/auth.store";
 import { useCoursesStore } from "@/store/courses.store";
+import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useLecturersStore } from "@/store/lecturers.store";
 import { useSchoolsStore } from "@/store/schools.store";
