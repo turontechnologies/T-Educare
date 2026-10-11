@@ -1,0 +1,59 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.teducare:teducare-backend >--------------------
+[INFO] Building teducare-backend 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ teducare-backend ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 29 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ teducare-backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ teducare-backend ---
+[INFO] skip non existing resourceDirectory /workspace/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ teducare-backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ teducare-backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.teducare.academics.AcademicSessionControllerTest
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+07:12:13.108 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.teducare.academics.AcademicSessionControllerTest]: AcademicSessionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+07:12:16.167 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.academics.AcademicSessionControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-10-11T07:12:21.491Z  INFO 86 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : Starting AcademicSessionControllerTest using Java 21.0.12.1 with PID 86 (started by root in /workspace)
+2026-10-11T07:12:21.496Z  INFO 86 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : No active profile set, falling back to 1 default profile: "default"
+2026-10-11T07:12:34.844Z  INFO 86 --- [teducare-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-11T07:12:38.717Z  INFO 86 --- [teducare-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 3823 ms. Found 32 JPA repository interfaces.
+2026-10-11T07:12:45.356Z  INFO 86 --- [teducare-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-11T07:12:47.452Z  INFO 86 --- [teducare-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection ConnectionID:1 ClientConnectionId: 9c984372-4ed3-44d5-ba63-e9534af5c2e3
+2026-10-11T07:12:47.478Z  INFO 86 --- [teducare-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-11T07:12:48.302Z  INFO 86 --- [teducare-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlserver://sqlserver:1433;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=teducare_db;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite; (Microsoft SQL Server 16.0)
+2026-10-11T07:12:50.301Z  INFO 86 --- [teducare-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 29 migrations (execution time 00:01.401s)
+2026-10-11T07:12:50.394Z  INFO 86 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema [dbo]: 24
+2026-10-11T07:12:50.515Z  INFO 86 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "25 - role editable menu keys"
+2026-10-11T07:12:50.981Z  INFO 86 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "26 - lecturers"
+2026-10-11T07:12:51.205Z  INFO 86 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "27 - lecture assignments"
+2026-10-11T07:12:51.384Z  INFO 86 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "28 - timetable change requests"
+2026-10-11T07:12:51.697Z  INFO 86 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "29 - user account lecturer link"
+2026-10-11T07:12:51.769Z  INFO 86 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 5 migrations to schema [dbo], now at version v29 (execution time 00:00.335s)
+2026-10-11T07:12:53.415Z  INFO 86 --- [teducare-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-11T07:12:54.639Z  INFO 86 --- [teducare-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-10-11T07:12:55.415Z  INFO 86 --- [teducare-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
