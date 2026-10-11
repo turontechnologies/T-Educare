@@ -17,6 +17,7 @@ import {
   NotchedSelectField,
 } from "@/components/shared/notched-field";
 import { readFileAsDataUrl } from "@/lib/files";
+import { fullName as lecturerFullName } from "@/lib/lecturers";
 import { generatePassword, generateUsername } from "@/lib/mock-generators";
 import {
   useCreateUserManager,
@@ -24,6 +25,7 @@ import {
 } from "@/hooks/use-user-managers";
 import { useRoles } from "@/hooks/use-roles";
 import { useUploadFile } from "@/hooks/use-upload";
+import { useLecturersStore } from "@/store/lecturers.store";
 import type {
   UserManagerAccount,
   UserManagerGender,
@@ -37,6 +39,8 @@ const GENDER_OPTIONS: { label: string; value: UserManagerGender }[] = [
 
 /** Real Role.id, or "" for "no role — full access" (see hooks/use-roles.ts). */
 const UNRESTRICTED_VALUE = "";
+/** Real Lecturer.id, or "" for "not linked to a lecturer" (see types/lecturer.ts). */
+const UNLINKED_VALUE = "";
 
 interface UserFormValues {
   firstName: string;
@@ -94,6 +98,7 @@ function UserForm({
   onDone: () => void;
 }) {
   const { data: roles = [] } = useRoles();
+  const lecturers = useLecturersStore((state) => state.lecturers);
   const createUserManager = useCreateUserManager();
   const updateUserManager = useUpdateUserManager();
   const uploadFile = useUploadFile();
@@ -102,6 +107,9 @@ function UserForm({
     user?.gender ?? "",
   );
   const [roleId, setRoleId] = useState(user?.roleId ?? UNRESTRICTED_VALUE);
+  const [lecturerId, setLecturerId] = useState(
+    user?.lecturerId ?? UNLINKED_VALUE,
+  );
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(
     user?.avatarUrl,
   );
@@ -178,6 +186,7 @@ function UserForm({
             username: values.username,
             gender,
             roleId,
+            lecturerId,
             avatarUrl,
           },
         });
@@ -199,10 +208,10 @@ function UserForm({
           isPrimaryAdmin: false,
           avatarUrl,
         });
-        if (roleId) {
+        if (roleId || lecturerId) {
           await updateUserManager.mutateAsync({
             id: created.id,
-            payload: { roleId },
+            payload: { roleId, lecturerId },
           });
         }
         toast.success(`${values.firstName} ${values.lastName} added`);
@@ -374,6 +383,23 @@ function UserForm({
                 .map((role) => ({ label: role.name, value: role.id })),
             ]}
             placeholder="Select a role"
+          />
+
+          <NotchedSelectField
+            label="Linked Lecturer (optional)"
+            labelClassName="bg-popover"
+            value={lecturerId ?? UNLINKED_VALUE}
+            onValueChange={(value) => setLecturerId(value ?? UNLINKED_VALUE)}
+            options={[
+              { label: "Not a lecturer", value: UNLINKED_VALUE },
+              ...lecturers
+                .filter((lecturer) => !lecturer.archivedAt)
+                .map((lecturer) => ({
+                  label: `${lecturerFullName(lecturer)} (${lecturer.username})`,
+                  value: lecturer.id,
+                })),
+            ]}
+            placeholder="Not a lecturer"
           />
         </div>
       </form>

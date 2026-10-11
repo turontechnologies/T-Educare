@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
-  Share2,
   Trash2,
   Upload,
 } from "lucide-react";
