@@ -3,10 +3,12 @@
 import { useMemo, useRef, useState } from "react";
 import {
   ArchiveRestore,
+  CalendarClock,
   Download,
   MoreHorizontal,
   Pencil,
   Plus,
+  Share2,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -30,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -40,65 +43,35 @@ import {
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { ChangeRequestsPanel } from "@/components/features/lectures/change-requests-panel";
+import { LectureAssignmentDialog } from "@/components/features/lectures/lecture-assignment-dialog";
 import { LecturerDetailsDialog } from "@/components/features/lectures/lecturer-details-dialog";
 import { LecturerDialog } from "@/components/features/lectures/lecturer-dialog";
+import { MyLecturesView } from "@/components/features/lectures/my-lectures-view";
+import { TimetableSlotsDialog } from "@/components/features/lectures/timetable-slots-dialog";
+import {
+  useArchiveLectureAssignment,
+  useLectureAssignments,
+  useRestoreLectureAssignment,
+} from "@/hooks/use-lecture-assignments";
+import {
+  useArchiveLecturer,
+  useExportLecturers,
+  useImportLecturers,
+  useRestoreLecturer,
+} from "@/hooks/use-lecturers";
 import { fullName } from "@/lib/lecturers";
+import { useAuthStore } from "@/store/auth.store";
+import { useCoursesStore } from "@/store/courses.store";
 import { useFacultiesStore } from "@/store/faculties.store";
 import { useLecturersStore } from "@/store/lecturers.store";
 import { useSchoolsStore } from "@/store/schools.store";
-import type { Lecturer } from "@/types/lecturer";
+import type { Lecturer, LectureAssignment } from "@/types/lecturer";
 
 const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 
-function lecturersToCsv(lecturers: Lecturer[]) {
-  const header = [
-    "Username",
-    "First Name",
-    "Middle Name",
-    "Last Name",
-    "Gender",
-    "Position",
-    "Assignment Type",
-    "Assignment",
-  ];
-  const rows = lecturers.map((l) => [
-    l.username,
-    l.firstName,
-    l.middleName ?? "",
-    l.lastName,
-    l.gender,
-    l.position,
-    l.assignmentType,
-    l.assignmentId,
-  ]);
-  return [header, ...rows]
-    .map((row) =>
-      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
-    )
-    .join("\n");
-}
-
-function parseCsv(text: string) {
-  const lines = text.trim().split(/\r?\n/);
-  const header = lines[0]
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, "").toLowerCase());
-  return lines.slice(1).map((line) => {
-    const cells = line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
-    const record: Record<string, string> = {};
-    header.forEach((key, i) => (record[key] = cells[i] ?? ""));
-    return record;
-  });
-}
-
 export default function LectureManagementPage() {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingLecturer, setEditingLecturer] = useState<
-    Lecturer | undefined
-  >();
-  const [viewingLecturer, setViewingLecturer] = useState<
-    Lecturer | undefined
-  >();
+  const lecturerId = useAuthStore((state) => state.user?.lecturerId);
 
   return (
     <div className="space-y-6">
@@ -109,7 +82,39 @@ export default function LectureManagementPage() {
           Lecture Management
         </h1>
 
-        <div className="mt-4 flex flex-wrap gap-3">
+        {lecturerId ? (
+          <div className="mt-6">
+            <MyLecturesView lecturerId={lecturerId} />
+          </div>
+        ) : (
+          <AdminLectureManagement />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminLectureManagement() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingLecturer, setEditingLecturer] = useState<
+    Lecturer | undefined
+  >();
+  const [viewingLecturer, setViewingLecturer] = useState<
+    Lecturer | undefined
+  >();
+
+  return (
+    <Tabs defaultValue="lecturers" className="mt-6">
+      <TabsList variant="line">
+        <TabsTrigger value="lecturers">Lecturers</TabsTrigger>
+        <TabsTrigger value="lectures">Lectures &amp; Timetable</TabsTrigger>
+      </TabsList>
+
+      <TabsContent
+        value="lecturers"
+        className="animate-in fade-in slide-in-from-bottom-1 mt-4 duration-300"
+      >
+        <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
             className="gap-1.5 rounded-md border-tertiary text-tertiary-foreground transition-transform hover:scale-[1.02] hover:bg-tertiary/10 active:scale-[0.98]"
@@ -133,89 +138,65 @@ export default function LectureManagementPage() {
             onView={(lecturer) => setViewingLecturer(lecturer)}
           />
         </div>
-      </div>
 
-      <LecturerDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        lecturer={editingLecturer}
-      />
-      <LecturerDetailsDialog
-        open={!!viewingLecturer}
-        onOpenChange={(open) => !open && setViewingLecturer(undefined)}
-        lecturer={viewingLecturer}
-      />
-    </div>
+        <LecturerDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          lecturer={editingLecturer}
+        />
+        <LecturerDetailsDialog
+          open={!!viewingLecturer}
+          onOpenChange={(open) => !open && setViewingLecturer(undefined)}
+          lecturer={viewingLecturer}
+        />
+      </TabsContent>
+
+      <TabsContent
+        value="lectures"
+        className="animate-in fade-in slide-in-from-bottom-1 mt-4 space-y-6 duration-300"
+      >
+        <LecturesTab />
+        <ChangeRequestsPanel />
+      </TabsContent>
+    </Tabs>
   );
 }
 
 function ImportExportButtons() {
-  const lecturers = useLecturersStore((state) => state.lecturers);
-  const createLecturer = useLecturersStore((state) => state.createLecturer);
-  const schools = useSchoolsStore((state) => state.schools);
+  const importLecturers = useImportLecturers();
+  const exportLecturers = useExportLecturers();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
-    const active = lecturers.filter((l) => !l.archivedAt);
-    const csv = lecturersToCsv(active);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `lecturers-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${active.length} lecturers`);
+  const handleExport = async () => {
+    try {
+      const blob = await exportLecturers.mutateAsync(false);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `lecturers-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Lecturers exported");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to export lecturers",
+      );
+    }
   };
 
   const handleImportFile = async (file: File) => {
-    const text = await file.text();
-    const rows = parseCsv(text);
-    const existingUsernames = new Set(
-      lecturers
-        .filter((l) => !l.archivedAt)
-        .map((l) => l.username.toLowerCase()),
-    );
-    const defaultSchoolId = schools.find((s) => !s.archivedAt)?.id ?? "";
-
-    let imported = 0;
-    let skipped = 0;
-    for (const row of rows) {
-      const username = row["username"] || "";
-      const firstName = row["first name"] || "";
-      const lastName = row["last name"] || "";
-      if (!username || !firstName || !lastName) {
-        skipped++;
-        continue;
-      }
-      if (existingUsernames.has(username.toLowerCase())) {
-        skipped++;
-        continue;
-      }
-      const gender = row["gender"] === "Female" ? "Female" : "Male";
-      createLecturer({
-        username,
-        position: "Lecturer II",
-        assignmentType: "school",
-        assignmentId: defaultSchoolId,
-        gender,
-        firstName,
-        middleName: row["middle name"] || undefined,
-        lastName,
-        email:
-          row["email"] ||
-          `${firstName.toLowerCase()}.${lastName.toLowerCase()}@staff.xyzcollege.edu.ng`,
-        phone: row["phone"] || "",
-      });
-      existingUsernames.add(username.toLowerCase());
-      imported++;
+    try {
+      const result = await importLecturers.mutateAsync(file);
+      toast.success(
+        `${result.imported} lecturers imported${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to import lecturers",
+      );
     }
-
-    toast.success(
-      `${imported} lecturers imported${skipped > 0 ? `, ${skipped} skipped` : ""}`,
-    );
   };
 
   return (
@@ -223,18 +204,20 @@ function ImportExportButtons() {
       <Button
         variant="outline"
         className="gap-1.5 rounded-md"
+        disabled={importLecturers.isPending}
         onClick={() => fileInputRef.current?.click()}
       >
         <Download className="size-4" />
-        Import Users
+        Import Lecturers
       </Button>
       <Button
         variant="outline"
         className="gap-1.5 rounded-md"
+        disabled={exportLecturers.isPending}
         onClick={handleExport}
       >
         <Upload className="size-4" />
-        Export Users
+        Export Lecturers
       </Button>
       <input
         ref={fileInputRef}
@@ -259,8 +242,8 @@ function LecturerTable({
   onView: (lecturer: Lecturer) => void;
 }) {
   const lecturers = useLecturersStore((state) => state.lecturers);
-  const archiveLecturer = useLecturersStore((state) => state.archiveLecturer);
-  const restoreLecturer = useLecturersStore((state) => state.restoreLecturer);
+  const archiveLecturer = useArchiveLecturer();
+  const restoreLecturer = useRestoreLecturer();
   const schools = useSchoolsStore((state) => state.schools);
   const faculties = useFacultiesStore((state) => state.faculties);
 
@@ -505,9 +488,17 @@ function LecturerTable({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          restoreLecturer(lecturer.id);
-                          toast.success(`${fullName(lecturer)} restored`);
+                        onClick={async () => {
+                          try {
+                            await restoreLecturer.mutateAsync(lecturer.id);
+                            toast.success(`${fullName(lecturer)} restored`);
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to restore lecturer",
+                            );
+                          }
                         }}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
                       >
@@ -577,10 +568,18 @@ function LecturerTable({
         description={`Are you sure you want to delete ${pendingArchive ? fullName(pendingArchive) : ""}? It will be hidden from the active list, but nothing is deleted — you can restore it anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingArchive) return;
-          archiveLecturer(pendingArchive.id);
-          toast.success(`${fullName(pendingArchive)} deleted`);
+          try {
+            await archiveLecturer.mutateAsync(pendingArchive.id);
+            toast.success(`${fullName(pendingArchive)} deleted`);
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete lecturer",
+            );
+          }
         }}
       />
 
@@ -591,12 +590,163 @@ function LecturerTable({
         description={`Are you sure you want to delete the ${selected.size} selected lecturers? They will be hidden from the active list, but nothing is deleted — you can restore them anytime from "View archived".`}
         confirmLabel="Delete"
         variant="destructive"
-        onConfirm={() => {
-          selected.forEach((id) => archiveLecturer(id));
-          toast.success(`${selected.size} lecturers deleted`);
-          setSelected(new Set());
+        onConfirm={async () => {
+          const ids = Array.from(selected);
+          try {
+            await Promise.all(ids.map((id) => archiveLecturer.mutateAsync(id)));
+            toast.success(`${ids.length} lecturers deleted`);
+            setSelected(new Set());
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to delete selected lecturers",
+            );
+          }
         }}
       />
     </>
+  );
+}
+
+function LecturesTab() {
+  const { data: assignments } = useLectureAssignments({});
+  const lecturers = useLecturersStore((state) => state.lecturers);
+  const courses = useCoursesStore((state) => state.courses);
+  const archiveAssignment = useArchiveLectureAssignment();
+  const restoreAssignment = useRestoreLectureAssignment();
+
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [timetableFor, setTimetableFor] = useState<
+    LectureAssignment | undefined
+  >();
+  const [view, setView] = useState<"active" | "archived">("active");
+
+  const lecturerName = (id: string) =>
+    fullName(
+      lecturers.find((l) => l.id === id) ?? { firstName: "—", lastName: "" },
+    );
+  const courseLabel = (id: string) => {
+    const course = courses.find((c) => c.id === id);
+    return course ? `${course.code} — ${course.name}` : "—";
+  };
+
+  const filtered = (assignments ?? []).filter((a) =>
+    view === "archived" ? a.archivedAt : !a.archivedAt,
+  );
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() =>
+            setView((v) => (v === "active" ? "archived" : "active"))
+          }
+          className="cursor-pointer text-sm font-medium text-secondary hover:underline"
+        >
+          {view === "active" ? "View archived" : "← Back to active"}
+        </button>
+        <Button
+          variant="outline"
+          className="gap-1.5 rounded-md border-tertiary text-tertiary-foreground"
+          onClick={() => setAssignDialogOpen(true)}
+        >
+          <Plus className="size-4" />
+          Assign Lecturer to Course
+        </Button>
+      </div>
+
+      <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
+        <CardContent className="space-y-2 pt-5">
+          {filtered.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              No lecture assignments yet.
+            </p>
+          ) : (
+            filtered.map((assignment) => (
+              <div
+                key={assignment.id}
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2.5 text-sm"
+              >
+                <div>
+                  <p className="font-medium text-foreground">
+                    {lecturerName(assignment.lecturerId)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {courseLabel(assignment.courseId)} ·{" "}
+                    {assignment.timetableSlots.length} timetable slot
+                    {assignment.timetableSlots.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {view === "active" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setTimetableFor(assignment)}
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
+                      >
+                        <CalendarClock className="size-3.5" />
+                        Manage Timetable
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Delete assignment"
+                        onClick={async () => {
+                          try {
+                            await archiveAssignment.mutateAsync(assignment.id);
+                            toast.success("Assignment removed");
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : "Failed to remove assignment",
+                            );
+                          }
+                        }}
+                        className="cursor-pointer rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await restoreAssignment.mutateAsync(assignment.id);
+                          toast.success("Assignment restored");
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Failed to restore assignment",
+                          );
+                        }
+                      }}
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
+                    >
+                      <ArchiveRestore className="size-3.5" />
+                      Restore
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <LectureAssignmentDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+      />
+      <TimetableSlotsDialog
+        open={!!timetableFor}
+        onOpenChange={(open) => !open && setTimetableFor(undefined)}
+        assignment={timetableFor}
+      />
+    </div>
   );
 }
