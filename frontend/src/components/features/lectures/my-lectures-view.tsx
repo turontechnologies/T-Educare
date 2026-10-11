@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarClock, Clock, MapPin } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -16,6 +16,10 @@ import {
 } from "@/lib/lecture-schedule";
 import { useCoursesStore } from "@/store/courses.store";
 import { RequestTimeChangeDialog } from "./request-time-change-dialog";
+import {
+  WeeklyTimetableGrid,
+  type TimetableBlock,
+} from "./weekly-timetable-grid";
 import type {
   TimetableChangeRequestStatus,
   TimetableSlot,
@@ -47,6 +51,21 @@ export function MyLecturesView({ lecturerId }: { lecturerId: string }) {
     const course = courses.find((c) => c.id === courseId);
     return course ? `${course.code} — ${course.name}` : courseId;
   };
+
+  const blocks: TimetableBlock[] = useMemo(
+    () =>
+      schedule.map(({ assignment, slot }) => ({
+        id: slot.id,
+        dayOfWeek: slot.dayOfWeek,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        title: courseLabel(assignment.courseId),
+        subtitle: slot.venue,
+        onClick: () => setRequestingSlot(slot),
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, courses],
+  );
 
   return (
     <div className="space-y-6">

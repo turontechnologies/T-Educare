@@ -1,6 +1,6 @@
 import { useId, useState, type ComponentProps, type ReactNode } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon, ChevronsUpDown, ClockIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Command,
@@ -231,6 +231,122 @@ export function NotchedDateField({
               className="cursor-pointer text-sm font-medium text-secondary hover:underline"
             >
               Today
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+const TIME_HOURS = Array.from({ length: 24 }, (_, h) =>
+  String(h).padStart(2, "0"),
+);
+const TIME_MINUTES = ["00", "15", "30", "45"];
+
+interface NotchedTimeFieldProps {
+  label: string;
+  labelClassName?: string;
+  /** "HH:mm" (24-hour), or "" for no time selected. */
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+/**
+ * Same notched-label frame as the other `Notched*Field`s, backed by a
+ * `Popover` with two real `Select` dropdowns (hour / minute) — use this
+ * instead of a native `<input type="time">`, whose picker is unstyled OS
+ * chrome (a vertical hour/minute scroller) that can't be made to match the
+ * rest of this app's design system.
+ */
+export function NotchedTimeField({
+  label,
+  labelClassName,
+  value,
+  onValueChange,
+  placeholder = "Select time",
+  disabled,
+}: NotchedTimeFieldProps) {
+  const [open, setOpen] = useState(false);
+  const [hour, minute] = value ? value.split(":") : ["", ""];
+
+  const commit = (nextHour: string, nextMinute: string) => {
+    if (nextHour && nextMinute) onValueChange(`${nextHour}:${nextMinute}`);
+  };
+
+  return (
+    <div className="relative">
+      <Label
+        className={cn(
+          "absolute -top-2.5 left-3 z-10 bg-muted px-1.5 text-xs font-medium text-primary",
+          labelClassName,
+        )}
+      >
+        {label}
+      </Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          disabled={disabled}
+          className="flex h-11 w-full items-center justify-between gap-2 rounded-md border border-secondary/40 bg-transparent px-3.5 text-base outline-none focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              !value && "text-muted-foreground",
+            )}
+          >
+            {value || placeholder}
+          </span>
+          <ClockIcon className="size-4 shrink-0 text-muted-foreground" />
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-3" align="start">
+          <div className="grid grid-cols-2 gap-2">
+            <Select
+              value={hour || null}
+              onValueChange={(next) => {
+                if (next) commit(next, minute || "00");
+              }}
+              items={TIME_HOURS.map((h) => ({ label: h, value: h }))}
+            >
+              <SelectTrigger className="h-10 w-full justify-between rounded-md text-sm">
+                <SelectValue placeholder="HH" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_HOURS.map((h) => (
+                  <SelectItem key={h} value={h}>
+                    {h}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={minute || null}
+              onValueChange={(next) => {
+                if (next) commit(hour || "00", next);
+              }}
+              items={TIME_MINUTES.map((m) => ({ label: m, value: m }))}
+            >
+              <SelectTrigger className="h-10 w-full justify-between rounded-md text-sm">
+                <SelectValue placeholder="MM" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_MINUTES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Done
             </button>
           </div>
         </PopoverContent>

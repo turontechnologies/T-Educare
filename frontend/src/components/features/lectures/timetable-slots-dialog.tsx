@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   NotchedField,
   NotchedSelectField,
+  NotchedTimeField,
 } from "@/components/shared/notched-field";
 import {
   useAddTimetableSlot,
@@ -144,19 +145,17 @@ function SlotsContent({ assignment }: { assignment: LectureAssignment }) {
           value={venue}
           onChange={(event) => setVenue(event.target.value)}
         />
-        <NotchedField
+        <NotchedTimeField
           label="Start Time"
           labelClassName="bg-popover"
-          type="time"
           value={startTime}
-          onChange={(event) => setStartTime(event.target.value)}
+          onValueChange={setStartTime}
         />
-        <NotchedField
+        <NotchedTimeField
           label="End Time"
           labelClassName="bg-popover"
-          type="time"
           value={endTime}
-          onChange={(event) => setEndTime(event.target.value)}
+          onValueChange={setEndTime}
         />
       </div>
 
