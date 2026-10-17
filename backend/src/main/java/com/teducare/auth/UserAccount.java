@@ -69,6 +69,10 @@ public class UserAccount {
     @Column(name = "lecturer_id", length = 64)
     private String lecturerId;
 
+    /** Links this login to a real StaffMember record (see com.teducare.staff) — drives Time & Attendance's self-service "My Attendance" view. Null for every other account. */
+    @Column(name = "staff_id", length = 64)
+    private String staffId;
+
     @Column(name = "status", nullable = false, length = 30)
     private String status;
 
@@ -100,6 +104,7 @@ public class UserAccount {
             String gender,
             boolean isPrimaryAdmin,
             String lecturerId,
+            String staffId,
             String status,
             Instant createdAt,
             Instant archivedAt) {
@@ -121,6 +126,7 @@ public class UserAccount {
         this.gender = gender;
         this.isPrimaryAdmin = isPrimaryAdmin;
         this.lecturerId = lecturerId;
+        this.staffId = staffId;
         this.status = status;
         this.createdAt = createdAt;
         this.archivedAt = archivedAt;
