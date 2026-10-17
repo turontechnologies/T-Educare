@@ -26,7 +26,9 @@
       "Bash(curl -s -X POST http://127.0.0.1:8081/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"super_admin\",\"password\":\"Super@2024\"}' -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\")",
       "Bash(curl -s -o /dev/null -w \"frontend status: %{http_code}\\\\n\" http://localhost:3000 --max-time 5)",
       "Bash(MSYS_NO_PATHCONV=1 docker run --rm -v \"//c/Users/HomePC/Documents/work/T-Educare/backend:/workspace\" -v maven-repo-cache:/root/.m2 -w /workspace maven:3.9-eclipse-temurin-21 mvn -q test-compile)",
-      "PowerShell(Get-CimInstance Win32_OperatingSystem | Select-Object @{N='FreeGB';E={[math]::Round\\($_.FreePhysicalMemory/1MB,2\\)}})"
+      "PowerShell(Get-CimInstance Win32_OperatingSystem | Select-Object @{N='FreeGB';E={[math]::Round\\($_.FreePhysicalMemory/1MB,2\\)}})",
+      "Bash(MSYS_NO_PATHCONV=1 docker run --rm -v //c/Users/HomePC/Documents/work/T-Educare/backend:/workspace -v maven-repo-cache:/root/.m2 -w /workspace --network backend_default -e 'DB_URL=jdbc:sqlserver://sqlserver:1433;databaseName=teducare_db;encrypt=true;trustServerCertificate=true' -e DB_USERNAME=sa -e DB_PASSWORD=StrongPassword123! maven:3.9-eclipse-temurin-21 mvn test)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }

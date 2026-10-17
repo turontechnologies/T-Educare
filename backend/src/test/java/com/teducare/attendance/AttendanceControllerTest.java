@@ -82,6 +82,16 @@ class AttendanceControllerTest {
                     .content("{\"resumptionTime\":\"not-a-time\"}"))
                     .andExpect(status().isBadRequest());
 
+            // Every day is a workday for the deterministic PRESENT/LATE checks below —
+            // the suite can run on any real calendar day, and the default Mon-Fri
+            // setting would otherwise make "today" a non-workday on a weekend run.
+            mockMvc.perform(patch("/api/attendance/settings")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"workdays\":[\"MONDAY\",\"TUESDAY\",\"WEDNESDAY\",\"THURSDAY\",\"FRIDAY\","
+                            + "\"SATURDAY\",\"SUNDAY\"]}"))
+                    .andExpect(status().isOk());
+
             // --- Devices: create, list, cross-institution isolation ---
             String deviceResponse = mockMvc.perform(post("/api/attendance/devices")
                     .header("Authorization", "Bearer " + token)

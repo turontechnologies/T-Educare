@@ -1,0 +1,1362 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.teducare:teducare-backend >--------------------
+[INFO] Building teducare-backend 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ teducare-backend ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 31 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ teducare-backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ teducare-backend ---
+[INFO] skip non existing resourceDirectory /workspace/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ teducare-backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ teducare-backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.teducare.academics.AcademicSessionControllerTest
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+12:05:00.196 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.teducare.academics.AcademicSessionControllerTest]: AcademicSessionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+12:05:01.274 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.academics.AcademicSessionControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-10-17T12:05:03.353Z  INFO 80 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : Starting AcademicSessionControllerTest using Java 21.0.12.1 with PID 80 (started by root in /workspace)
+2026-10-17T12:05:03.357Z  INFO 80 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : No active profile set, falling back to 1 default profile: "default"
+2026-10-17T12:05:11.580Z  INFO 80 --- [teducare-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-17T12:05:14.357Z  INFO 80 --- [teducare-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 2725 ms. Found 35 JPA repository interfaces.
+2026-10-17T12:05:18.023Z  INFO 80 --- [teducare-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-17T12:05:19.316Z  INFO 80 --- [teducare-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection ConnectionID:1 ClientConnectionId: 1ab08094-cf1a-46d4-804b-925ffe78f21f
+2026-10-17T12:05:19.332Z  INFO 80 --- [teducare-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-17T12:05:19.674Z  INFO 80 --- [teducare-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlserver://sqlserver:1433;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=teducare_db;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite; (Microsoft SQL Server 16.0)
+2026-10-17T12:05:20.761Z  INFO 80 --- [teducare-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 31 migrations (execution time 00:00.776s)
+2026-10-17T12:05:20.833Z  INFO 80 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema [dbo]: 29
+2026-10-17T12:05:20.968Z  INFO 80 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "30 - attendance"
+2026-10-17T12:05:21.515Z  INFO 80 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema [dbo] to version "31 - user account staff link"
+2026-10-17T12:05:21.569Z  INFO 80 --- [teducare-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 2 migrations to schema [dbo], now at version v31 (execution time 00:00.226s)
+2026-10-17T12:05:22.452Z  INFO 80 --- [teducare-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-17T12:05:22.997Z  INFO 80 --- [teducare-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-10-17T12:05:23.232Z  INFO 80 --- [teducare-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-17T12:05:25.645Z  INFO 80 --- [teducare-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-17T12:05:26.024Z  WARN 80 --- [teducare-backend] [           main] org.hibernate.orm.deprecation            : HHH90000025: SQLServerDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-10-17T12:05:34.503Z  INFO 80 --- [teducare-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-17T12:05:34.523Z  INFO 80 --- [teducare-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-17T12:05:36.678Z  INFO 80 --- [teducare-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-17T12:05:43.495Z  INFO 80 --- [teducare-backend] [           main] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name customAuthenticationProvider
+2026-10-17T12:05:47.161Z  INFO 80 --- [teducare-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-10-17T12:05:47.162Z  INFO 80 --- [teducare-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-17T12:05:47.164Z  INFO 80 --- [teducare-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2026-10-17T12:05:47.237Z  INFO 80 --- [teducare-backend] [           main] c.t.a.AcademicSessionControllerTest      : Started AcademicSessionControllerTest in 45.227 seconds (process running for 49.725)
+WARNING: A Java agent has been loaded dynamically (/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.19/byte-buddy-agent-1.14.19.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 55.94 s -- in com.teducare.academics.AcademicSessionControllerTest
+[INFO] Running com.teducare.attendance.AttendanceControllerTest
+2026-10-17T12:05:55.430Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.attendance.AttendanceControllerTest]: AttendanceControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:05:56.097Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.attendance.AttendanceControllerTest
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/auth/login
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"50"]
+             Body = {"username":"super_admin","password":"Super@2024"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.auth.AuthController
+           Method = com.teducare.auth.AuthController#login(LoginRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"user":{"id":"demo-super-admin","firstName":"Adetunji","lastName":"Aderinwale","email":"ade.adetunji@turontech.com","role":"super_admin","phone":"08012345678","avatarUrl":"","institutionLogoUrl":""},"token":"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/institutions
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8", Content-Length:"163"]
+             Body = {"name":"Attendance Test University 1792238756212","institutionType":"University",
+ "adminUser":"Test Admin","adminEmail":"admin@attendancetestuniversity.edu.ng"}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.institution.InstitutionController
+           Method = com.teducare.institution.InstitutionController#create(Authentication, CreateInstitutionRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","code":"1546","name":"Attendance Test University 1792238756212","institutionType":"University","adminUser":"Test Admin","adminEmail":"admin@attendancetestuniversity.edu.ng","moduleKeys":[],"modulesCount":0,"studentCount":0,"revenue":0,"licenseType":"Basic","tokenKey":"5WLM-8UB8-VAPW-9XL6","status":"active","licenseStatus":"ACTIVE","createdAt":"2026-10-17T12:05:56.223786736Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/institutions
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8", Content-Length:"165"]
+             Body = {"name":"Attendance Test University B 1792238756212","institutionType":"University",
+ "adminUser":"Test Admin","adminEmail":"admin@attendancetestuniversity.edu.ng"}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.institution.InstitutionController
+           Method = com.teducare.institution.InstitutionController#create(Authentication, CreateInstitutionRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"inst-43c44f2c-344b-4ed1-bd15-8abc8a583560","code":"1547","name":"Attendance Test University B 1792238756212","institutionType":"University","adminUser":"Test Admin","adminEmail":"admin@attendancetestuniversity.edu.ng","moduleKeys":[],"modulesCount":0,"studentCount":0,"revenue":0,"licenseType":"Basic","tokenKey":"3PK3-8SYT-FS2O-I9CV","status":"active","licenseStatus":"ACTIVE","createdAt":"2026-10-17T12:05:56.264015659Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/user-managers
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8", Content-Length:"255"]
+             Body = {"firstName":"Attendance","lastName":"Test","email":"attendance_1792238756212@example.com",
+ "username":"attendance_admin_1792238756212","password":"AttendanceTest@2026",
+ "institutionId":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","isPrimaryAdmin":true}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.usermanager.UserManagerController
+           Method = com.teducare.usermanager.UserManagerController#create(Authentication, CreateUserManagerRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"um-5c81d4b5-1683-420f-b2ea-6b676c21899f","code":"1254","firstName":"Attendance","otherName":"","lastName":"Test","email":"attendance_1792238756212@example.com","username":"attendance_admin_1792238756212","institutionId":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","institutionName":"Attendance Test University 1792238756212","isPrimaryAdmin":true,"avatarUrl":"","status":"active","createdAt":"2026-10-17T12:05:56.417240424Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/user-managers
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8", Content-Length:"259"]
+             Body = {"firstName":"Attendance","lastName":"Test","email":"attendance_b_1792238756212@example.com",
+ "username":"attendance_admin_b_1792238756212","password":"AttendanceTest@2026",
+ "institutionId":"inst-43c44f2c-344b-4ed1-bd15-8abc8a583560","isPrimaryAdmin":true}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.usermanager.UserManagerController
+           Method = com.teducare.usermanager.UserManagerController#create(Authentication, CreateUserManagerRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"um-ab7960ac-5da3-4804-8864-3a56bc7c2d85","code":"1255","firstName":"Attendance","otherName":"","lastName":"Test","email":"attendance_b_1792238756212@example.com","username":"attendance_admin_b_1792238756212","institutionId":"inst-43c44f2c-344b-4ed1-bd15-8abc8a583560","institutionName":"Attendance Test University B 1792238756212","isPrimaryAdmin":true,"avatarUrl":"","status":"active","createdAt":"2026-10-17T12:05:56.576003707Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/auth/login
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"78"]
+             Body = {"username":"attendance_admin_1792238756212","password":"AttendanceTest@2026"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.auth.AuthController
+           Method = com.teducare.auth.AuthController#login(LoginRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"user":{"id":"um-5c81d4b5-1683-420f-b2ea-6b676c21899f","firstName":"Attendance","lastName":"Test","email":"attendance_1792238756212@example.com","role":"institution_admin","institutionId":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","institutionName":"Attendance Test University 1792238756212","avatarUrl":"","institutionLogoUrl":""},"token":"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/auth/login
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"80"]
+             Body = {"username":"attendance_admin_b_1792238756212","password":"AttendanceTest@2026"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.auth.AuthController
+           Method = com.teducare.auth.AuthController#login(LoginRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"user":{"id":"um-ab7960ac-5da3-4804-8864-3a56bc7c2d85","firstName":"Attendance","lastName":"Test","email":"attendance_b_1792238756212@example.com","role":"institution_admin","institutionId":"inst-43c44f2c-344b-4ed1-bd15-8abc8a583560","institutionName":"Attendance Test University B 1792238756212","avatarUrl":"","institutionLogoUrl":""},"token":"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS1hYjc5NjBhYy01ZGEzLTQ4MDQtODg2NC0zYTU2YmM3YzJkODUiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluX2JfMTc5MjIzODc1NjIxMiIsImlhdCI6MTc5MjIzODc1NiwiZXhwIjoxNzkyMzI1MTU2fQ.bon1s77IOJovqcq1NVD4wb1WiV1Z01eUM6No8iGdfRk"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/schools
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"77"]
+             Body = {"name":"School of Attendance Test","headName":"Someone","designation":"HOD"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.school.SchoolController
+           Method = com.teducare.school.SchoolController#create(Authentication, CreateSchoolRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"school-4b63bbaa-5a3b-4710-b1fc-f064353166fd","institutionId":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","name":"School of Attendance Test","headName":"Someone","designation":"HOD","createdAt":"2026-10-17T12:05:56.899763791Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/faculties
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"115"]
+             Body = {"name":"Faculty of Attendance Test","deanName":"Someone","schoolId":"school-4b63bbaa-5a3b-4710-b1fc-f064353166fd"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.faculty.FacultyController
+           Method = com.teducare.faculty.FacultyController#create(Authentication, CreateFacultyRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"faculty-1b6776fe-fa45-44bc-a2f2-040d8f2e5fe6","institutionId":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","name":"Faculty of Attendance Test","deanName":"Someone","schoolId":"school-4b63bbaa-5a3b-4710-b1fc-f064353166fd","createdAt":"2026-10-17T12:05:56.974384851Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/departments
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"170"]
+             Body = {"name":"Dept of Attendance Test","hodName":"Someone","facultyId":"faculty-1b6776fe-fa45-44bc-a2f2-040d8f2e5fe6","schoolId":"school-4b63bbaa-5a3b-4710-b1fc-f064353166fd"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.department.DepartmentController
+           Method = com.teducare.department.DepartmentController#create(Authentication, CreateDepartmentRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"department-1f604629-8ec1-49a0-a045-7b7d63cb7918","institutionId":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","name":"Dept of Attendance Test","hodName":"Someone","facultyId":"faculty-1b6776fe-fa45-44bc-a2f2-040d8f2e5fe6","schoolId":"school-4b63bbaa-5a3b-4710-b1fc-f064353166fd","createdAt":"2026-10-17T12:05:57.065275428Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/staff-designations
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"83"]
+             Body = {"name":"Clerk-1792238756212","description":"desc","category":"Non-Academic Staff"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.staffdesignation.StaffDesignationController
+           Method = com.teducare.staffdesignation.StaffDesignationController#create(Authentication, CreateStaffDesignationRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","name":"Clerk-1792238756212","description":"desc","category":"Non-Academic Staff","createdAt":"2026-10-17T12:05:57.121225398Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/staff-members
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"544"]
+             Body = {"staffId":"ATT-1792238756212-A","roleId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","designationId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","departmentId":"department-1f604629-8ec1-49a0-a045-7b7d63cb7918",
+ "gender":"Male","firstName":"Attendance","lastName":"Tester","maritalStatus":"Single",
+ "email":"attendance.ATT-1792238756212-A@staff.test","phone":"08033334444",
+ "emergencyContact":"08033334445","dateOfBirth":"1990-01-01T00:00:00Z",
+ "employmentStartDate":"2020-01-01T00:00:00Z","contactAddress":"1 Attendance Lane"}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.staff.StaffMemberController
+           Method = com.teducare.staff.StaffMemberController#create(Authentication, CreateStaffMemberRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"staff-55517c9a-688a-40e0-811c-998217f23ea4","staffId":"ATT-1792238756212-A","roleId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","designationId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","departmentId":"department-1f604629-8ec1-49a0-a045-7b7d63cb7918","gender":"Male","firstName":"Attendance","lastName":"Tester","maritalStatus":"Single","email":"attendance.ATT-1792238756212-A@staff.test","phone":"08033334444","emergencyContact":"08033334445","dateOfBirth":"1990-01-01T00:00:00Z","employmentStartDate":"2020-01-01T00:00:00Z","contactAddress":"1 Attendance Lane","disciplinaryStatus":"NONE","createdAt":"2026-10-17T12:05:57.206924858Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/staff-members
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"544"]
+             Body = {"staffId":"ATT-1792238756212-B","roleId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","designationId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","departmentId":"department-1f604629-8ec1-49a0-a045-7b7d63cb7918",
+ "gender":"Male","firstName":"Attendance","lastName":"Tester","maritalStatus":"Single",
+ "email":"attendance.ATT-1792238756212-B@staff.test","phone":"08033334444",
+ "emergencyContact":"08033334445","dateOfBirth":"1990-01-01T00:00:00Z",
+ "employmentStartDate":"2020-01-01T00:00:00Z","contactAddress":"1 Attendance Lane"}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.staff.StaffMemberController
+           Method = com.teducare.staff.StaffMemberController#create(Authentication, CreateStaffMemberRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"staff-4b83a1d0-a79e-42dd-bc82-bcce05c9b000","staffId":"ATT-1792238756212-B","roleId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","designationId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","departmentId":"department-1f604629-8ec1-49a0-a045-7b7d63cb7918","gender":"Male","firstName":"Attendance","lastName":"Tester","maritalStatus":"Single","email":"attendance.ATT-1792238756212-B@staff.test","phone":"08033334444","emergencyContact":"08033334445","dateOfBirth":"1990-01-01T00:00:00Z","employmentStartDate":"2020-01-01T00:00:00Z","contactAddress":"1 Attendance Lane","disciplinaryStatus":"NONE","createdAt":"2026-10-17T12:05:57.268957747Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/staff-members
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"544"]
+             Body = {"staffId":"ATT-1792238756212-C","roleId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","designationId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","departmentId":"department-1f604629-8ec1-49a0-a045-7b7d63cb7918",
+ "gender":"Male","firstName":"Attendance","lastName":"Tester","maritalStatus":"Single",
+ "email":"attendance.ATT-1792238756212-C@staff.test","phone":"08033334444",
+ "emergencyContact":"08033334445","dateOfBirth":"1990-01-01T00:00:00Z",
+ "employmentStartDate":"2020-01-01T00:00:00Z","contactAddress":"1 Attendance Lane"}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.staff.StaffMemberController
+           Method = com.teducare.staff.StaffMemberController#create(Authentication, CreateStaffMemberRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"staff-1f02e198-250f-4872-bc77-da86e1f13f3b","staffId":"ATT-1792238756212-C","roleId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","designationId":"staffdesig-e6375aa0-980e-4d6d-825b-ec39ca10d1b2","departmentId":"department-1f604629-8ec1-49a0-a045-7b7d63cb7918","gender":"Male","firstName":"Attendance","lastName":"Tester","maritalStatus":"Single","email":"attendance.ATT-1792238756212-C@staff.test","phone":"08033334444","emergencyContact":"08033334445","dateOfBirth":"1990-01-01T00:00:00Z","employmentStartDate":"2020-01-01T00:00:00Z","contactAddress":"1 Attendance Lane","disciplinaryStatus":"NONE","createdAt":"2026-10-17T12:05:57.316774892Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = GET
+      Request URI = /api/attendance/settings
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceController
+           Method = com.teducare.attendance.AttendanceController#getSettings(Authentication)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"resumptionTime":"08:00","closingTime":"17:00","gracePeriodMinutes":15,"workdays":["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY"],"updatedAt":"2026-10-17T12:05:57.349472792Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = PATCH
+      Request URI = /api/attendance/settings
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"49"]
+             Body = {"resumptionTime":"06:00","gracePeriodMinutes":0}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceController
+           Method = com.teducare.attendance.AttendanceController#updateSettings(Authentication, UpdateAttendanceSettingsRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"resumptionTime":"06:00","closingTime":"17:00","gracePeriodMinutes":0,"workdays":["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY"],"updatedAt":"2026-10-17T12:05:57.388487510Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = PATCH
+      Request URI = /api/attendance/settings
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"31"]
+             Body = {"resumptionTime":"not-a-time"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceController
+           Method = com.teducare.attendance.AttendanceController#updateSettings(Authentication, UpdateAttendanceSettingsRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = org.springframework.web.server.ResponseStatusException
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 400
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"error":"resumptionTime must be in HH:mm (24-hour) format."}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/attendance/devices
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"51"]
+             Body = {"name":"Main Gate Scanner","location":"Main Gate"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceController
+           Method = com.teducare.attendance.AttendanceController#createDevice(Authentication, CreateAttendanceDeviceRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"device":{"id":"device-98a03582-95dd-4e0c-9eb6-1487844c6037","name":"Main Gate Scanner","location":"Main Gate","status":"active","createdAt":"2026-10-17T12:05:57.530305941Z"},"apiKey":"tdat_S2nXEUgtXnBbne9WNnHyJF6HXhgwb6qE"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = GET
+      Request URI = /api/attendance/devices
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS1hYjc5NjBhYy01ZGEzLTQ4MDQtODg2NC0zYTU2YmM3YzJkODUiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluX2JfMTc5MjIzODc1NjIxMiIsImlhdCI6MTc5MjIzODc1NiwiZXhwIjoxNzkyMzI1MTU2fQ.bon1s77IOJovqcq1NVD4wb1WiV1Z01eUM6No8iGdfRk"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceController
+           Method = com.teducare.attendance.AttendanceController#listDevices(Authentication)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = []
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/attendance/clock-events
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", X-Device-Api-Key:"wrong-key", Content-Length:"92"]
+             Body = {"staffId":"ATT-1792238756212-A","eventType":"CLOCK_IN","occurredAt":"2026-10-17T05:55:00Z"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceClockController
+           Method = com.teducare.attendance.AttendanceClockController#clockEvent(String, ClockEventRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = org.springframework.web.server.ResponseStatusException
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 401
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"error":"Invalid device API key."}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/attendance/clock-events
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", X-Device-Api-Key:"tdat_S2nXEUgtXnBbne9WNnHyJF6HXhgwb6qE", Content-Length:"92"]
+             Body = {"staffId":"ATT-1792238756212-A","eventType":"CLOCK_IN","occurredAt":"2026-10-17T05:55:00Z"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceClockController
+           Method = com.teducare.attendance.AttendanceClockController#clockEvent(String, ClockEventRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"attevt-87946578-0bc5-43ce-aefd-85d3aa8e18a3","staffId":"staff-55517c9a-688a-40e0-811c-998217f23ea4","eventType":"CLOCK_IN","occurredAt":"2026-10-17T05:55:00Z","deviceId":"device-98a03582-95dd-4e0c-9eb6-1487844c6037","source":"DEVICE","createdAt":"2026-10-17T12:05:57.774961085Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/attendance/clock-events
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", X-Device-Api-Key:"tdat_S2nXEUgtXnBbne9WNnHyJF6HXhgwb6qE", Content-Length:"92"]
+             Body = {"staffId":"ATT-1792238756212-B","eventType":"CLOCK_IN","occurredAt":"2026-10-17T09:30:00Z"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceClockController
+           Method = com.teducare.attendance.AttendanceClockController#clockEvent(String, ClockEventRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"attevt-038d04a3-81a5-472f-a262-f1e5d9e9cb44","staffId":"staff-4b83a1d0-a79e-42dd-bc82-bcce05c9b000","eventType":"CLOCK_IN","occurredAt":"2026-10-17T09:30:00Z","deviceId":"device-98a03582-95dd-4e0c-9eb6-1487844c6037","source":"DEVICE","createdAt":"2026-10-17T12:05:57.897387057Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/attendance/manual-entries
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM", Content-Length:"136"]
+             Body = {"staffId":"ATT-1792238756212-A","eventType":"CLOCK_OUT","occurredAt":"2026-10-17T17:00:00Z","note":"Device offline, recorded by admin"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceController
+           Method = com.teducare.attendance.AttendanceController#recordManualEntry(Authentication, RecordManualAttendanceRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"attevt-49741d64-1d4e-481e-ae76-2d453373d637","staffId":"staff-55517c9a-688a-40e0-811c-998217f23ea4","eventType":"CLOCK_OUT","occurredAt":"2026-10-17T17:00:00Z","source":"MANUAL","note":"Device offline, recorded by admin","createdAt":"2026-10-17T12:05:57.932766365Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = GET
+      Request URI = /api/attendance/overview
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiaW5zdGl0dXRpb25fYWRtaW4iLCJ1c2VySWQiOiJ1bS01YzgxZDRiNS0xNjgzLTQyMGYtYjJlYS02YjY3NmMyMTg5OWYiLCJzdWIiOiJhdHRlbmRhbmNlX2FkbWluXzE3OTIyMzg3NTYyMTIiLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.8C-urcjjPMPaSBSkOFxPEdz5gqExOiPeZGiiAOYqKIM"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.attendance.AttendanceController
+           Method = com.teducare.attendance.AttendanceController#getOverview(Authentication, String)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"date":"2026-10-17","workday":false,"totalStaff":3,"presentCount":0,"lateCount":0,"absentCount":0,"notClockedInCount":0,"entries":[{"staffId":"staff-55517c9a-688a-40e0-811c-998217f23ea4","staffCode":"ATT-1792238756212-A","staffName":"Attendance Tester","status":"NON_WORKDAY"},{"staffId":"staff-4b83a1d0-a79e-42dd-bc82-bcce05c9b000","staffCode":"ATT-1792238756212-B","staffName":"Attendance Tester","status":"NON_WORKDAY"},{"staffId":"staff-1f02e198-250f-4872-bc77-da86e1f13f3b","staffCode":"ATT-1792238756212-C","staffName":"Attendance Tester","status":"NON_WORKDAY"}]}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/user-managers/um-5c81d4b5-1683-420f-b2ea-6b676c21899f/archive
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.usermanager.UserManagerController
+           Method = com.teducare.usermanager.UserManagerController#archive(Authentication, String)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"um-5c81d4b5-1683-420f-b2ea-6b676c21899f","code":"1254","firstName":"Attendance","otherName":"","lastName":"Test","email":"attendance_1792238756212@example.com","username":"attendance_admin_1792238756212","institutionId":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","institutionName":"Attendance Test University 1792238756212","isPrimaryAdmin":true,"avatarUrl":"","status":"active","createdAt":"2026-10-17T12:05:56.417240400Z","archivedAt":"2026-10-17T12:05:58.003393480Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/user-managers/um-ab7960ac-5da3-4804-8864-3a56bc7c2d85/archive
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.usermanager.UserManagerController
+           Method = com.teducare.usermanager.UserManagerController#archive(Authentication, String)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"um-ab7960ac-5da3-4804-8864-3a56bc7c2d85","code":"1255","firstName":"Attendance","otherName":"","lastName":"Test","email":"attendance_b_1792238756212@example.com","username":"attendance_admin_b_1792238756212","institutionId":"inst-43c44f2c-344b-4ed1-bd15-8abc8a583560","institutionName":"Attendance Test University B 1792238756212","isPrimaryAdmin":true,"avatarUrl":"","status":"active","createdAt":"2026-10-17T12:05:56.576003700Z","archivedAt":"2026-10-17T12:05:58.035612778Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/institutions/inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8/archive
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.institution.InstitutionController
+           Method = com.teducare.institution.InstitutionController#archive(Authentication, String)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"inst-58a6ade6-bad6-4f80-bb3c-bd288719eac8","code":"1546","name":"Attendance Test University 1792238756212","institutionType":"University","adminUser":"Test Admin","adminEmail":"admin@attendancetestuniversity.edu.ng","moduleKeys":[],"modulesCount":0,"studentCount":0,"revenue":0,"licenseType":"Basic","tokenKey":"5WLM-8UB8-VAPW-9XL6","status":"active","licenseStatus":"ACTIVE","createdAt":"2026-10-17T12:05:56.223786700Z","archivedAt":"2026-10-17T12:05:58.074850597Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/institutions/inst-43c44f2c-344b-4ed1-bd15-8abc8a583560/archive
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3NTYsImV4cCI6MTc5MjMyNTE1Nn0.OH1KckoF-6ksvYbo-JpDKCvNGCT_AqJ_DRMULvRjBP8"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.institution.InstitutionController
+           Method = com.teducare.institution.InstitutionController#archive(Authentication, String)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"inst-43c44f2c-344b-4ed1-bd15-8abc8a583560","code":"1547","name":"Attendance Test University B 1792238756212","institutionType":"University","adminUser":"Test Admin","adminEmail":"admin@attendancetestuniversity.edu.ng","moduleKeys":[],"modulesCount":0,"studentCount":0,"revenue":0,"licenseType":"Basic","tokenKey":"3PK3-8SYT-FS2O-I9CV","status":"active","licenseStatus":"ACTIVE","createdAt":"2026-10-17T12:05:56.264015700Z","archivedAt":"2026-10-17T12:05:58.128918661Z"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 2.799 s <<< FAILURE! -- in com.teducare.attendance.AttendanceControllerTest
+[ERROR] com.teducare.attendance.AttendanceControllerTest.fullAttendanceLifecycleWithDeviceAuthAndSelfServiceIsolation -- Time elapsed: 2.091 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.workday" expected:<true> but was:<false>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:123)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:111)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.teducare.attendance.AttendanceControllerTest.fullAttendanceLifecycleWithDeviceAuthAndSelfServiceIsolation(AttendanceControllerTest.java:142)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running com.teducare.auth.AuthControllerTest
+2026-10-17T12:05:58.235Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.auth.AuthControllerTest]: AuthControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:05:58.821Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.auth.AuthControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.560 s -- in com.teducare.auth.AuthControllerTest
+[INFO] Running com.teducare.course.CourseControllerTest
+2026-10-17T12:05:59.808Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.course.CourseControllerTest]: CourseControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:00.324Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.course.CourseControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.596 s -- in com.teducare.course.CourseControllerTest
+[INFO] Running com.teducare.coursegrade.CourseGradeControllerTest
+2026-10-17T12:06:02.392Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.coursegrade.CourseGradeControllerTest]: CourseGradeControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:02.948Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.coursegrade.CourseGradeControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.877 s -- in com.teducare.coursegrade.CourseGradeControllerTest
+[INFO] Running com.teducare.dashboard.DashboardControllerTest
+2026-10-17T12:06:06.272Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.dashboard.DashboardControllerTest]: DashboardControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:07.086Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.dashboard.DashboardControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.907 s -- in com.teducare.dashboard.DashboardControllerTest
+[INFO] Running com.teducare.department.DepartmentControllerTest
+2026-10-17T12:06:08.183Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.department.DepartmentControllerTest]: DepartmentControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:08.793Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.department.DepartmentControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.910 s -- in com.teducare.department.DepartmentControllerTest
+[INFO] Running com.teducare.elective.ElectiveGroupControllerTest
+2026-10-17T12:06:10.090Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.elective.ElectiveGroupControllerTest]: ElectiveGroupControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:10.618Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.elective.ElectiveGroupControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.004 s -- in com.teducare.elective.ElectiveGroupControllerTest
+[INFO] Running com.teducare.faculty.FacultyControllerTest
+2026-10-17T12:06:12.094Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.faculty.FacultyControllerTest]: FacultyControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:12.703Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.faculty.FacultyControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.751 s -- in com.teducare.faculty.FacultyControllerTest
+[INFO] Running com.teducare.institution.InstitutionControllerTest
+2026-10-17T12:06:13.849Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.institution.InstitutionControllerTest]: InstitutionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:14.486Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.institution.InstitutionControllerTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.142 s -- in com.teducare.institution.InstitutionControllerTest
+[INFO] Running com.teducare.institution.InstitutionLicenseControllerTest
+2026-10-17T12:06:15.999Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.institution.InstitutionLicenseControllerTest]: InstitutionLicenseControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:16.010Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.institution.InstitutionLicenseControllerTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.709 s -- in com.teducare.institution.InstitutionLicenseControllerTest
+[INFO] Running com.teducare.lecturer.LectureAssignmentControllerTest
+2026-10-17T12:06:17.702Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.lecturer.LectureAssignmentControllerTest]: LectureAssignmentControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:18.457Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.lecturer.LectureAssignmentControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.447 s -- in com.teducare.lecturer.LectureAssignmentControllerTest
+[INFO] Running com.teducare.lecturer.LecturerControllerTest
+2026-10-17T12:06:21.152Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.lecturer.LecturerControllerTest]: LecturerControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:21.163Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.lecturer.LecturerControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.095 s -- in com.teducare.lecturer.LecturerControllerTest
+[INFO] Running com.teducare.module.ModuleControllerTest
+2026-10-17T12:06:22.249Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.module.ModuleControllerTest]: ModuleControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:22.827Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.module.ModuleControllerTest
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/auth/login
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"50"]
+             Body = {"username":"super_admin","password":"Super@2024"}
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.auth.AuthController
+           Method = com.teducare.auth.AuthController#login(LoginRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"user":{"id":"demo-super-admin","firstName":"Adetunji","lastName":"Aderinwale","email":"ade.adetunji@turontech.com","role":"super_admin","phone":"08012345678","avatarUrl":"","institutionLogoUrl":""},"token":"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3ODIsImV4cCI6MTc5MjMyNTE4Mn0.v6QqxNAeHNdzGkyOfef_5UtliqQMFnB2IfJpMztDpzI"}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = GET
+      Request URI = /api/modules
+       Parameters = {}
+          Headers = [Authorization:"Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic3VwZXJfYWRtaW4iLCJ1c2VySWQiOiJkZW1vLXN1cGVyLWFkbWluIiwic3ViIjoic3VwZXJfYWRtaW4iLCJpYXQiOjE3OTIyMzg3ODIsImV4cCI6MTc5MjMyNTE4Mn0.v6QqxNAeHNdzGkyOfef_5UtliqQMFnB2IfJpMztDpzI"]
+             Body = null
+    Session Attrs = {}
+
+Handler:
+             Type = com.teducare.module.ModuleController
+           Method = com.teducare.module.ModuleController#list(Authentication)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Vary:"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"data":[{"key":"registration","label":"Registration"},{"key":"academic-sessions","label":"Session Management"},{"key":"school","label":"School Management"},{"key":"faculty","label":"Faculty Management"},{"key":"department","label":"Department Management"},{"key":"programs","label":"Program Management"},{"key":"program-levels","label":"Program Levels"},{"key":"course-grades","label":"Courses Grades"},{"key":"courses","label":"Courses Management"},{"key":"students","label":"Student Management"},{"key":"staff-designation","label":"Designation"},{"key":"staff-all","label":"All Staff"},{"key":"staff-attendance","label":"Time & Attendance"},{"key":"user-management","label":"User Management"},{"key":"lecturer","label":"Lecture Management"},{"key":"payment","label":"Financials"},{"key":"results","label":"Results Management"},{"key":"hotels","label":"Hostel Management"},{"key":"transport","label":"Transport Management"},{"key":"announcements","label":"Announcement"},{"key":"notifications","label":"Notifications"},{"key":"requests","label":"Requests"},{"key":"support","label":"Support"}]}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+[ERROR] Tests run: 2, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.830 s <<< FAILURE! -- in com.teducare.module.ModuleControllerTest
+[ERROR] com.teducare.module.ModuleControllerTest.listReturnsTheFixedCatalogForSuperAdmin -- Time elapsed: 0.106 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.data.length()" expected:<22> but was:<23>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:123)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:111)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.teducare.module.ModuleControllerTest.listReturnsTheFixedCatalogForSuperAdmin(ModuleControllerTest.java:38)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running com.teducare.notification.NotificationControllerTest
+2026-10-17T12:06:23.076Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.notification.NotificationControllerTest]: NotificationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:23.609Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.notification.NotificationControllerTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.333 s -- in com.teducare.notification.NotificationControllerTest
+[INFO] Running com.teducare.profile.ProfileControllerTest
+2026-10-17T12:06:25.417Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.profile.ProfileControllerTest]: ProfileControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:26.092Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.profile.ProfileControllerTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.475 s -- in com.teducare.profile.ProfileControllerTest
+[INFO] Running com.teducare.program.ProgramControllerTest
+2026-10-17T12:06:27.885Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.program.ProgramControllerTest]: ProgramControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:28.522Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.program.ProgramControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.129 s -- in com.teducare.program.ProgramControllerTest
+[INFO] Running com.teducare.programlevel.ProgramLevelControllerTest
+2026-10-17T12:06:30.018Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.programlevel.ProgramLevelControllerTest]: ProgramLevelControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:31.064Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.programlevel.ProgramLevelControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.428 s -- in com.teducare.programlevel.ProgramLevelControllerTest
+[INFO] Running com.teducare.registration.CourseRegistrationControllerTest
+2026-10-17T12:06:33.454Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.registration.CourseRegistrationControllerTest]: CourseRegistrationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:34.120Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.registration.CourseRegistrationControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.866 s -- in com.teducare.registration.CourseRegistrationControllerTest
+[INFO] Running com.teducare.registration.RegistrationSettingsControllerTest
+2026-10-17T12:06:36.317Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.registration.RegistrationSettingsControllerTest]: RegistrationSettingsControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:36.329Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.registration.RegistrationSettingsControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.912 s -- in com.teducare.registration.RegistrationSettingsControllerTest
+[INFO] Running com.teducare.role.RoleControllerTest
+2026-10-17T12:06:37.226Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.role.RoleControllerTest]: RoleControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:37.784Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.role.RoleControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.182 s -- in com.teducare.role.RoleControllerTest
+[INFO] Running com.teducare.school.SchoolControllerTest
+2026-10-17T12:06:39.410Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.school.SchoolControllerTest]: SchoolControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:39.971Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.school.SchoolControllerTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.015 s -- in com.teducare.school.SchoolControllerTest
+[INFO] Running com.teducare.staff.StaffMemberControllerTest
+2026-10-17T12:06:41.425Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.staff.StaffMemberControllerTest]: StaffMemberControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:42.054Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.staff.StaffMemberControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.032 s -- in com.teducare.staff.StaffMemberControllerTest
+[INFO] Running com.teducare.staffdesignation.StaffDesignationControllerTest
+2026-10-17T12:06:43.463Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.staffdesignation.StaffDesignationControllerTest]: StaffDesignationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:43.975Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.staffdesignation.StaffDesignationControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.306 s -- in com.teducare.staffdesignation.StaffDesignationControllerTest
+[INFO] Running com.teducare.student.StudentControllerTest
+2026-10-17T12:06:44.773Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.student.StudentControllerTest]: StudentControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:45.617Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.student.StudentControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.461 s -- in com.teducare.student.StudentControllerTest
+[INFO] Running com.teducare.studentsettings.StudentIdentitySettingsControllerTest
+2026-10-17T12:06:47.241Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.studentsettings.StudentIdentitySettingsControllerTest]: StudentIdentitySettingsControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:47.897Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.studentsettings.StudentIdentitySettingsControllerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.700 s -- in com.teducare.studentsettings.StudentIdentitySettingsControllerTest
+[INFO] Running com.teducare.usermanager.UserManagerControllerTest
+2026-10-17T12:06:48.933Z  INFO 80 --- [teducare-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.teducare.usermanager.UserManagerControllerTest]: UserManagerControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-17T12:06:49.598Z  INFO 80 --- [teducare-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.teducare.TeducareBackendApplication for test class com.teducare.usermanager.UserManagerControllerTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.614 s -- in com.teducare.usermanager.UserManagerControllerTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   AttendanceControllerTest.fullAttendanceLifecycleWithDeviceAuthAndSelfServiceIsolation:142 JSON path "$.workday" expected:<true> but was:<false>
+[ERROR]   ModuleControllerTest.listReturnsTheFixedCatalogForSuperAdmin:38 JSON path "$.data.length()" expected:<22> but was:<23>
+[INFO] 
+[ERROR] Tests run: 62, Failures: 2, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  02:06 min
+[INFO] Finished at: 2026-10-17T12:06:52Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project teducare-backend: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /workspace/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+EXIT:1
