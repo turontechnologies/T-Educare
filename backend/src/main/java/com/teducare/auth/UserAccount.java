@@ -260,6 +260,14 @@ public class UserAccount {
         this.lecturerId = lecturerId;
     }
 
+    public String getStaffId() {
+        return staffId;
+    }
+
+    public void setStaffId(String staffId) {
+        this.staffId = staffId;
+    }
+
     public String getStatus() {
         return status;
     }

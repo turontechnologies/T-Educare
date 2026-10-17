@@ -20,6 +20,7 @@ import com.teducare.lecturer.LecturerService;
 import com.teducare.notification.NotificationService;
 import com.teducare.role.Role;
 import com.teducare.role.RoleRepository;
+import com.teducare.staff.StaffMemberService;
 
 @Service
 public class UserManagerService {
@@ -33,6 +34,7 @@ public class UserManagerService {
     private final InstitutionRepository institutionRepository;
     private final RoleRepository roleRepository;
     private final LecturerService lecturerService;
+    private final StaffMemberService staffMemberService;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
@@ -41,12 +43,14 @@ public class UserManagerService {
             InstitutionRepository institutionRepository,
             RoleRepository roleRepository,
             LecturerService lecturerService,
+            StaffMemberService staffMemberService,
             PasswordEncoder passwordEncoder,
             NotificationService notificationService) {
         this.repository = repository;
         this.institutionRepository = institutionRepository;
         this.roleRepository = roleRepository;
         this.lecturerService = lecturerService;
+        this.staffMemberService = staffMemberService;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
     }
@@ -105,6 +109,7 @@ public class UserManagerService {
                 request.otherName() == null ? "" : request.otherName(),
                 request.gender(),
                 request.isPrimaryAdmin(),
+                null,
                 null,
                 "active",
                 Instant.now(),
@@ -187,6 +192,14 @@ public class UserManagerService {
             } else {
                 lecturerService.requireOwnLecturer(account.getInstitutionId(), request.lecturerId());
                 account.setLecturerId(request.lecturerId());
+            }
+        }
+        if (request.staffId() != null) {
+            if (request.staffId().isBlank()) {
+                account.setStaffId(null);
+            } else {
+                staffMemberService.requireOwnStaffMember(account.getInstitutionId(), request.staffId());
+                account.setStaffId(request.staffId());
             }
         }
 

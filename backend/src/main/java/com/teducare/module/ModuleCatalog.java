@@ -45,6 +45,7 @@ public final class ModuleCatalog {
             new PlatformModule("students", "Student Management"),
             new PlatformModule("staff-designation", "Designation"),
             new PlatformModule("staff-all", "All Staff"),
+            new PlatformModule("staff-attendance", "Time & Attendance"),
             new PlatformModule("user-management", "User Management"),
             new PlatformModule("lecturer", "Lecture Management"),
             new PlatformModule("payment", "Financials"),

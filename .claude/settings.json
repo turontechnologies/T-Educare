@@ -24,7 +24,9 @@
       "Bash(curl -s -o /dev/null -w \"frontend status: %{http_code}\\\\n\" http://localhost:3000 --max-time 3)",
       "PowerShell(Get-CimInstance Win32_OperatingSystem | Select-Object @{N='FreeGB';E={[math]::Round\\($_.FreePhysicalMemory/1MB,2\\)}}, @{N='TotalGB';E={[math]::Round\\($_.TotalVisibleMemorySize/1MB,2\\)}})",
       "Bash(curl -s -X POST http://127.0.0.1:8081/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"super_admin\",\"password\":\"Super@2024\"}' -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\")",
-      "Bash(curl -s -o /dev/null -w \"frontend status: %{http_code}\\\\n\" http://localhost:3000 --max-time 5)"
+      "Bash(curl -s -o /dev/null -w \"frontend status: %{http_code}\\\\n\" http://localhost:3000 --max-time 5)",
+      "Bash(MSYS_NO_PATHCONV=1 docker run --rm -v \"//c/Users/HomePC/Documents/work/T-Educare/backend:/workspace\" -v maven-repo-cache:/root/.m2 -w /workspace maven:3.9-eclipse-temurin-21 mvn -q test-compile)",
+      "PowerShell(Get-CimInstance Win32_OperatingSystem | Select-Object @{N='FreeGB';E={[math]::Round\\($_.FreePhysicalMemory/1MB,2\\)}})"
     ]
   }
 }

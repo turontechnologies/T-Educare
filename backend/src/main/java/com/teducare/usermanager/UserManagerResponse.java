@@ -20,6 +20,7 @@ public record UserManagerResponse(
         String avatarUrl,
         String roleId,
         String lecturerId,
+        String staffId,
         String status,
         Instant createdAt,
         Instant archivedAt) {
@@ -41,6 +42,7 @@ public record UserManagerResponse(
                 account.getAvatarUrl(),
                 account.getRoleId(),
                 account.getLecturerId(),
+                account.getStaffId(),
                 account.getStatus(),
                 account.getCreatedAt(),
                 account.getArchivedAt());

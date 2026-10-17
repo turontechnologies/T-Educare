@@ -126,7 +126,8 @@ public class AuthDirectory {
                                                 entity.getPhone(),
                                                 entity.getAvatarUrl(),
                                                 institutionLogoUrl,
-                                                entity.getLecturerId()),
+                                                entity.getLecturerId(),
+                                                entity.getStaffId()),
                                 entity.getStatus(),
                                 entity.getArchivedAt());
         }
