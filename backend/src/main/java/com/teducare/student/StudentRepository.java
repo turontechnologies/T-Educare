@@ -12,4 +12,11 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     Optional<Student> findByIdAndInstitutionId(String id, String institutionId);
 
     boolean existsByInstitutionIdAndMatricNoIgnoreCaseAndArchivedAtIsNull(String institutionId, String matricNo);
+
+    long countByInstitutionIdAndArchivedAtIsNull(String institutionId);
+
+    /** Platform-wide active student count — the real backing for the super admin dashboard's "total student population" stat. */
+    long countByArchivedAtIsNull();
+
+    List<Student> findByInstitutionIdAndArchivedAtIsNullOrderByCreatedAtDesc(String institutionId);
 }

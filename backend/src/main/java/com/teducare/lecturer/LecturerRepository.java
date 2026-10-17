@@ -10,4 +10,6 @@ public interface LecturerRepository extends JpaRepository<Lecturer, String> {
     List<Lecturer> findByInstitutionIdOrderByCreatedAtAsc(String institutionId);
 
     Optional<Lecturer> findByIdAndInstitutionId(String id, String institutionId);
+
+    long countByInstitutionIdAndArchivedAtIsNull(String institutionId);
 }

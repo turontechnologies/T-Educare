@@ -32,12 +32,6 @@ public interface InstitutionRepository extends JpaRepository<Institution, String
     @Query("select count(i) from Institution i where i.archivedAt is null")
     long countActive();
 
-    @Query("select coalesce(sum(i.studentCount), 0) from Institution i where i.archivedAt is null")
-    long sumActiveStudentCount();
-
-    @Query("select coalesce(sum(i.revenue), 0) from Institution i where i.archivedAt is null")
-    long sumActiveRevenue();
-
     @Query("select count(i) from Institution i where i.archivedAt is null and i.licenseKey is not null")
     long countLicensed();
 

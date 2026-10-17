@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { NotificationsBell } from "@/components/features/notifications/notifications-bell";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import type { NavItem } from "@/config/nav";
 import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
@@ -180,6 +181,7 @@ export function AppHeader({ menu, onMenuClick }: AppHeaderProps) {
           )}
         </div>
 
+        <ThemeToggle />
         <NotificationsBell />
 
         <DropdownMenu>

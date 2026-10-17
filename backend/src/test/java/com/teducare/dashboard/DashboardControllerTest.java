@@ -72,45 +72,81 @@ class DashboardControllerTest {
     }
 
     @Test
-    void institutionAdminDashboardStatsReadRealPerInstitutionColumnsAndZeroWhatHasNoBackendYet() throws Exception {
-        String turonToken = loginAs("turon_admin", "Turon@2024");
-        String amaraToken = loginAs("amara_bello", "Amara@2024");
+    void institutionAdminDashboardStatsAreRealLiveCountsNotTheDeadInstitutionColumns() throws Exception {
+        String superToken = loginAs("super_admin", "Super@2024");
+        String suffix = String.valueOf(System.currentTimeMillis());
+        String institutionId = createInstitution(superToken, "Dashboard Live Stats University " + suffix);
+        String username = "dash_admin_" + suffix;
+        String userManagerId = null;
 
-        // Real, seeded per-institution values (Institution.studentCount/revenue —
-        // see DemoInstitutionSeeder) — differ by institution because they're
-        // read live from the real row, not a hardcoded switch statement.
-        mockMvc.perform(get("/api/dashboard/stats")
-                .header("Authorization", "Bearer " + turonToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.registeredStudents").value(90))
-                .andExpect(jsonPath("$.accumulatedProfit").value(120000))
-                .andExpect(jsonPath("$.applicants").value(0))
-                .andExpect(jsonPath("$.lecturers").value(0));
+        try {
+            userManagerId = createUserManager(superToken, institutionId, username, "dash_" + suffix);
+            String token = loginAs(username, "DashTest@2026");
 
-        mockMvc.perform(get("/api/dashboard/stats")
-                .header("Authorization", "Bearer " + amaraToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.registeredStudents").value(47))
-                .andExpect(jsonPath("$.accumulatedProfit").value(43300))
-                .andExpect(jsonPath("$.applicants").value(0))
-                .andExpect(jsonPath("$.lecturers").value(0));
-    }
+            // A freshly created institution has zero of everything — proves
+            // these are live counts, not some nonzero seeded/cached value.
+            mockMvc.perform(get("/api/dashboard/stats")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.registeredStudents").value(0))
+                    .andExpect(jsonPath("$.lecturers").value(0))
+                    .andExpect(jsonPath("$.applicants").value(0))
+                    .andExpect(jsonPath("$.accumulatedProfit").value(0));
 
-    @Test
-    void enrollmentAndRecentStudentsAreHonestlyEmptyRatherThanFabricated() throws Exception {
-        String token = loginAs("turon_admin", "Turon@2024");
+            String schoolId = createSchool(token, "School of Dashboard Test");
+            String facultyId = createFaculty(token, "Faculty of Dashboard Test", schoolId);
+            String departmentId = createDepartment(token, "Dept of Dashboard Test", facultyId, schoolId);
+            String programId = createProgram(token, "Program of Dashboard Test", departmentId, facultyId);
+            String levelId = createProgramLevel(token, "100L-" + suffix);
+            String sessionId = createAcademicSession(token, "26/27-" + suffix.substring(suffix.length() - 6));
 
-        mockMvc.perform(get("/api/dashboard/enrollment")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(0));
+            createStudent(token, "Chinedu", "Okafor", "chinedu." + suffix,
+                    schoolId, facultyId, departmentId, programId, levelId, sessionId);
+            createStudent(token, "Amina", "Bello", "amina." + suffix,
+                    schoolId, facultyId, departmentId, programId, levelId, sessionId);
+            createLecturer(token, "UL-" + suffix, schoolId);
 
-        mockMvc.perform(get("/api/dashboard/recent-students")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(0));
+            // Real counts now reflect the 2 students + 1 lecturer just created
+            // — the exact regression this fix targets: these used to read
+            // Institution.studentCount/revenue, which are set to 0 once at
+            // creation and never updated by any real write path, so they
+            // never moved no matter how many real students/lecturers existed.
+            mockMvc.perform(get("/api/dashboard/stats")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.registeredStudents").value(2))
+                    .andExpect(jsonPath("$.lecturers").value(1))
+                    .andExpect(jsonPath("$.applicants").value(0))
+                    .andExpect(jsonPath("$.accumulatedProfit").value(0));
+
+            // Enrollment ("day" range) sums to the 2 students created just now.
+            String enrollment = mockMvc.perform(get("/api/dashboard/enrollment")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").isArray())
+                    .andExpect(jsonPath("$.data.length()").value(14))
+                    .andReturn().getResponse().getContentAsString();
+            long total = java.util.regex.Pattern.compile("\"value\":(\\d+)")
+                    .matcher(enrollment)
+                    .results()
+                    .mapToLong(m -> Long.parseLong(m.group(1)))
+                    .sum();
+            org.junit.jupiter.api.Assertions.assertEquals(2, total);
+
+            // Recent students — real, newest first (Amina was created after Chinedu).
+            mockMvc.perform(get("/api/dashboard/recent-students")
+                    .header("Authorization", "Bearer " + token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[0].name").value("Amina Bello"))
+                    .andExpect(jsonPath("$.data[1].name").value("Chinedu Okafor"));
+        } finally {
+            if (userManagerId != null) {
+                mockMvc.perform(post("/api/user-managers/" + userManagerId + "/archive")
+                        .header("Authorization", "Bearer " + superToken));
+            }
+            mockMvc.perform(post("/api/institutions/" + institutionId + "/archive")
+                    .header("Authorization", "Bearer " + superToken));
+        }
     }
 
     @Test

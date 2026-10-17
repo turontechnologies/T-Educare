@@ -44,13 +44,17 @@ public class DashboardController {
     }
 
     @GetMapping("/dashboard/enrollment")
-    public ResponseEntity<Map<String, Object>> enrollment(@RequestParam(defaultValue = "day") String range) {
-        return ResponseEntity.ok(Map.of("data", dashboardService.enrollment(range).data()));
+    public ResponseEntity<Map<String, Object>> enrollment(
+            Authentication authentication, @RequestParam(defaultValue = "day") String range) {
+        return ResponseEntity.ok(Map.of(
+                "data", dashboardService.enrollment(resolveInstitutionId(authentication), range).data()));
     }
 
     @GetMapping("/dashboard/recent-students")
-    public ResponseEntity<Map<String, Object>> recentStudents(@RequestParam(defaultValue = "4") int limit) {
-        return ResponseEntity.ok(Map.of("data", dashboardService.recentStudents(limit).data()));
+    public ResponseEntity<Map<String, Object>> recentStudents(
+            Authentication authentication, @RequestParam(defaultValue = "4") int limit) {
+        return ResponseEntity.ok(Map.of(
+                "data", dashboardService.recentStudents(resolveInstitutionId(authentication), limit).data()));
     }
 
     @GetMapping("/super-admin/recent-institutions")
