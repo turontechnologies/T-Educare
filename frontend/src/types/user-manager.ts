@@ -21,6 +21,8 @@ export interface UserManagerAccount {
   roleId?: string | null;
   /** Real Lecturer.id (see types/lecturer.ts) this login is linked to — present only for a lecturer's own account, driving Lecture Management's self-service "My Lectures" view instead of the admin table. */
   lecturerId?: string | null;
+  /** Real StaffMember.id (see types/staff-member.ts) this login is linked to — present only for a staff member's own account, driving Time & Attendance's self-service "My Attendance" view instead of the admin dashboard. */
+  staffId?: string | null;
   status: UserManagerStatus;
   createdAt: string;
   /** Soft-delete — archived accounts are hidden from the main list but never destroyed. ISO timestamp, or null if active. */

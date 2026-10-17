@@ -33,6 +33,8 @@ export type UserManagerFormPayload = {
   roleId?: string;
   /** Omit to leave unchanged; "" unlinks; otherwise a real Lecturer.id (see types/lecturer.ts) — links this login to that lecturer's self-service view. */
   lecturerId?: string;
+  /** Omit to leave unchanged; "" unlinks; otherwise a real StaffMember.id (see types/staff-member.ts) — links this login to that staff member's self-service "My Attendance" view. */
+  staffId?: string;
 };
 
 export const userManagerService = {

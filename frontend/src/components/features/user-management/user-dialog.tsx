@@ -19,6 +19,7 @@ import {
 import { readFileAsDataUrl } from "@/lib/files";
 import { fullName as lecturerFullName } from "@/lib/lecturers";
 import { generatePassword, generateUsername } from "@/lib/mock-generators";
+import { fullName as staffFullName } from "@/lib/staff-members";
 import {
   useCreateUserManager,
   useUpdateUserManager,
@@ -26,6 +27,7 @@ import {
 import { useRoles } from "@/hooks/use-roles";
 import { useUploadFile } from "@/hooks/use-upload";
 import { useLecturersStore } from "@/store/lecturers.store";
+import { useStaffMembersStore } from "@/store/staff-members.store";
 import type {
   UserManagerAccount,
   UserManagerGender,
@@ -41,6 +43,8 @@ const GENDER_OPTIONS: { label: string; value: UserManagerGender }[] = [
 const UNRESTRICTED_VALUE = "";
 /** Real Lecturer.id, or "" for "not linked to a lecturer" (see types/lecturer.ts). */
 const UNLINKED_VALUE = "";
+/** Real StaffMember.id, or "" for "not linked to a staff member" (see types/staff-member.ts). */
+const UNLINKED_STAFF_VALUE = "";
 
 interface UserFormValues {
   firstName: string;
@@ -99,6 +103,7 @@ function UserForm({
 }) {
   const { data: roles = [] } = useRoles();
   const lecturers = useLecturersStore((state) => state.lecturers);
+  const staffMembers = useStaffMembersStore((state) => state.staffMembers);
   const createUserManager = useCreateUserManager();
   const updateUserManager = useUpdateUserManager();
   const uploadFile = useUploadFile();
@@ -110,6 +115,7 @@ function UserForm({
   const [lecturerId, setLecturerId] = useState(
     user?.lecturerId ?? UNLINKED_VALUE,
   );
+  const [staffId, setStaffId] = useState(user?.staffId ?? UNLINKED_STAFF_VALUE);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(
     user?.avatarUrl,
   );
@@ -187,6 +193,7 @@ function UserForm({
             gender,
             roleId,
             lecturerId,
+            staffId,
             avatarUrl,
           },
         });
@@ -208,10 +215,10 @@ function UserForm({
           isPrimaryAdmin: false,
           avatarUrl,
         });
-        if (roleId || lecturerId) {
+        if (roleId || lecturerId || staffId) {
           await updateUserManager.mutateAsync({
             id: created.id,
-            payload: { roleId, lecturerId },
+            payload: { roleId, lecturerId, staffId },
           });
         }
         toast.success(`${values.firstName} ${values.lastName} added`);
@@ -400,6 +407,23 @@ function UserForm({
                 })),
             ]}
             placeholder="Not a lecturer"
+          />
+
+          <NotchedSelectField
+            label="Linked Staff Member (optional)"
+            labelClassName="bg-popover"
+            value={staffId ?? UNLINKED_STAFF_VALUE}
+            onValueChange={(value) => setStaffId(value ?? UNLINKED_STAFF_VALUE)}
+            options={[
+              { label: "Not a staff member", value: UNLINKED_STAFF_VALUE },
+              ...staffMembers
+                .filter((member) => !member.archivedAt)
+                .map((member) => ({
+                  label: `${staffFullName(member)} (${member.staffId})`,
+                  value: member.id,
+                })),
+            ]}
+            placeholder="Not a staff member"
           />
         </div>
       </form>
