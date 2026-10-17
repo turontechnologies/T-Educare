@@ -1774,23 +1774,24 @@ Don't merge the two lists; they're deliberately separate.
 
 **Implemented** (`backend/src/main/java/com/teducare/dashboard/`), against
 the same MSSQL-backed `AuthDirectory` accounts as Auth/Profile above.
-**As of 2026-09-26, both dashboards' numbers are real wherever a real
-column/resource exists to read them from, and honestly zero/empty where
-none does yet — nothing on either dashboard is hardcoded anymore.**
-Institution admin: `registeredStudents`/`accumulatedProfit` read the real,
-per-institution `Institution.studentCount`/`revenue` columns (real since
-the Institutions build, just never read by this endpoint before);
-`applicants`/`lecturers` are `0` and the enrollment chart/recent-students
-list are empty, not fabricated, since Applicants/Lecturers/Students have
-no real backend at all yet — see §9.1-9.3. Super admin:
-`institutionsCount`/`totalStudents`/`totalRevenue` (§9.4) and the recent-
-institutions list (§9.5) are now real platform-wide aggregates/queries
-over every non-archived institution, and guaranteed consistent with
-`GET /profile`'s own super-admin `summary` (§3.1), which reads the exact
-same underlying queries. Both dashboards
-(`frontend/src/app/dashboard/page.tsx` and
-`frontend/src/app/super-admin/page.tsx`) already called these routes instead of
-reading `frontend/src/store/dashboard.store.ts` directly; `institutions.store.ts`
+**As of 2026-10-17, every number on both dashboards is a live read off a
+real table — `registeredStudents`/`lecturers`/`enrollment`/
+`recentStudents`/`totalStudents` all changed this pass; `applicants`/
+`accumulatedProfit`/`totalRevenue` stay honestly 0, since no
+Applicant-tracking or Financials/Payment resource exists yet.** Institution
+admin and super admin previously both read `Institution.studentCount`/
+`revenue` — two columns set once (to `0`) at institution creation and
+never updated by any real write path since (confirmed: nothing outside the
+constructor ever called `setStudentCount`/`setRevenue`), so every
+dashboard showed the same frozen numbers no matter how many real
+students/lecturers/institutions existed. Fixed by reading real,
+live counts off `StudentRepository`/`LecturerRepository` instead — see
+§9.1-9.4 below, and
+`DashboardControllerTest#institutionAdminDashboardStatsAreRealLiveCountsNotTheDeadInstitutionColumns`.
+Both dashboards (`frontend/src/app/dashboard/page.tsx` and
+`frontend/src/app/super-admin/page.tsx`) needed no frontend changes for
+this — they already called these routes, not
+`frontend/src/store/dashboard.store.ts` directly; `institutions.store.ts`
 still backs the "Recent Added Institutions" table's underlying data model,
 but is superseded for that one table by `GET /super-admin/recent-institutions`
 below (see the note in 9.4 — the original plan to reuse `GET /institutions`
@@ -1802,71 +1803,67 @@ so this got its own dedicated route instead).
 Scoped to the caller's own institution — resolved server-side from the
 bearer token's subject (the login username) via `AuthDirectory`, **not**
 from a client-supplied value, same multi-tenancy rule as everywhere else in
-this contract (§1). `turon_admin` and `amara_bello` (§3) get different
-numbers because their accounts resolve to different `institutionId`s, and
-(2026-09-26) because `registeredStudents`/`accumulatedProfit` now read
-that institution's own real `studentCount`/`revenue` row — a regression
-where the controller passed the raw JWT subject straight into the stats
-lookup (so every institution admin silently saw the same fallback numbers
-regardless of which institution they belonged to) was caught and fixed
-earlier, covered by
-`DashboardControllerTest#institutionAdminDashboardStatsReadRealPerInstitutionColumnsAndZeroWhatHasNoBackendYet`.
-`applicants`/`lecturers` are `0` — Applicants and Lecturers have no real
-backend yet, so these are honestly zero rather than a fabricated number;
-update this endpoint once either exists.
+this contract (§1). `registeredStudents` = live `countByInstitutionIdAndArchivedAtIsNull`
+off the real `students` table; `lecturers` = the same off `lecturers`.
+`applicants`/`accumulatedProfit` are `0` — Applicants and Financials/Payment
+have no real backend yet, so these are honestly zero rather than a
+fabricated number; a pre-matriculation "pre-student" (no `matricNo` yet) is
+still a real `Student` row (§7.13), so there is no separate applicant
+concept to count even once this changes.
 
 ```json
 {
   "registeredStudents": 90,
   "applicants": 0,
-  "lecturers": 0,
-  "accumulatedProfit": 120000
+  "lecturers": 4,
+  "accumulatedProfit": 0
 }
 ```
 
 ### 9.2 Institution admin — `GET /dashboard/enrollment?range=day|week|month`
 
 Powers the "Registered students per program" chart. `range` defaults to
-`"day"`. **Honestly empty as of 2026-09-26** (`{ "data": [] }`) — Students
-has no real backend yet, so there's no real enrollment history to bucket;
-returning fabricated points here would contradict every other real
-endpoint in this contract. Once Students is built, bucket real
-registration timestamps by the requested `range` and populate this for
-real; `label` is whatever the frontend should print on the x-axis for that
-range (hour-of-day for `day`, weekday for `week`, month for `month`) — the
-backend owns the bucketing, the frontend just renders what it's given.
+`"day"`. **Real since 2026-10-17** — buckets the caller's institution's
+real, active `Student.createdAt` timestamps at read time (never
+persisted/cached, same convention as Time & Attendance's daily status,
+§12). `day` = last 14 calendar days, `week` = last 8 ISO weeks (Monday
+start), `month` = last 12 calendar months — every bucket in the window is
+present at `0` if empty, so the chart's x-axis is always a complete,
+evenly-spaced range rather than skipping quiet periods. `label` is
+pre-formatted for the x-axis ("17 Oct" / "Wk of 13 Oct" / "Oct 2026") —
+the backend owns the bucketing and formatting, the frontend just renders
+what it's given.
 
 ```json
-{ "data": [] }
+{ "data": [{ "label": "17 Oct", "value": 2 }, { "label": "18 Oct", "value": 0 }] }
 ```
 
 ### 9.3 Institution admin — `GET /dashboard/recent-students?limit=4`
 
-**Honestly empty as of 2026-09-26** (`{ "data": [] }`), same reasoning as
-9.2 — no real Students resource to draw "recent" registrations from yet.
-Once Students is real, `registeredAt` should be a real ISO timestamp; the
-frontend formats it as relative time ("2 hours ago") itself, don't
-pre-format it server-side.
+**Real since 2026-10-17** — the caller's institution's most recently
+created active students, newest first. `registeredAt` is a real ISO
+timestamp; the frontend formats it as relative time ("2 hours ago")
+itself, not pre-formatted server-side.
 
 ```json
-{ "data": [] }
+{ "data": [{ "id": "student-...", "name": "Amina Bello", "registeredAt": "2026-10-17T14:02:11Z" }] }
 ```
 
 ### 9.4 Super admin — `GET /super-admin/stats`
 
 A precomputed summary so the client doesn't have to page through every
 institution just to sum three numbers (it can still cross-check against
-`GET /institutions` — see §4 — but shouldn't have to). **Real since
-2026-09-26** — a live aggregate over every non-archived institution
-(`institutionsCount` = count, `totalStudents`/`totalRevenue` = sums of
-`studentCount`/`revenue`), not a hardcoded seed-sized number. Guaranteed
-consistent with `GET /profile`'s own `summary.institutionsCount` (§3.1),
-since both now read the exact same `InstitutionRepository.countActive()`
-query rather than two independently-hardcoded numbers that could never
-actually agree.
+`GET /institutions` — see §4 — but shouldn't have to). `institutionsCount`
+= live `InstitutionRepository.countActive()`, guaranteed consistent with
+`GET /profile`'s own `summary.institutionsCount` (§3.1) since both read
+the exact same query. `totalStudents` is **real since 2026-10-17** — a
+platform-wide live `StudentRepository.countByArchivedAtIsNull()`, not a
+sum of the dead per-institution `studentCount` column (see §9's intro).
+`totalRevenue` stays honestly `0` — no Financials/Payment resource exists
+yet to sum.
 
 ```json
-{ "institutionsCount": 6, "totalStudents": 287, "totalRevenue": 330300 }
+{ "institutionsCount": 6, "totalStudents": 287, "totalRevenue": 0 }
 ```
 
 ### 9.5 Super admin — `GET /super-admin/recent-institutions?limit=5`
