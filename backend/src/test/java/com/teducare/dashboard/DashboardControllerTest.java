@@ -162,6 +162,143 @@ class DashboardControllerTest {
                 .andExpect(jsonPath("$.data[0].status").isNotEmpty());
     }
 
+    private String createInstitution(String superToken, String name) throws Exception {
+        String response = mockMvc.perform(post("/api/institutions")
+                .header("Authorization", "Bearer " + superToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"name":"%s","institutionType":"University",
+                         "adminUser":"Test Admin","adminEmail":"admin@dashboardlivestatsuniversity.edu.ng"}
+                        """.formatted(name)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createUserManager(String superToken, String institutionId, String username, String emailPrefix)
+            throws Exception {
+        String response = mockMvc.perform(post("/api/user-managers")
+                .header("Authorization", "Bearer " + superToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"firstName":"Dashboard","lastName":"Test","email":"%s@example.com",
+                         "username":"%s","password":"DashTest@2026",
+                         "institutionId":"%s","isPrimaryAdmin":true}
+                        """.formatted(emailPrefix, username, institutionId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createSchool(String token, String name) throws Exception {
+        String response = mockMvc.perform(post("/api/schools")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"" + name + "\",\"headName\":\"Someone\",\"designation\":\"HOD\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createFaculty(String token, String name, String schoolId) throws Exception {
+        String response = mockMvc.perform(post("/api/faculties")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"" + name + "\",\"deanName\":\"Someone\",\"schoolId\":\"" + schoolId + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createDepartment(String token, String name, String facultyId, String schoolId) throws Exception {
+        String response = mockMvc.perform(post("/api/departments")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"" + name + "\",\"hodName\":\"Someone\",\"facultyId\":\"" + facultyId
+                        + "\",\"schoolId\":\"" + schoolId + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createProgram(String token, String name, String departmentId, String facultyId) throws Exception {
+        String response = mockMvc.perform(post("/api/programs")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"" + name + "\",\"departmentId\":\"" + departmentId + "\",\"facultyId\":\""
+                        + facultyId + "\",\"programType\":\"Undergraduate\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createProgramLevel(String token, String levelCode) throws Exception {
+        String response = mockMvc.perform(post("/api/program-levels")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"levelCode\":\"" + levelCode + "\",\"description\":\"" + levelCode + " description\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createAcademicSession(String token, String session) throws Exception {
+        String response = mockMvc.perform(post("/api/academic-sessions")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"session\":\"" + session + "\",\"from\":\"2026-09-01T00:00:00.000Z\","
+                        + "\"to\":\"2027-07-31T00:00:00.000Z\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createStudent(
+            String token,
+            String firstName,
+            String lastName,
+            String emailPrefix,
+            String schoolId,
+            String facultyId,
+            String departmentId,
+            String programId,
+            String levelId,
+            String sessionId) throws Exception {
+        String response = mockMvc.perform(post("/api/students")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"title":"Mr","firstName":"%s","lastName":"%s",
+                         "gender":"Male","maritalStatus":"Single","email":"%s@example.com",
+                         "phone":"08011112222","emergencyContact":"08099990000",
+                         "dateOfBirth":"2004-05-10T00:00:00.000Z","religion":"Christian",
+                         "bloodGroup":"O+","genotype":"AA","weightKg":68.5,"heightCm":175.0,
+                         "nationality":"Nigerian","stateOfOrigin":"Anambra","lga":"Awka North",
+                         "residentAddress":"12 Unity Road","schoolId":"%s","facultyId":"%s",
+                         "departmentId":"%s","programId":"%s","programLevelId":"%s","currentSessionId":"%s",
+                         "admissionMode":"DIRECT_ENTRY"}
+                        """.formatted(firstName, lastName, emailPrefix,
+                        schoolId, facultyId, departmentId, programId, levelId, sessionId))
+                )
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
+    private String createLecturer(String token, String username, String schoolId) throws Exception {
+        String response = mockMvc.perform(post("/api/lecturers")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"username":"%s","position":"Senior Lecturer","assignmentType":"school",
+                         "assignmentId":"%s","gender":"Male","firstName":"Ada","lastName":"Okoye",
+                         "email":"ada.okoye@dashboardtest.edu","phone":"08011112222"}
+                        """.formatted(username, schoolId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return response.split("\"id\":\"")[1].split("\"")[0];
+    }
+
     private String loginAs(String username, String password) throws Exception {
         String body = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
 
