@@ -4,6 +4,7 @@ import {
   leaveService,
   type CreateLeaveRequestPayload,
   type LeaveTypeFormPayload,
+  type SubmitResumptionPayload,
 } from "@/services/leave.service";
 
 const TYPES_KEY = "leave-types";
@@ -70,7 +71,7 @@ export function useRestoreLeaveType() {
 // --- Admin: requests & balances ---
 
 export function useLeaveRequests(
-  params: { status?: string; staffId?: string } = {},
+  params: { status?: string; staffId?: string; resumptionStatus?: string } = {},
   options: { enabled?: boolean } = {},
 ) {
   return useQuery({
@@ -104,6 +105,25 @@ export function useRejectLeaveRequest() {
   return useMutation({
     mutationFn: ({ id, note }: { id: string; note: string }) =>
       leaveService.reject(id, note),
+    onSuccess: invalidate,
+  });
+}
+
+/** Admin confirms a staff member's reported resumption date — the action that actually moves days (crediting unused ones back, or confirming extra ones used). */
+export function useApproveResumption() {
+  const invalidate = useInvalidateRequests();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string }) =>
+      leaveService.approveResumption(id, note),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRejectResumption() {
+  const invalidate = useInvalidateRequests();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note: string }) =>
+      leaveService.rejectResumption(id, note),
     onSuccess: invalidate,
   });
 }
