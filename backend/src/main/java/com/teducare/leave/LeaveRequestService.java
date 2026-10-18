@@ -2,6 +2,7 @@ package com.teducare.leave;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
@@ -154,18 +155,37 @@ public class LeaveRequestService {
         List<LeaveType> types = typeRepository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
                 .filter(t -> t.getArchivedAt() == null)
                 .toList();
+        StaffMemberResponse staff = staffMemberService.get(institutionId, staffId);
 
         return types.stream().map(type -> {
             int used = usedDays(institutionId, staffId, type.getId(), year);
-            int rolloverDays = type.isRollover() ? rolloverDaysInto(institutionId, staffId, type, year) : 0;
+            int rolloverDays = type.isRollover() ? rolloverDaysInto(institutionId, staffId, type, year, staff) : 0;
             int allocated = type.getDefaultDaysPerYear() + rolloverDays;
             return new LeaveBalanceResponse(
                     type.getId(), type.getName(), year, type.getDefaultDaysPerYear(), rolloverDays, used, allocated - used);
         }).toList();
     }
 
-    /** Unused days from last year, capped at maxRolloverDays (uncapped if null) — 0 if the type doesn't roll over or last year had no deficit to roll forward. */
-    private int rolloverDaysInto(String institutionId, String staffId, LeaveType type, int year) {
+    /**
+     * Unused days from last year, capped at maxRolloverDays (uncapped if
+     * null) — 0 if the type doesn't roll over, if last year had no deficit
+     * to roll forward, or (the actual bug this guards against) if the staff
+     * member wasn't even employed for the whole of last year, or the leave
+     * type itself didn't exist yet — neither can have "unused days" from a
+     * year they weren't eligible for in the first place, so a brand new
+     * hire or a freshly-created leave type must never show a rollover
+     * credit out of nowhere.
+     */
+    private int rolloverDaysInto(String institutionId, String staffId, LeaveType type, int year, StaffMemberResponse staff) {
+        LocalDate lastYearStart = LocalDate.of(year - 1, 1, 1);
+        boolean staffEligibleForLastYear =
+                !staff.employmentStartDate().atZone(ZoneOffset.UTC).toLocalDate().isAfter(lastYearStart);
+        boolean typeExistedLastYear =
+                !type.getCreatedAt().atZone(ZoneOffset.UTC).toLocalDate().isAfter(lastYearStart);
+        if (!staffEligibleForLastYear || !typeExistedLastYear) {
+            return 0;
+        }
+
         int lastYearUsed = usedDays(institutionId, staffId, type.getId(), year - 1);
         int lastYearUnused = Math.max(0, type.getDefaultDaysPerYear() - lastYearUsed);
         return type.getMaxRolloverDays() == null
