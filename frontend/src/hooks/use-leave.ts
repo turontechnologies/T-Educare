@@ -185,8 +185,13 @@ export function useCancelMyLeaveRequest() {
 export function useSubmitResumption() {
   const invalidate = useInvalidateMyRequests();
   return useMutation({
-    mutationFn: ({ id, note }: { id: string; note: string }) =>
-      leaveService.submitResumption(id, note),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: SubmitResumptionPayload;
+    }) => leaveService.submitResumption(id, payload),
     onSuccess: invalidate,
   });
 }
