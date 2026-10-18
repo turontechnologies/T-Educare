@@ -2000,3 +2000,157 @@ against `schools.store.ts`'s stable seed ids
 seed time — mirrors `academics.store.ts`'s own fixed session ids).
 `rollover.store.ts` keeps both drafts and completed `RolloverRecord`s in
 the same `records` array, filtering by `status` for history — see §7.3.
+
+---
+
+## 12. Time & Attendance — a real module under Staff Management
+
+**Implemented** (`backend/src/main/java/com/teducare/attendance/`). Biometric
+or card devices push clock events via a per-device API key (no
+institution_admin login involved — a physical machine or its middleware
+calls `/api/attendance/clock-events` directly); daily PRESENT/LATE/ABSENT
+status is never stored, always derived from raw events + settings at read
+time (same "never denormalize something computable" rule as institution
+name/logo at login). As of this section being written, ON_LEAVE is also a
+possible status — see §13, which this module depends on (one-directional:
+Attendance reads Leave, Leave never reads Attendance).
+
+- `GET/PATCH /attendance/settings` — resumption/closing time (`HH:mm`),
+  grace period minutes (0-180), and which of MONDAY..SUNDAY count as a
+  workday. Get-or-create-default: every institution has sensible defaults
+  (08:00/17:00/15min/Mon-Fri) from the moment this module is first opened.
+- `GET/POST /attendance/devices`, `DELETE /attendance/devices/{id}` — admin
+  registers a device (name + optional location) and gets back a plaintext
+  API key shown exactly once (`{"device": {...}, "apiKey": "tdat_..."}`),
+  BCrypt-hashed at rest from then on, same "can't be retrieved again"
+  convention as a generated password. Delete revokes it — its key stops
+  authenticating immediately.
+- `POST /attendance/clock-events` (no JWT, `X-Device-Api-Key` header
+  instead) — the one endpoint a device ever calls. `staffId` accepts either
+  the real internal id or the human-readable staff code.
+- `POST /attendance/manual-entries` (admin, JWT) — a note is required, same
+  audit-trail convention as a disciplinary action's reason.
+- `GET /attendance/overview?date=` — today's (or any date's) whole
+  institution: `workday`, `totalStaff`, `presentCount`/`lateCount`/
+  `absentCount`/`notClockedInCount`/`onLeaveCount`, and one `entries[]` row
+  per staff member.
+- `GET /attendance/trend?days=14` — the Overview's chart data: one
+  aggregate point per day (same shape as the overview's counts, minus
+  `entries`), oldest first, for the requested window (1-90 days). Computed
+  by calling the overview logic once per day — accepted cost at this scale,
+  same philosophy as everything else in this module.
+- `GET /attendance/staff/{staffId}/history?from=&to=` (admin) and
+  `GET /attendance/my/today` / `GET /attendance/my/history?from=&to=`
+  (self-service) — same per-day entry shape as the overview. Self-service
+  `staffId` is always resolved from the caller's own session
+  (`AuthenticatedUser.staffId`, linked via User Manager the same way
+  `lecturerId` is, see §4.5), **never** accepted from the client — one
+  staff member can never read another's clock-in/clock-out times.
+
+```json
+{
+  "date": "2026-10-18",
+  "workday": true,
+  "totalStaff": 12,
+  "presentCount": 8,
+  "lateCount": 1,
+  "absentCount": 1,
+  "notClockedInCount": 1,
+  "onLeaveCount": 1,
+  "entries": [
+    { "staffId": "staff-...", "staffCode": "SU-ST-1001", "staffName": "Tunde Adewale",
+      "status": "ON_LEAVE", "leaveTypeName": "Annual Leave" }
+  ]
+}
+```
+
+---
+
+## 13. Leave Management — a real module under Staff Management
+
+**Implemented** (`backend/src/main/java/com/teducare/leave/`). A staff
+member's own request through its whole lifecycle (PENDING ->
+APPROVED/REJECTED/CANCELLED, then optionally a resumption report once
+back) — one evolving record, same shape as `TimetableChangeRequest` (§8.2),
+not the separate "cached value + immutable history" shape used for
+disciplinary records, because the request itself is the thing being
+tracked. **Balances are never stored** — always computed at read time from
+the real `leave_types` allocation minus the real sum of a staff member's
+APPROVED requests' `totalDays` for the year (same "never denormalize
+something computable" rule as Attendance's own daily status, §12). An
+APPROVED request covering a given day is what makes Attendance report
+ON_LEAVE for that day instead of ABSENT/NOT_CLOCKED_IN/NON_WORKDAY — this
+is the one integration point between the two modules, and it takes
+priority over every other attendance status, including on a day that
+wouldn't otherwise be a workday.
+
+### 13.1 Admin — leave type policy (`/api/leave/types`)
+
+`GET` / `POST` / `PATCH /{id}` / `POST /{id}/archive` / `POST /{id}/restore`.
+Each leave type sets: `name`, `defaultDaysPerYear` (0-365), `rollover`
+(whether unused days carry into next year), and `maxRolloverDays` (only
+meaningful when `rollover` is true; omitted/null means no cap). There is
+deliberately no per-staff override of the allocation — keeping the policy
+in exactly one place (the leave type itself) is the "clean" half of
+"clean and flexible"; flexibility comes from the rollover rule and from
+leave approval not being hard-capped at the balance (see 13.3).
+
+### 13.2 Admin — the approval queue (`/api/leave/requests`)
+
+`GET ?status=&staffId=` (status defaults to showing everything if omitted),
+`POST /{id}/approve` (optional note), `POST /{id}/reject` (note **required**
+— the rejection reason). Every response is enriched with `staffCode`/
+`staffName`/`leaveTypeName` so the frontend never needs a separate lookup
+to render a row (same convention as `DailyAttendanceEntry` carrying
+`staffName`/`staffCode` directly). `GET /leave/balances?year=` returns
+every staff member's balance across every active leave type in one call —
+the admin overview table.
+
+### 13.3 Self-service (`/api/leave/my`)
+
+`staffId` is always resolved from the caller's own session, never accepted
+from the client — same privacy rule as Attendance's self-service.
+
+- `GET /leave/my/types` — active leave types only.
+- `GET/POST /leave/my/requests` — own history; submitting validates the
+  leave type is active, `endDate >= startDate`, and that no PENDING or
+  APPROVED request of the caller's already overlaps the proposed range
+  (`409 Conflict` otherwise). `totalDays` counts **workdays** within the
+  range per Attendance's own settings (§12), not raw calendar days, so a
+  request spanning a weekend doesn't cost the staff member those days.
+  Approving beyond the remaining balance is allowed, not blocked — an
+  admin judgment call (e.g. unpaid leave) the backend doesn't second-guess;
+  the balance is informational, and `remainingDays` can go negative.
+- `POST /leave/my/requests/{id}/cancel` — own PENDING request only.
+- `POST /leave/my/requests/{id}/resume` — a required note confirming
+  they've resumed duty; only valid once on an APPROVED request (a second
+  call is rejected). This is what "staff submits a report when resumed"
+  means end to end — nothing else changes automatically on this date,
+  Attendance simply stops finding an APPROVED request covering *future*
+  days once the staff member's next leave ends, same as always.
+- `GET /leave/my/balance?year=` — this year's (or any year's) balance per
+  active leave type, computed as described above.
+
+```json
+[
+  { "leaveTypeId": "leavetype-...", "leaveTypeName": "Annual Leave", "year": 2026,
+    "allocatedDays": 26, "rolloverDays": 5, "usedDays": 3, "remainingDays": 23 }
+]
+```
+
+```mermaid
+sequenceDiagram
+    participant S as Staff (self-service)
+    participant B as Backend
+    participant A as Admin
+
+    S->>B: POST /leave/my/requests (type, dates, reason)
+    B-->>S: 201 PENDING (overlap-checked against their own active requests)
+    A->>B: GET /leave/requests?status=PENDING
+    B-->>A: includes the new request, staff/type enriched
+    A->>B: POST /leave/requests/{id}/approve
+    B-->>A: 200 APPROVED
+    Note over B: Attendance now reads ON_LEAVE for every day in [startDate, endDate]
+    S->>B: POST /leave/my/requests/{id}/resume (note)
+    B-->>S: 200 resumedAt set
+```
