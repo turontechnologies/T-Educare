@@ -21,9 +21,27 @@ import com.teducare.staff.StaffMemberService;
 /**
  * Leave requests — a staff member's own submission through its whole
  * approve/reject/resume lifecycle, plus the always-computed-at-read-time
- * balance (see {@link LeaveBalanceResponse}'s doc comment). {@link
- * #isOnApprovedLeave} is the one method {@code AttendanceService} calls
- * directly to turn an ABSENT/NOT_CLOCKED_IN day into ON_LEAVE.
+ * balance (see {@link LeaveBalanceResponse}'s doc comment).
+ *
+ * <p><b>The resumption rule, in one place</b>: an APPROVED request's real
+ * "last day on leave" is never just the stored {@code endDate} — it's
+ * {@link #effectiveEndDate}, computed fresh on every read:
+ * <ul>
+ *   <li>Resumption APPROVED by admin: the real end is the day before the
+ *       confirmed {@code resumptionDate} — before {@code endDate} credits
+ *       unused days back, after it confirms extra days were used.</li>
+ *   <li>No APPROVED resumption yet, and today has already passed {@code
+ *       endDate}: the real end is <em>today</em> — the leave is silently
+ *       extending every single day nobody reports a return, and both the
+ *       balance and Attendance keep counting it.</li>
+ *   <li>Otherwise: the real end is just {@code endDate}, as planned.</li>
+ * </ul>
+ * A resumption report submitted after that auto-extension has already
+ * started (i.e. after {@code endDate}) is functionally the appeal that
+ * corrects it — same mechanism, just carrying a required {@code
+ * lateReason} and, once approved, crediting back whatever was
+ * over-deducted in the meantime. {@link #findCoveringDate} is
+ * {@code AttendanceService}'s one integration point.
  */
 @Service
 public class LeaveRequestService {
@@ -49,13 +67,19 @@ public class LeaveRequestService {
 
     // --- Admin ---
 
-    public List<LeaveRequestResponse> listForInstitution(String institutionId, String status, String staffId) {
+    public List<LeaveRequestResponse> listForInstitution(
+            String institutionId, String status, String staffId, String resumptionStatus) {
         List<LeaveRequest> requests = isPresent(status)
                 ? repository.findByInstitutionIdAndStatusOrderByCreatedAtDesc(institutionId, status.toUpperCase())
                 : repository.findByInstitutionIdOrderByCreatedAtDesc(institutionId);
         if (isPresent(staffId)) {
             String internalId = resolveStaffInternalId(institutionId, staffId);
             requests = requests.stream().filter(r -> r.getStaffId().equals(internalId)).toList();
+        }
+        if (isPresent(resumptionStatus)) {
+            requests = requests.stream()
+                    .filter(r -> resumptionStatus.equalsIgnoreCase(r.getResumptionStatus()))
+                    .toList();
         }
         return enrich(institutionId, requests);
     }
@@ -80,6 +104,37 @@ public class LeaveRequestService {
         leaveRequest.setReviewedBy(actorId);
         leaveRequest.setReviewedAt(Instant.now());
         leaveRequest.setReviewNote(request.note());
+        return enrichOne(institutionId, repository.save(leaveRequest));
+    }
+
+    /**
+     * Admin confirms the staff member's claimed resumption date — this is
+     * the one action that actually moves days (back into, or further out
+     * of, their balance). Works identically whether this was a prompt,
+     * on-time report or a late appeal; the correction is the same either
+     * way, just the direction/size of {@code daysRestored} differs.
+     */
+    public LeaveRequestResponse approveResumption(String institutionId, String id, String actorId, ReviewLeaveRequestRequest request) {
+        LeaveRequest leaveRequest = requireOwnRequest(institutionId, id);
+        requirePendingResumption(leaveRequest);
+        leaveRequest.setResumptionStatus("APPROVED");
+        leaveRequest.setResumptionReviewedBy(actorId);
+        leaveRequest.setResumptionReviewedAt(Instant.now());
+        leaveRequest.setResumptionReviewNote(request.note());
+        return enrichOne(institutionId, repository.save(leaveRequest));
+    }
+
+    /** Admin disputes the claimed resumption date — the request reverts to "no confirmed resumption," so auto-extension (if applicable) resumes counting live from where it was. The staff member may submit a new report. */
+    public LeaveRequestResponse rejectResumption(String institutionId, String id, String actorId, ReviewLeaveRequestRequest request) {
+        if (!isPresent(request.note())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A reason is required to reject a resumption report.");
+        }
+        LeaveRequest leaveRequest = requireOwnRequest(institutionId, id);
+        requirePendingResumption(leaveRequest);
+        leaveRequest.setResumptionStatus("REJECTED");
+        leaveRequest.setResumptionReviewedBy(actorId);
+        leaveRequest.setResumptionReviewedAt(Instant.now());
+        leaveRequest.setResumptionReviewNote(request.note());
         return enrichOne(institutionId, repository.save(leaveRequest));
     }
 
@@ -118,7 +173,7 @@ public class LeaveRequestService {
                 totalDays,
                 request.reason(),
                 "PENDING",
-                null, null, null, null, null,
+                null, null, null,
                 Instant.now());
         return enrichOne(institutionId, repository.save(leaveRequest));
     }
@@ -137,17 +192,44 @@ public class LeaveRequestService {
         return enrichOne(institutionId, repository.save(leaveRequest));
     }
 
+    /**
+     * Staff member reports their actual resumption date — works whether
+     * this is a prompt on-time report or a late appeal correcting an
+     * already-auto-extending leave; {@code lateReason} is required exactly
+     * when today is already past {@code endDate} at submission time, since
+     * that's the one fact the client can't be trusted to self-certify.
+     * Does not move any balance by itself — only {@link #approveResumption}
+     * does, deliberately, so a staff member can't unilaterally credit
+     * themselves days back.
+     */
     public LeaveRequestResponse submitResumption(String institutionId, String staffId, String id, SubmitResumptionRequest request) {
         LeaveRequest leaveRequest = requireOwnRequest(institutionId, id);
         requireOwnStaffRequest(leaveRequest, staffId);
         if (!"APPROVED".equals(leaveRequest.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only an approved leave request can be resumed from.");
         }
-        if (leaveRequest.getResumedAt() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A resumption report has already been submitted for this leave.");
+        if ("APPROVED".equals(leaveRequest.getResumptionStatus())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A resumption has already been confirmed for this leave.");
         }
-        leaveRequest.setResumedAt(Instant.now());
+
+        LocalDate resumptionDate = parseDate(request.resumptionDate(), "resumptionDate");
+        if (resumptionDate.isBefore(leaveRequest.getStartDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resumptionDate cannot be before the leave's startDate.");
+        }
+
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        boolean isLate = today.isAfter(leaveRequest.getEndDate());
+        if (isLate && !isPresent(request.lateReason())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This leave's end date has already passed without a resumption report — explain the delay in lateReason to appeal it.");
+        }
+
+        leaveRequest.setResumptionDate(resumptionDate);
+        leaveRequest.setResumptionReportedAt(Instant.now());
         leaveRequest.setResumptionNote(request.note());
+        leaveRequest.setResumptionLateReason(isLate ? request.lateReason() : null);
+        leaveRequest.setResumptionStatus("PENDING");
         return enrichOne(institutionId, repository.save(leaveRequest));
     }
 
@@ -193,27 +275,75 @@ public class LeaveRequestService {
                 : Math.min(lastYearUnused, type.getMaxRolloverDays());
     }
 
+    /** Real days consumed this year against this leave type — using each request's effective end date, not blindly its stored totalDays, so an early-return credit or a live/confirmed extension both show up correctly. */
     private int usedDays(String institutionId, String staffId, String leaveTypeId, int year) {
         LocalDate yearStart = LocalDate.of(year, 1, 1);
         LocalDate yearEnd = LocalDate.of(year, 12, 31);
-        return repository.findApprovedOverlapping(institutionId, staffId, yearStart, yearEnd).stream()
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        return repository.findApprovedStartingOnOrBeforeForStaff(institutionId, staffId, yearEnd).stream()
                 .filter(r -> r.getLeaveTypeId().equals(leaveTypeId))
-                .mapToInt(LeaveRequest::getTotalDays)
+                .filter(r -> !effectiveEndDate(r, today).isBefore(yearStart))
+                .mapToInt(r -> effectiveDaysUsed(institutionId, r, today))
                 .sum();
     }
 
-    /** Every staff member's APPROVED leave covering one day, in one query — AttendanceService's integration point for a whole day's overview. */
-    public List<LeaveRequest> findApprovedCoveringDateForOverview(String institutionId, LocalDate date) {
-        return repository.findApprovedCoveringDate(institutionId, date);
+    /** Every staff member's APPROVED leave effectively covering one day, including live auto-extensions — AttendanceService's integration point for a whole day's overview. */
+    public List<LeaveRequest> findCoveringDate(String institutionId, LocalDate date) {
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        return repository.findApprovedStartingOnOrBefore(institutionId, date).stream()
+                .filter(r -> !date.isAfter(effectiveEndDate(r, today)))
+                .toList();
     }
 
-    /** This staff member's APPROVED leave requests overlapping [from, to] — lets AttendanceService check a date range in one query instead of one per day. */
-    public List<LeaveRequest> findApprovedOverlappingForHistory(String institutionId, String staffId, LocalDate from, LocalDate to) {
-        return repository.findApprovedOverlapping(institutionId, staffId, from, to);
+    /** This staff member's APPROVED leave effectively overlapping [from, to], including live auto-extensions — lets AttendanceService check a date range in one query instead of one per day. */
+    public List<LeaveRequest> findCoveringRangeForStaff(String institutionId, String staffId, LocalDate from, LocalDate to) {
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        return repository.findApprovedStartingOnOrBeforeForStaff(institutionId, staffId, to).stream()
+                .filter(r -> !effectiveEndDate(r, today).isBefore(from))
+                .toList();
     }
 
     public Optional<String> leaveTypeName(String leaveTypeId) {
         return typeRepository.findById(leaveTypeId).map(LeaveType::getName);
+    }
+
+    /** The leave type's display name, suffixed to flag an unreported auto-extension — so an admin scanning Attendance can tell at a glance this isn't just an ordinary approved leave day. */
+    public String attendanceLabelFor(LeaveRequest r) {
+        String typeName = leaveTypeName(r.getLeaveTypeId()).orElse("Leave");
+        return isAutoExtending(r, LocalDate.now(ZoneOffset.UTC)) ? typeName + " (unreported extension)" : typeName;
+    }
+
+    // --- the resumption rule itself ---
+
+    /** See this class's own doc comment — the single place "what day did this leave actually end" is decided. */
+    private LocalDate effectiveEndDate(LeaveRequest r, LocalDate today) {
+        if ("APPROVED".equals(r.getResumptionStatus()) && r.getResumptionDate() != null) {
+            return r.getResumptionDate().minusDays(1);
+        }
+        return today.isAfter(r.getEndDate()) ? today : r.getEndDate();
+    }
+
+    private int effectiveDaysUsed(String institutionId, LeaveRequest r, LocalDate today) {
+        LocalDate effectiveEnd = effectiveEndDate(r, today);
+        if (effectiveEnd.isBefore(r.getStartDate())) {
+            return 0;
+        }
+        return countWorkdays(institutionId, r.getStartDate(), effectiveEnd);
+    }
+
+    private boolean isAutoExtending(LeaveRequest r, LocalDate today) {
+        return "APPROVED".equals(r.getStatus())
+                && !"APPROVED".equals(r.getResumptionStatus())
+                && today.isAfter(r.getEndDate());
+    }
+
+    /** Only meaningful once resumptionStatus is APPROVED — positive means days credited back (early return), negative means extra days deducted (confirmed overstay), both relative to the originally-approved totalDays. */
+    private Integer daysRestoredFor(String institutionId, LeaveRequest r) {
+        if (!"APPROVED".equals(r.getResumptionStatus())) {
+            return null;
+        }
+        int actualUsed = effectiveDaysUsed(institutionId, r, LocalDate.now(ZoneOffset.UTC));
+        return r.getTotalDays() - actualUsed;
     }
 
     // --- shared helpers ---
@@ -239,12 +369,16 @@ public class LeaveRequestService {
     private LeaveRequestResponse enrichOne(String institutionId, LeaveRequest r) {
         StaffMemberResponse staff = staffMemberService.get(institutionId, r.getStaffId());
         String typeName = typeRepository.findById(r.getLeaveTypeId()).map(LeaveType::getName).orElse("—");
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
         return new LeaveRequestResponse(
                 r.getId(), staff.id(), staff.staffId(), staff.firstName() + " " + staff.lastName(),
                 r.getLeaveTypeId(), typeName,
                 r.getStartDate(), r.getEndDate(), r.getTotalDays(), r.getReason(), r.getStatus(),
                 r.getReviewedBy(), r.getReviewedAt(), r.getReviewNote(),
-                r.getResumedAt(), r.getResumptionNote(), r.getCreatedAt());
+                r.getResumptionDate(), r.getResumptionReportedAt(), r.getResumptionNote(),
+                r.getResumptionLateReason(), r.getResumptionStatus(),
+                r.getResumptionReviewedBy(), r.getResumptionReviewedAt(), r.getResumptionReviewNote(),
+                isAutoExtending(r, today), daysRestoredFor(institutionId, r), r.getCreatedAt());
     }
 
     private LeaveRequest requireOwnRequest(String institutionId, String id) {
@@ -261,6 +395,12 @@ public class LeaveRequestService {
     private static void requirePending(LeaveRequest leaveRequest) {
         if (!"PENDING".equals(leaveRequest.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This leave request has already been reviewed.");
+        }
+    }
+
+    private static void requirePendingResumption(LeaveRequest leaveRequest) {
+        if (!"PENDING".equals(leaveRequest.getResumptionStatus())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "There is no resumption report awaiting review for this leave.");
         }
     }
 

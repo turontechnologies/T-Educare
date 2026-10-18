@@ -72,8 +72,9 @@ public class LeaveController {
     public List<LeaveRequestResponse> listRequests(
             Authentication authentication,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String staffId) {
-        return requestService.listForInstitution(requireInstitutionId(authentication), status, staffId);
+            @RequestParam(required = false) String staffId,
+            @RequestParam(required = false) String resumptionStatus) {
+        return requestService.listForInstitution(requireInstitutionId(authentication), status, staffId, resumptionStatus);
     }
 
     @PostMapping("/requests/{id}/approve")
@@ -89,6 +90,22 @@ public class LeaveController {
             Authentication authentication, @PathVariable String id, @RequestBody ReviewLeaveRequestRequest request) {
         AuthenticatedUserDto caller = requireCaller(authentication);
         return requestService.reject(caller.institutionId(), id, caller.id(), request);
+    }
+
+    /** Admin confirms a staff member's reported resumption date — the action that actually moves days (crediting unused ones back, or confirming extra ones used). */
+    @PostMapping("/requests/{id}/resumption/approve")
+    public LeaveRequestResponse approveResumption(
+            Authentication authentication, @PathVariable String id, @RequestBody(required = false) ReviewLeaveRequestRequest request) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        return requestService.approveResumption(
+                caller.institutionId(), id, caller.id(), request == null ? new ReviewLeaveRequestRequest(null) : request);
+    }
+
+    @PostMapping("/requests/{id}/resumption/reject")
+    public LeaveRequestResponse rejectResumption(
+            Authentication authentication, @PathVariable String id, @RequestBody ReviewLeaveRequestRequest request) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        return requestService.rejectResumption(caller.institutionId(), id, caller.id(), request);
     }
 
     @GetMapping("/balances")

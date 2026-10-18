@@ -226,7 +226,7 @@ public class AttendanceService {
         // of one query per staff member — matches the N+1-avoidance already
         // used for dayEvents above.
         Map<String, LeaveRequest> onLeaveByStaffId = new HashMap<>();
-        for (LeaveRequest leave : leaveRequestService.findApprovedCoveringDateForOverview(institutionId, date)) {
+        for (LeaveRequest leave : leaveRequestService.findCoveringDate(institutionId, date)) {
             onLeaveByStaffId.put(leave.getStaffId(), leave);
         }
 
@@ -290,7 +290,7 @@ public class AttendanceService {
                 .findByInstitutionIdAndStaffIdAndOccurredAtBetweenOrderByOccurredAtAsc(
                         institutionId, staffInternalId, rangeStart, rangeEnd);
         List<LeaveRequest> approvedLeaves =
-                leaveRequestService.findApprovedOverlappingForHistory(institutionId, staffInternalId, from, to);
+                leaveRequestService.findCoveringRangeForStaff(institutionId, staffInternalId, from, to);
 
         List<DailyAttendanceEntry> history = new ArrayList<>();
         for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
@@ -314,7 +314,7 @@ public class AttendanceService {
         String staffName = member.firstName() + " " + member.lastName();
 
         if (leave != null) {
-            String leaveTypeName = leaveRequestService.leaveTypeName(leave.getLeaveTypeId()).orElse("Leave");
+            String leaveTypeName = leaveRequestService.attendanceLabelFor(leave);
             return new DailyAttendanceEntry(member.id(), member.staffId(), staffName, "ON_LEAVE", null, null, leaveTypeName);
         }
 
