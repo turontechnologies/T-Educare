@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArchiveRestore, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -15,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { TablePagination } from "@/components/shared/table-pagination";
 import {
   useArchiveLeaveType,
   useLeaveTypes,
@@ -22,6 +32,8 @@ import {
 } from "@/hooks/use-leave";
 import { LeaveTypeDialog } from "./leave-type-dialog";
 import type { LeaveType } from "@/types/leave";
+
+const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 
 export function LeaveTypesPanel() {
   const { data: types = [] } = useLeaveTypes();
@@ -32,8 +44,28 @@ export function LeaveTypesPanel() {
   const [editing, setEditing] = useState<LeaveType | undefined>();
   const [pendingArchive, setPendingArchive] = useState<LeaveType | null>(null);
 
-  const active = types.filter((t) => !t.archivedAt);
+  const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState("10");
+  const [page, setPage] = useState(1);
+
+  const active = useMemo(() => types.filter((t) => !t.archivedAt), [types]);
   const archived = types.filter((t) => t.archivedAt);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return active;
+    return active.filter((type) => type.name.toLowerCase().includes(query));
+  }, [active, search]);
+
+  const size = Number(pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice(
+    (currentPage - 1) * size,
+    currentPage * size,
+  );
+  const rangeStart = filtered.length === 0 ? 0 : (currentPage - 1) * size + 1;
+  const rangeEnd = Math.min(currentPage * size, filtered.length);
 
   return (
     <div className="space-y-4">
