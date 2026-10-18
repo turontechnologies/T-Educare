@@ -1,7 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -15,6 +25,8 @@ import { cn } from "@/lib/utils";
 import { LeaveBreakdownDialog } from "./leave-breakdown-dialog";
 import type { LeaveBalance } from "@/types/leave";
 
+const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
+
 export function LeaveBalancesPanel() {
   const { data: staffBalances = [] } = useLeaveBalances();
   const [breakdownFor, setBreakdownFor] = useState<
@@ -26,21 +38,95 @@ export function LeaveBalancesPanel() {
     { enabled: !!breakdownFor },
   );
 
-  const rows = staffBalances.flatMap((staff) =>
-    staff.balances.map((balance) => ({ staff, balance })),
+  const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState("10");
+  const [page, setPage] = useState(1);
+
+  const allRows = useMemo(
+    () =>
+      staffBalances.flatMap((staff) =>
+        staff.balances.map((balance) => ({ staff, balance })),
+      ),
+    [staffBalances],
   );
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return allRows;
+    return allRows.filter(
+      ({ staff, balance }) =>
+        staff.staffName.toLowerCase().includes(query) ||
+        staff.staffCode.toLowerCase().includes(query) ||
+        balance.leaveTypeName.toLowerCase().includes(query),
+    );
+  }, [allRows, search]);
+
+  const size = Number(pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice(
+    (currentPage - 1) * size,
+    currentPage * size,
+  );
+  const rangeStart = filtered.length === 0 ? 0 : (currentPage - 1) * size + 1;
+  const rangeEnd = Math.min(currentPage * size, filtered.length);
 
   return (
     <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
-      <CardHeader>
-        <p className="text-sm font-medium text-foreground">
-          Staff Leave Balances — {new Date().getFullYear()}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Allocated and remaining days per staff member, per leave type.
-          Computed live from approved requests — never a stored number that can
-          drift. Click a row to see the full breakdown.
-        </p>
+      <CardHeader className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-foreground">
+            Staff Leave Balances — {new Date().getFullYear()}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Computed live from approved requests. Click a row for the full
+            breakdown.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Show</span>
+            <Select
+              value={pageSize}
+              onValueChange={(value) => {
+                if (value) {
+                  setPageSize(value);
+                  setPage(1);
+                }
+              }}
+            >
+              <SelectTrigger size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>entries</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Label
+              htmlFor="leave-balances-search"
+              className="text-muted-foreground"
+            >
+              Filter:
+            </Label>
+            <Input
+              id="leave-balances-search"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Staff name, code, or leave type"
+              className="h-8 w-56"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -55,7 +141,7 @@ export function LeaveBalancesPanel() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map(({ staff, balance }) => (
+            {paginated.map(({ staff, balance }) => (
               <TableRow
                 key={`${staff.staffId}-${balance.leaveTypeId}`}
                 onClick={() =>
@@ -99,7 +185,7 @@ export function LeaveBalancesPanel() {
                 </TableCell>
               </TableRow>
             ))}
-            {rows.length === 0 && (
+            {paginated.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={6}
@@ -111,6 +197,41 @@ export function LeaveBalancesPanel() {
             )}
           </TableBody>
         </Table>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+          <p>
+            Showing {rangeStart} to {rangeEnd} of {filtered.length} entries
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+              <Button
+                key={n}
+                variant={n === currentPage ? "default" : "outline"}
+                size="sm"
+                className="size-7 p-0"
+                onClick={() => setPage(n)}
+              >
+                {n}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </CardContent>
 
       <LeaveBreakdownDialog

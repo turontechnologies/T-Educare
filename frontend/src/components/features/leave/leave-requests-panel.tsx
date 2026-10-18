@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -40,9 +43,15 @@ const STATUS_FILTERS: { label: string; value: string }[] = [
   { label: "All", value: "" },
 ];
 
+const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
+
 export function LeaveRequestsPanel() {
   const [status, setStatus] = useState("PENDING");
   const { data: requests = [] } = useLeaveRequests(status ? { status } : {});
+
+  const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState("10");
+  const [page, setPage] = useState(1);
 
   const [reviewing, setReviewing] = useState<
     { request: LeaveRequest; action: "approve" | "reject" } | undefined
@@ -51,34 +60,95 @@ export function LeaveRequestsPanel() {
     { request: LeaveRequest; action: "approve" | "reject" } | undefined
   >();
 
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return requests;
+    return requests.filter(
+      (request) =>
+        request.staffName.toLowerCase().includes(query) ||
+        request.staffCode.toLowerCase().includes(query) ||
+        request.leaveTypeName.toLowerCase().includes(query),
+    );
+  }, [requests, search]);
+
+  const size = Number(pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice(
+    (currentPage - 1) * size,
+    currentPage * size,
+  );
+  const rangeStart = filtered.length === 0 ? 0 : (currentPage - 1) * size + 1;
+  const rangeEnd = Math.min(currentPage * size, filtered.length);
+
   return (
     <div className="space-y-4">
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
-        <CardHeader className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              Leave Requests
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Review and act on staff leave requests.
-            </p>
+        <CardHeader className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Show</span>
+            <Select
+              value={pageSize}
+              onValueChange={(value) => {
+                if (value) {
+                  setPageSize(value);
+                  setPage(1);
+                }
+              }}
+            >
+              <SelectTrigger size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>entries</span>
           </div>
-          <Select
-            value={status}
-            onValueChange={(value) => setStatus(value ?? "")}
-            items={STATUS_FILTERS}
-          >
-            <SelectTrigger size="sm" className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTERS.map((option) => (
-                <SelectItem key={option.value || "all"} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              value={status}
+              onValueChange={(value) => {
+                setStatus(value ?? "");
+                setPage(1);
+              }}
+              items={STATUS_FILTERS}
+            >
+              <SelectTrigger size="sm" className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_FILTERS.map((option) => (
+                  <SelectItem key={option.value || "all"} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2 text-sm">
+              <Label
+                htmlFor="leave-requests-search"
+                className="text-muted-foreground"
+              >
+                Filter:
+              </Label>
+              <Input
+                id="leave-requests-search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Staff name, code, or leave type"
+                className="h-8 w-56"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -94,7 +164,7 @@ export function LeaveRequestsPanel() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.map((request) => (
+              {paginated.map((request) => (
                 <TableRow
                   key={request.id}
                   className="animate-in fade-in duration-300"
@@ -197,7 +267,7 @@ export function LeaveRequestsPanel() {
                   </TableCell>
                 </TableRow>
               ))}
-              {requests.length === 0 && (
+              {paginated.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={7}
@@ -209,6 +279,41 @@ export function LeaveRequestsPanel() {
               )}
             </TableBody>
           </Table>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+            <p>
+              Showing {rangeStart} to {rangeEnd} of {filtered.length} entries
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <Button
+                  key={n}
+                  variant={n === currentPage ? "default" : "outline"}
+                  size="sm"
+                  className="size-7 p-0"
+                  onClick={() => setPage(n)}
+                >
+                  {n}
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
