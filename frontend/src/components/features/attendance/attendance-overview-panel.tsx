@@ -4,6 +4,7 @@ import { useState } from "react";
 import { addDays, format, subDays } from "date-fns";
 import {
   CalendarCheck,
+  CalendarOff,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -30,6 +31,7 @@ import {
   formatDisplayDate,
   todayIsoDate,
 } from "@/lib/attendance";
+import { AttendanceTrendChart } from "./attendance-trend-chart";
 import { ManualEntryDialog } from "./manual-entry-dialog";
 import { StaffHistoryDialog } from "./staff-history-dialog";
 
@@ -45,6 +47,12 @@ const STAT_CARDS = [
     label: "Late",
     icon: Clock,
     tint: "bg-amber-500/10 text-amber-600",
+  },
+  {
+    key: "onLeaveCount" as const,
+    label: "On Leave",
+    icon: CalendarOff,
+    tint: "bg-tertiary/15 text-tertiary-foreground",
   },
   {
     key: "absentCount" as const,
@@ -135,7 +143,7 @@ export function AttendanceOverviewPanel() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {STAT_CARDS.map(({ key, label, icon: Icon, tint }) => (
           <Card
             key={key}
@@ -157,6 +165,8 @@ export function AttendanceOverviewPanel() {
           </Card>
         ))}
       </div>
+
+      <AttendanceTrendChart />
 
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
         <CardContent className="pt-5">

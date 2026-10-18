@@ -74,6 +74,18 @@ export function useAttendanceOverview(
   });
 }
 
+export function useAttendanceTrend(
+  days = 14,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: ["attendance-trend", days],
+    queryFn: () => attendanceService.getTrend(days),
+    enabled: options.enabled ?? true,
+    refetchInterval: 60_000,
+  });
+}
+
 export function useStaffAttendanceHistory(
   staffId: string | undefined,
   from: string,

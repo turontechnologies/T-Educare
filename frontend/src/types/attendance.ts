@@ -53,13 +53,16 @@ export interface AttendanceEvent {
 }
 
 export type DailyAttendanceStatus =
-  "PRESENT" | "LATE" | "ABSENT" | "NOT_CLOCKED_IN" | "NON_WORKDAY";
+  "PRESENT" | "LATE" | "ABSENT" | "NOT_CLOCKED_IN" | "ON_LEAVE" | "NON_WORKDAY";
 
 /**
  * One staff member's derived attendance for one calendar day — never
  * fetched/stored as a persisted record, always a read-time computation on
- * the backend. `clockInAt`/`clockOutAt` are omitted entirely from the JSON
- * when there's no matching event yet, not sent as explicit `null`.
+ * the backend. `clockInAt`/`clockOutAt`/`leaveTypeName` are omitted
+ * entirely from the JSON when not applicable, not sent as explicit `null`.
+ * `leaveTypeName` is only present when `status` is "ON_LEAVE" — an
+ * APPROVED Leave Management request covering this day always takes
+ * priority over ABSENT/NOT_CLOCKED_IN, even on a non-workday.
  */
 export interface DailyAttendanceEntry {
   staffId: string;
@@ -68,6 +71,7 @@ export interface DailyAttendanceEntry {
   status: DailyAttendanceStatus;
   clockInAt?: string;
   clockOutAt?: string;
+  leaveTypeName?: string;
 }
 
 export interface AttendanceOverview {
@@ -79,5 +83,16 @@ export interface AttendanceOverview {
   lateCount: number;
   absentCount: number;
   notClockedInCount: number;
+  onLeaveCount: number;
   entries: DailyAttendanceEntry[];
+}
+
+export interface AttendanceTrendPoint {
+  date: string;
+  workday: boolean;
+  presentCount: number;
+  lateCount: number;
+  absentCount: number;
+  notClockedInCount: number;
+  onLeaveCount: number;
 }

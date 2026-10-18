@@ -5,6 +5,7 @@ import type {
   AttendanceEvent,
   AttendanceOverview,
   AttendanceSettings,
+  AttendanceTrendPoint,
   AttendanceWorkday,
   DailyAttendanceEntry,
 } from "@/types/attendance";
@@ -75,6 +76,14 @@ export const attendanceService = {
     const { data } = await apiClient.get<AttendanceOverview>(
       "/attendance/overview",
       { params: { date } },
+    );
+    return data;
+  },
+
+  async getTrend(days = 14): Promise<AttendanceTrendPoint[]> {
+    const { data } = await apiClient.get<AttendanceTrendPoint[]>(
+      "/attendance/trend",
+      { params: { days } },
     );
     return data;
   },

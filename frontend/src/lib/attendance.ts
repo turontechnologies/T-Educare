@@ -19,6 +19,7 @@ export const STATUS_LABELS: Record<DailyAttendanceStatus, string> = {
   LATE: "Late",
   ABSENT: "Absent",
   NOT_CLOCKED_IN: "Not Clocked In",
+  ON_LEAVE: "On Leave",
   NON_WORKDAY: "Non-Workday",
 };
 
@@ -28,6 +29,7 @@ export const STATUS_BADGE_CLASSES: Record<DailyAttendanceStatus, string> = {
   LATE: "bg-amber-500/10 text-amber-600",
   ABSENT: "bg-destructive/10 text-destructive",
   NOT_CLOCKED_IN: "bg-muted text-muted-foreground",
+  ON_LEAVE: "bg-tertiary/15 text-tertiary-foreground",
   NON_WORKDAY: "bg-secondary/10 text-secondary",
 };
 
