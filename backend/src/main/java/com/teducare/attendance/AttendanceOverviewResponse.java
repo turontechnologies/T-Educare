@@ -10,5 +10,6 @@ public record AttendanceOverviewResponse(
         int lateCount,
         int absentCount,
         int notClockedInCount,
+        int onLeaveCount,
         List<DailyAttendanceEntry> entries) {
 }

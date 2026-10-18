@@ -7,7 +7,9 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,6 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.teducare.leave.LeaveRequest;
+import com.teducare.leave.LeaveRequestService;
 import com.teducare.staff.StaffMemberResponse;
 import com.teducare.staff.StaffMemberService;
 
