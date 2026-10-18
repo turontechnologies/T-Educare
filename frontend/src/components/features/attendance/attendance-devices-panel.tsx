@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -16,12 +25,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { TablePagination } from "@/components/shared/table-pagination";
 import {
   useAttendanceDevices,
   useRevokeAttendanceDevice,
 } from "@/hooks/use-attendance";
 import { AttendanceDeviceDialog } from "./attendance-device-dialog";
 import type { AttendanceDevice } from "@/types/attendance";
+
+const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 
 export function AttendanceDevicesPanel() {
   const { data: devices = [] } = useAttendanceDevices();
@@ -31,6 +43,30 @@ export function AttendanceDevicesPanel() {
   const [pendingRevoke, setPendingRevoke] = useState<
     AttendanceDevice | undefined
   >();
+
+  const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState("10");
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return devices;
+    return devices.filter(
+      (device) =>
+        device.name.toLowerCase().includes(query) ||
+        (device.location ?? "").toLowerCase().includes(query),
+    );
+  }, [devices, search]);
+
+  const size = Number(pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice(
+    (currentPage - 1) * size,
+    currentPage * size,
+  );
+  const rangeStart = filtered.length === 0 ? 0 : (currentPage - 1) * size + 1;
+  const rangeEnd = Math.min(currentPage * size, filtered.length);
 
   return (
     <div className="space-y-4">
@@ -55,7 +91,51 @@ export function AttendanceDevicesPanel() {
       </div>
 
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
-        <CardContent className="pt-5">
+        <CardHeader className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Show</span>
+            <Select
+              value={pageSize}
+              onValueChange={(value) => {
+                if (value) {
+                  setPageSize(value);
+                  setPage(1);
+                }
+              }}
+            >
+              <SelectTrigger size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>entries</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Label
+              htmlFor="attendance-devices-search"
+              className="text-muted-foreground"
+            >
+              Filter:
+            </Label>
+            <Input
+              id="attendance-devices-search"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Device name or location"
+              className="h-8 w-56"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -68,7 +148,7 @@ export function AttendanceDevicesPanel() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {devices.map((device) => (
+              {paginated.map((device) => (
                 <TableRow
                   key={device.id}
                   className="animate-in fade-in duration-300"
@@ -111,18 +191,29 @@ export function AttendanceDevicesPanel() {
                   </TableCell>
                 </TableRow>
               ))}
-              {devices.length === 0 && (
+              {paginated.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={6}
                     className="py-10 text-center text-muted-foreground"
                   >
-                    No devices registered yet.
+                    {devices.length === 0
+                      ? "No devices registered yet."
+                      : "No devices match this filter."}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+
+          <TablePagination
+            page={currentPage}
+            totalPages={totalPages}
+            rangeStart={rangeStart}
+            rangeEnd={rangeEnd}
+            totalCount={filtered.length}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
 

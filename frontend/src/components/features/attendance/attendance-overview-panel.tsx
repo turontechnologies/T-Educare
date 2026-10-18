@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { addDays, format, subDays } from "date-fns";
 import {
   CalendarCheck,
@@ -14,7 +14,16 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -31,9 +40,12 @@ import {
   formatDisplayDate,
   todayIsoDate,
 } from "@/lib/attendance";
+import { TablePagination } from "@/components/shared/table-pagination";
 import { AttendanceTrendChart } from "./attendance-trend-chart";
 import { ManualEntryDialog } from "./manual-entry-dialog";
 import { StaffHistoryDialog } from "./staff-history-dialog";
+
+const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"];
 
 const STAT_CARDS = [
   {
@@ -77,7 +89,32 @@ export function AttendanceOverviewPanel() {
     { staffId: string; staffName: string } | undefined
   >();
 
+  const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState("25");
+  const [page, setPage] = useState(1);
+
   const isToday = date === todayIsoDate();
+
+  const entries = useMemo(() => overview?.entries ?? [], [overview]);
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return entries;
+    return entries.filter(
+      (entry) =>
+        entry.staffName.toLowerCase().includes(query) ||
+        entry.staffCode.toLowerCase().includes(query),
+    );
+  }, [entries, search]);
+
+  const size = Number(pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice(
+    (currentPage - 1) * size,
+    currentPage * size,
+  );
+  const rangeStart = filtered.length === 0 ? 0 : (currentPage - 1) * size + 1;
+  const rangeEnd = Math.min(currentPage * size, filtered.length);
 
   return (
     <div className="space-y-6">
@@ -169,7 +206,51 @@ export function AttendanceOverviewPanel() {
       <AttendanceTrendChart />
 
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
-        <CardContent className="pt-5">
+        <CardHeader className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Show</span>
+            <Select
+              value={pageSize}
+              onValueChange={(value) => {
+                if (value) {
+                  setPageSize(value);
+                  setPage(1);
+                }
+              }}
+            >
+              <SelectTrigger size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>entries</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Label
+              htmlFor="attendance-overview-search"
+              className="text-muted-foreground"
+            >
+              Filter:
+            </Label>
+            <Input
+              id="attendance-overview-search"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Staff name or code"
+              className="h-8 w-56"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -182,7 +263,7 @@ export function AttendanceOverviewPanel() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(overview?.entries ?? []).map((entry) => (
+              {paginated.map((entry) => (
                 <TableRow
                   key={entry.staffId}
                   className="animate-in fade-in duration-300"
@@ -221,18 +302,29 @@ export function AttendanceOverviewPanel() {
                   </TableCell>
                 </TableRow>
               ))}
-              {(overview?.entries ?? []).length === 0 && (
+              {paginated.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={6}
                     className="py-10 text-center text-muted-foreground"
                   >
-                    No staff members yet.
+                    {entries.length === 0
+                      ? "No staff members yet."
+                      : "No staff match this filter."}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+
+          <TablePagination
+            page={currentPage}
+            totalPages={totalPages}
+            rangeStart={rangeStart}
+            rangeEnd={rangeEnd}
+            totalCount={filtered.length}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
 

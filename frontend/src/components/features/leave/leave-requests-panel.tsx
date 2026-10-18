@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TablePagination } from "@/components/shared/table-pagination";
 import { useLeaveRequests } from "@/hooks/use-leave";
 import { formatDisplayDate } from "@/lib/attendance";
 import { ReviewLeaveRequestDialog } from "./review-leave-request-dialog";
@@ -280,40 +280,14 @@ export function LeaveRequestsPanel() {
             </TableBody>
           </Table>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>
-              Showing {rangeStart} to {rangeEnd} of {filtered.length} entries
-            </p>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </Button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-                <Button
-                  key={n}
-                  variant={n === currentPage ? "default" : "outline"}
-                  size="sm"
-                  className="size-7 p-0"
-                  onClick={() => setPage(n)}
-                >
-                  {n}
-                </Button>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <TablePagination
+            page={currentPage}
+            totalPages={totalPages}
+            rangeStart={rangeStart}
+            rangeEnd={rangeEnd}
+            totalCount={filtered.length}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
 
