@@ -1,9 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Check, X } from "lucide-react";
+import { AlertTriangle, Check, MoreHorizontal, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -209,61 +215,67 @@ export function LeaveRequestsPanel() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {request.status === "PENDING" && (
-                      <div className="flex justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setReviewing({ request, action: "approve" })
-                          }
-                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-500/10"
+                    {(request.status === "PENDING" ||
+                      (request.status === "APPROVED" &&
+                        request.resumptionStatus === "PENDING")) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          aria-label={`Actions for ${request.staffName}'s request`}
+                          className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-open:bg-muted data-open:text-foreground"
                         >
-                          <Check className="size-3.5" />
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setReviewing({ request, action: "reject" })
-                          }
-                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
-                        >
-                          <X className="size-3.5" />
-                          Reject
-                        </button>
-                      </div>
+                          <MoreHorizontal className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          {request.status === "PENDING" ? (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setReviewing({ request, action: "approve" })
+                                }
+                              >
+                                <Check className="size-3.5" />
+                                Approve
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() =>
+                                  setReviewing({ request, action: "reject" })
+                                }
+                              >
+                                <X className="size-3.5" />
+                                Reject
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setReviewingResumption({
+                                    request,
+                                    action: "approve",
+                                  })
+                                }
+                              >
+                                <Check className="size-3.5" />
+                                Confirm
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() =>
+                                  setReviewingResumption({
+                                    request,
+                                    action: "reject",
+                                  })
+                                }
+                              >
+                                <X className="size-3.5" />
+                                Dispute
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
-                    {request.status === "APPROVED" &&
-                      request.resumptionStatus === "PENDING" && (
-                        <div className="flex justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setReviewingResumption({
-                                request,
-                                action: "approve",
-                              })
-                            }
-                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-500/10"
-                          >
-                            <Check className="size-3.5" />
-                            Confirm
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setReviewingResumption({
-                                request,
-                                action: "reject",
-                              })
-                            }
-                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
-                          >
-                            <X className="size-3.5" />
-                            Dispute
-                          </button>
-                        </div>
-                      )}
                   </TableCell>
                 </TableRow>
               ))}

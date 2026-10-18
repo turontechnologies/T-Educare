@@ -174,7 +174,7 @@ function ImportExportButtons() {
         onClick={() => fileInputRef.current?.click()}
       >
         <Download className="size-4" />
-        Import Users
+        Import Courses
       </Button>
       <Button
         variant="outline"
@@ -183,7 +183,7 @@ function ImportExportButtons() {
         onClick={handleExport}
       >
         <Upload className="size-4" />
-        Export Users
+        Export Courses
       </Button>
       <input
         ref={fileInputRef}

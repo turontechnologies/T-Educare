@@ -113,7 +113,7 @@ export function NotchedSelectField({
   disabled,
 }: NotchedSelectFieldProps) {
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <Label
         className={cn(
           "absolute -top-2.5 left-3 z-10 bg-muted px-1.5 text-xs font-medium text-primary",
@@ -134,8 +134,9 @@ export function NotchedSelectField({
         // role's id vs. its real name).
         items={options}
       >
-        <SelectTrigger className="h-11 w-full justify-between rounded-md border-secondary/40 bg-transparent px-3.5 text-base font-normal outline-none focus-visible:border-secondary focus-visible:ring-secondary/30 data-placeholder:text-muted-foreground">
-          <SelectValue placeholder={placeholder} />
+        {/* min-w-0 is load-bearing: this field sits in two-column grids (e.g. CourseOfferingsDialog's Department + Unit Override), and without it a long selected label (a department name, etc.) refuses to shrink below its own content width — it pushes the grid track wider than the dialog and silently clips without ellipsis, since the dialog itself clips overflow. */}
+        <SelectTrigger className="h-11 w-full min-w-0 justify-between rounded-md border-secondary/40 bg-transparent px-3.5 text-base font-normal outline-none focus-visible:border-secondary focus-visible:ring-secondary/30 data-placeholder:text-muted-foreground">
+          <SelectValue placeholder={placeholder} className="min-w-0 truncate" />
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
@@ -403,11 +404,11 @@ export function NotchedComboboxField({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           disabled={disabled}
-          className="flex h-11 w-full items-center justify-between rounded-md border border-secondary/40 bg-transparent px-3.5 text-base outline-none focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-11 w-full min-w-0 items-center justify-between rounded-md border border-secondary/40 bg-transparent px-3.5 text-base outline-none focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span
             className={cn(
-              "truncate text-left",
+              "min-w-0 truncate text-left",
               !selected && "text-muted-foreground",
             )}
           >
