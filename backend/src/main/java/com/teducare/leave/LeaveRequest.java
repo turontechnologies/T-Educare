@@ -14,9 +14,18 @@ import jakarta.persistence.Table;
  * optionally a resumption report once back), same shape as {@code
  * TimetableChangeRequest}, not the separate "cached value + immutable
  * history" shape used for disciplinary records, because the request itself
- * is the thing being tracked. An APPROVED request covering a given day is
- * what makes {@link com.teducare.attendance.AttendanceService} report
- * ON_LEAVE instead of ABSENT for that day.
+ * is the thing being tracked.
+ *
+ * <p>The resumption sub-flow is its own admin-approved cycle, not a plain
+ * note: a staff member reports {@code resumptionDate} (their first day NOT
+ * on leave), which only takes effect once admin approves it via {@code
+ * resumptionStatus}. Until approved, {@link LeaveRequestService}'s
+ * effective-end-date logic treats an APPROVED request with no approved
+ * resumption as still ongoing past {@code endDate} if today has already
+ * passed it — the "silence extends the leave and keeps deducting days"
+ * rule — which is also what makes a late resumption report (submitted
+ * after that auto-extension already started, carrying {@code
+ * resumptionLateReason}) function as the appeal that corrects it.
  */
 @Entity
 @Table(name = "leave_requests", schema = "dbo")
@@ -61,11 +70,32 @@ public class LeaveRequest {
     @Column(name = "review_note", length = 1000)
     private String reviewNote;
 
-    @Column(name = "resumed_at")
-    private Instant resumedAt;
+    /** The staff member's claimed first day back at work — not yet in effect until resumptionStatus is "APPROVED". */
+    @Column(name = "resumption_date")
+    private LocalDate resumptionDate;
+
+    @Column(name = "resumption_reported_at")
+    private Instant resumptionReportedAt;
 
     @Column(name = "resumption_note", length = 1000)
     private String resumptionNote;
+
+    /** Only present (and required by the service) when reported after endDate had already passed — the appeal's "why late" explanation. */
+    @Column(name = "resumption_late_reason", length = 1000)
+    private String resumptionLateReason;
+
+    /** "PENDING" | "APPROVED" | "REJECTED" — null means nothing reported yet. */
+    @Column(name = "resumption_status", length = 20)
+    private String resumptionStatus;
+
+    @Column(name = "resumption_reviewed_by", length = 64)
+    private String resumptionReviewedBy;
+
+    @Column(name = "resumption_reviewed_at")
+    private Instant resumptionReviewedAt;
+
+    @Column(name = "resumption_review_note", length = 1000)
+    private String resumptionReviewNote;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -86,8 +116,6 @@ public class LeaveRequest {
             String reviewedBy,
             Instant reviewedAt,
             String reviewNote,
-            Instant resumedAt,
-            String resumptionNote,
             Instant createdAt) {
         this.id = id;
         this.institutionId = institutionId;
@@ -101,8 +129,6 @@ public class LeaveRequest {
         this.reviewedBy = reviewedBy;
         this.reviewedAt = reviewedAt;
         this.reviewNote = reviewNote;
-        this.resumedAt = resumedAt;
-        this.resumptionNote = resumptionNote;
         this.createdAt = createdAt;
     }
 
@@ -170,12 +196,20 @@ public class LeaveRequest {
         this.reviewNote = reviewNote;
     }
 
-    public Instant getResumedAt() {
-        return resumedAt;
+    public LocalDate getResumptionDate() {
+        return resumptionDate;
     }
 
-    public void setResumedAt(Instant resumedAt) {
-        this.resumedAt = resumedAt;
+    public void setResumptionDate(LocalDate resumptionDate) {
+        this.resumptionDate = resumptionDate;
+    }
+
+    public Instant getResumptionReportedAt() {
+        return resumptionReportedAt;
+    }
+
+    public void setResumptionReportedAt(Instant resumptionReportedAt) {
+        this.resumptionReportedAt = resumptionReportedAt;
     }
 
     public String getResumptionNote() {
@@ -184,6 +218,46 @@ public class LeaveRequest {
 
     public void setResumptionNote(String resumptionNote) {
         this.resumptionNote = resumptionNote;
+    }
+
+    public String getResumptionLateReason() {
+        return resumptionLateReason;
+    }
+
+    public void setResumptionLateReason(String resumptionLateReason) {
+        this.resumptionLateReason = resumptionLateReason;
+    }
+
+    public String getResumptionStatus() {
+        return resumptionStatus;
+    }
+
+    public void setResumptionStatus(String resumptionStatus) {
+        this.resumptionStatus = resumptionStatus;
+    }
+
+    public String getResumptionReviewedBy() {
+        return resumptionReviewedBy;
+    }
+
+    public void setResumptionReviewedBy(String resumptionReviewedBy) {
+        this.resumptionReviewedBy = resumptionReviewedBy;
+    }
+
+    public Instant getResumptionReviewedAt() {
+        return resumptionReviewedAt;
+    }
+
+    public void setResumptionReviewedAt(Instant resumptionReviewedAt) {
+        this.resumptionReviewedAt = resumptionReviewedAt;
+    }
+
+    public String getResumptionReviewNote() {
+        return resumptionReviewNote;
+    }
+
+    public void setResumptionReviewNote(String resumptionReviewNote) {
+        this.resumptionReviewNote = resumptionReviewNote;
     }
 
     public Instant getCreatedAt() {
