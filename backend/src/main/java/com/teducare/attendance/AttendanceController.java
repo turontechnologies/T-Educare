@@ -75,6 +75,12 @@ public class AttendanceController {
         return service.getOverview(requireInstitutionId(authentication), resolvedDate);
     }
 
+    @GetMapping("/trend")
+    public List<AttendanceTrendPoint> getTrend(
+            Authentication authentication, @RequestParam(defaultValue = "14") int days) {
+        return service.getTrend(requireInstitutionId(authentication), days);
+    }
+
     @GetMapping("/staff/{staffId}/history")
     public List<DailyAttendanceEntry> getStaffHistory(
             Authentication authentication,
