@@ -12,7 +12,21 @@ export interface LeaveType {
 export type LeaveRequestStatus =
   "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
-/** Enriched with staff/leave-type display fields — never requires a separate lookup to render a row. */
+export type ResumptionStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+/**
+ * Enriched with staff/leave-type display fields — never requires a separate
+ * lookup to render a row. The resumption fields are their own admin-approved
+ * sub-flow: a staff member reports `resumptionDate` (their first day NOT on
+ * leave), which only takes effect — crediting unused days back, or
+ * confirming extra ones used — once an admin approves it via
+ * `resumptionStatus`. Until then, `isAutoExtending` tells you whether this
+ * leave is *right now* silently extending past `endDate` and still
+ * deducting days because nobody has reported a return yet; a resumption
+ * report submitted after that point is the appeal that corrects it, and
+ * carries `resumptionLateReason`. `isAutoExtending`/`daysRestored` are
+ * computed by the backend on every read, never stored.
+ */
 export interface LeaveRequest {
   id: string;
   staffId: string;
@@ -31,8 +45,20 @@ export interface LeaveRequest {
   reviewedBy?: string;
   reviewedAt?: string;
   reviewNote?: string;
-  resumedAt?: string;
+  /** "yyyy-MM-dd" — the staff member's claimed first day back at work. */
+  resumptionDate?: string;
+  resumptionReportedAt?: string;
   resumptionNote?: string;
+  /** Only present when reported after `endDate` had already passed — the appeal's "why late" explanation. */
+  resumptionLateReason?: string;
+  resumptionStatus?: ResumptionStatus;
+  resumptionReviewedBy?: string;
+  resumptionReviewedAt?: string;
+  resumptionReviewNote?: string;
+  /** True when APPROVED, no confirmed resumption yet, and today is already past `endDate` — this leave is live-extending and deducting extra days right now. */
+  isAutoExtending: boolean;
+  /** Only meaningful once `resumptionStatus` is "APPROVED": positive = days credited back (early return), negative = extra days deducted (confirmed overstay), zero = exactly as planned. */
+  daysRestored?: number;
   createdAt: string;
 }
 

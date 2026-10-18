@@ -24,6 +24,14 @@ export type CreateLeaveRequestPayload = {
   reason: string;
 };
 
+export type SubmitResumptionPayload = {
+  /** "yyyy-MM-dd" — the first day NOT on leave. */
+  resumptionDate: string;
+  note: string;
+  /** Required only when submitting after the leave's endDate has already passed — the backend enforces this, not the client. */
+  lateReason?: string;
+};
+
 export const leaveService = {
   // --- Admin: leave types ---
   async listTypes(): Promise<LeaveType[]> {
@@ -63,7 +71,11 @@ export const leaveService = {
 
   // --- Admin: requests & balances ---
   async listRequests(
-    params: { status?: string; staffId?: string } = {},
+    params: {
+      status?: string;
+      staffId?: string;
+      resumptionStatus?: string;
+    } = {},
   ): Promise<LeaveRequest[]> {
     const { data } = await apiClient.get<LeaveRequest[]>("/leave/requests", {
       params,
@@ -82,6 +94,23 @@ export const leaveService = {
   async reject(id: string, note: string): Promise<LeaveRequest> {
     const { data } = await apiClient.post<LeaveRequest>(
       `/leave/requests/${id}/reject`,
+      { note },
+    );
+    return data;
+  },
+
+  /** Admin confirms a staff member's reported resumption date — the action that actually moves days. */
+  async approveResumption(id: string, note?: string): Promise<LeaveRequest> {
+    const { data } = await apiClient.post<LeaveRequest>(
+      `/leave/requests/${id}/resumption/approve`,
+      { note },
+    );
+    return data;
+  },
+
+  async rejectResumption(id: string, note: string): Promise<LeaveRequest> {
+    const { data } = await apiClient.post<LeaveRequest>(
+      `/leave/requests/${id}/resumption/reject`,
       { note },
     );
     return data;
@@ -123,10 +152,13 @@ export const leaveService = {
     return data;
   },
 
-  async submitResumption(id: string, note: string): Promise<LeaveRequest> {
+  async submitResumption(
+    id: string,
+    payload: SubmitResumptionPayload,
+  ): Promise<LeaveRequest> {
     const { data } = await apiClient.post<LeaveRequest>(
       `/leave/my/requests/${id}/resume`,
-      { note },
+      payload,
     );
     return data;
   },
