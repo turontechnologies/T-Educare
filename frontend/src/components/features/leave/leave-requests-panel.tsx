@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { AlertTriangle, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -22,6 +22,7 @@ import {
 import { useLeaveRequests } from "@/hooks/use-leave";
 import { formatDisplayDate } from "@/lib/attendance";
 import { ReviewLeaveRequestDialog } from "./review-leave-request-dialog";
+import { ReviewResumptionDialog } from "./review-resumption-dialog";
 import type { LeaveRequest, LeaveRequestStatus } from "@/types/leave";
 
 const STATUS_BADGE: Record<LeaveRequestStatus, string> = {
@@ -44,6 +45,9 @@ export function LeaveRequestsPanel() {
   const { data: requests = [] } = useLeaveRequests(status ? { status } : {});
 
   const [reviewing, setReviewing] = useState<
+    { request: LeaveRequest; action: "approve" | "reject" } | undefined
+  >();
+  const [reviewingResumption, setReviewingResumption] = useState<
     { request: LeaveRequest; action: "approve" | "reject" } | undefined
   >();
 
@@ -119,11 +123,20 @@ export function LeaveRequestsPanel() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {request.resumedAt
-                      ? "Yes"
-                      : request.status === "APPROVED"
-                        ? "Not yet"
-                        : "—"}
+                    {request.status !== "APPROVED" ? (
+                      "—"
+                    ) : request.resumptionStatus === "APPROVED" ? (
+                      "Confirmed"
+                    ) : request.resumptionStatus === "PENDING" ? (
+                      "Awaiting review"
+                    ) : request.isAutoExtending ? (
+                      <span className="inline-flex items-center gap-1 font-medium text-amber-700">
+                        <AlertTriangle className="size-3.5" />
+                        Extending
+                      </span>
+                    ) : (
+                      "Not yet"
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     {request.status === "PENDING" && (
@@ -150,6 +163,37 @@ export function LeaveRequestsPanel() {
                         </button>
                       </div>
                     )}
+                    {request.status === "APPROVED" &&
+                      request.resumptionStatus === "PENDING" && (
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setReviewingResumption({
+                                request,
+                                action: "approve",
+                              })
+                            }
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-500/10"
+                          >
+                            <Check className="size-3.5" />
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setReviewingResumption({
+                                request,
+                                action: "reject",
+                              })
+                            }
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                          >
+                            <X className="size-3.5" />
+                            Dispute
+                          </button>
+                        </div>
+                      )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -173,6 +217,12 @@ export function LeaveRequestsPanel() {
         onOpenChange={(open) => !open && setReviewing(undefined)}
         request={reviewing?.request}
         action={reviewing?.action}
+      />
+      <ReviewResumptionDialog
+        open={!!reviewingResumption}
+        onOpenChange={(open) => !open && setReviewingResumption(undefined)}
+        request={reviewingResumption?.request}
+        action={reviewingResumption?.action}
       />
     </div>
   );

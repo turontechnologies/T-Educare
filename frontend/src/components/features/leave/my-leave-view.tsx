@@ -32,6 +32,46 @@ const STATUS_BADGE: Record<LeaveRequestStatus, string> = {
   CANCELLED: "bg-muted text-muted-foreground",
 };
 
+/** The one-line explanation under an APPROVED request's badge — what's happening with its resumption right now. */
+function ResumptionStatusHint({ request }: { request: LeaveRequest }) {
+  if (request.isAutoExtending) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+        <AlertTriangle className="size-3" />
+        Extending — not yet reported
+      </span>
+    );
+  }
+  if (request.resumptionStatus === "PENDING") {
+    return (
+      <span className="text-xs text-muted-foreground">
+        Resumption pending admin review
+      </span>
+    );
+  }
+  if (request.resumptionStatus === "APPROVED") {
+    const days = request.daysRestored ?? 0;
+    if (days > 0) {
+      return (
+        <span className="text-xs text-emerald-600">
+          {days} day{days === 1 ? "" : "s"} credited back
+        </span>
+      );
+    }
+    if (days < 0) {
+      return (
+        <span className="text-xs text-destructive">
+          {Math.abs(days)} extra day{Math.abs(days) === 1 ? "" : "s"} deducted
+        </span>
+      );
+    }
+    return (
+      <span className="text-xs text-muted-foreground">Resumed as planned</span>
+    );
+  }
+  return <span className="text-xs text-muted-foreground">Not yet resumed</span>;
+}
+
 /** A logged-in staff member's own leave — balance per type, request history, and the actions that move a request through its lifecycle (request, cancel, submit a resumption report once back). Shown instead of the admin view when `AuthenticatedUser.staffId` is present. */
 export function MyLeaveView() {
   const { data: balances = [] } = useMyLeaveBalance();
