@@ -51,6 +51,7 @@ public class RoleService {
             "staff.designation",
             "staff.all",
             "staff.attendance",
+            "staff.leave",
             "user-management",
             "lectures",
             "financials",

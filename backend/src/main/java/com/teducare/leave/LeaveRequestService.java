@@ -182,11 +182,14 @@ public class LeaveRequestService {
                 .sum();
     }
 
-    /** Called by AttendanceService — the one integration point between the two modules. */
-    public Optional<LeaveRequest> isOnApprovedLeave(String institutionId, String staffId, LocalDate date) {
-        return repository.findApprovedCoveringDate(institutionId, date).stream()
-                .filter(r -> r.getStaffId().equals(staffId))
-                .findFirst();
+    /** Every staff member's APPROVED leave covering one day, in one query — AttendanceService's integration point for a whole day's overview. */
+    public List<LeaveRequest> findApprovedCoveringDateForOverview(String institutionId, LocalDate date) {
+        return repository.findApprovedCoveringDate(institutionId, date);
+    }
+
+    /** This staff member's APPROVED leave requests overlapping [from, to] — lets AttendanceService check a date range in one query instead of one per day. */
+    public List<LeaveRequest> findApprovedOverlappingForHistory(String institutionId, String staffId, LocalDate from, LocalDate to) {
+        return repository.findApprovedOverlapping(institutionId, staffId, from, to);
     }
 
     public Optional<String> leaveTypeName(String leaveTypeId) {

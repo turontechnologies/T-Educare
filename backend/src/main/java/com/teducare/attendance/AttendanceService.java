@@ -49,18 +49,21 @@ public class AttendanceService {
     private final AttendanceEventRepository eventRepository;
     private final StaffMemberService staffMemberService;
     private final PasswordEncoder passwordEncoder;
+    private final LeaveRequestService leaveRequestService;
 
     public AttendanceService(
             AttendanceSettingsRepository settingsRepository,
             AttendanceDeviceRepository deviceRepository,
             AttendanceEventRepository eventRepository,
             StaffMemberService staffMemberService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            LeaveRequestService leaveRequestService) {
         this.settingsRepository = settingsRepository;
         this.deviceRepository = deviceRepository;
         this.eventRepository = eventRepository;
         this.staffMemberService = staffMemberService;
         this.passwordEncoder = passwordEncoder;
+        this.leaveRequestService = leaveRequestService;
     }
 
     // --- Settings ---
@@ -219,30 +222,41 @@ public class AttendanceService {
         List<AttendanceEvent> dayEvents =
                 eventRepository.findByInstitutionIdAndOccurredAtBetweenOrderByOccurredAtAsc(institutionId, dayStart, dayEnd);
 
+        // One query for every staff member on approved leave today, instead
+        // of one query per staff member — matches the N+1-avoidance already
+        // used for dayEvents above.
+        Map<String, LeaveRequest> onLeaveByStaffId = new HashMap<>();
+        for (LeaveRequest leave : leaveRequestService.findApprovedCoveringDateForOverview(institutionId, date)) {
+            onLeaveByStaffId.put(leave.getStaffId(), leave);
+        }
+
         List<DailyAttendanceEntry> entries = new ArrayList<>();
         int present = 0;
         int late = 0;
         int absent = 0;
         int notClockedIn = 0;
+        int onLeave = 0;
         boolean isWorkday = settings.getWorkdays().contains(date.getDayOfWeek().name());
 
         for (StaffMemberResponse member : staff) {
             List<AttendanceEvent> memberEvents = dayEvents.stream()
                     .filter(e -> e.getStaffId().equals(member.id()))
                     .toList();
-            DailyAttendanceEntry entry = computeEntry(member, date, settings, memberEvents, isWorkday);
+            LeaveRequest leave = onLeaveByStaffId.get(member.id());
+            DailyAttendanceEntry entry = computeEntry(member, date, settings, memberEvents, isWorkday, leave);
             entries.add(entry);
             switch (entry.status()) {
                 case "PRESENT" -> present++;
                 case "LATE" -> late++;
                 case "ABSENT" -> absent++;
                 case "NOT_CLOCKED_IN" -> notClockedIn++;
+                case "ON_LEAVE" -> onLeave++;
                 default -> { }
             }
         }
 
         return new AttendanceOverviewResponse(
-                date.toString(), isWorkday, staff.size(), present, late, absent, notClockedIn, entries);
+                date.toString(), isWorkday, staff.size(), present, late, absent, notClockedIn, onLeave, entries);
     }
 
     public List<DailyAttendanceEntry> getStaffHistory(String institutionId, String staffId, LocalDate from, LocalDate to) {
@@ -264,6 +278,8 @@ public class AttendanceService {
         List<AttendanceEvent> events = eventRepository
                 .findByInstitutionIdAndStaffIdAndOccurredAtBetweenOrderByOccurredAtAsc(
                         institutionId, staffInternalId, rangeStart, rangeEnd);
+        List<LeaveRequest> approvedLeaves =
+                leaveRequestService.findApprovedOverlappingForHistory(institutionId, staffInternalId, from, to);
 
         List<DailyAttendanceEntry> history = new ArrayList<>();
         for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
@@ -272,18 +288,27 @@ public class AttendanceService {
             List<AttendanceEvent> dayEvents = events.stream()
                     .filter(e -> e.getOccurredAt().atZone(ZoneOffset.UTC).toLocalDate().equals(finalDate))
                     .toList();
-            history.add(computeEntry(staffResponse, date, settings, dayEvents, isWorkday));
+            LeaveRequest leave = approvedLeaves.stream()
+                    .filter(l -> !finalDate.isBefore(l.getStartDate()) && !finalDate.isAfter(l.getEndDate()))
+                    .findFirst()
+                    .orElse(null);
+            history.add(computeEntry(staffResponse, date, settings, dayEvents, isWorkday, leave));
         }
         return history;
     }
 
     private DailyAttendanceEntry computeEntry(
             StaffMemberResponse member, LocalDate date, AttendanceSettings settings,
-            List<AttendanceEvent> dayEvents, boolean isWorkday) {
+            List<AttendanceEvent> dayEvents, boolean isWorkday, LeaveRequest leave) {
         String staffName = member.firstName() + " " + member.lastName();
 
+        if (leave != null) {
+            String leaveTypeName = leaveRequestService.leaveTypeName(leave.getLeaveTypeId()).orElse("Leave");
+            return new DailyAttendanceEntry(member.id(), member.staffId(), staffName, "ON_LEAVE", null, null, leaveTypeName);
+        }
+
         if (!isWorkday) {
-            return new DailyAttendanceEntry(member.id(), member.staffId(), staffName, "NON_WORKDAY", null, null);
+            return new DailyAttendanceEntry(member.id(), member.staffId(), staffName, "NON_WORKDAY", null, null, null);
         }
 
         Instant clockIn = dayEvents.stream()
@@ -301,13 +326,13 @@ public class AttendanceService {
 
         if (clockIn == null) {
             String status = isToday ? "NOT_CLOCKED_IN" : "ABSENT";
-            return new DailyAttendanceEntry(member.id(), member.staffId(), staffName, status, null, clockOut);
+            return new DailyAttendanceEntry(member.id(), member.staffId(), staffName, status, null, clockOut, null);
         }
 
         LocalTime clockInTime = clockIn.atZone(ZoneOffset.UTC).toLocalTime();
         LocalTime cutoff = LocalTime.parse(settings.getResumptionTime()).plusMinutes(settings.getGracePeriodMinutes());
         String status = clockInTime.isAfter(cutoff) ? "LATE" : "PRESENT";
-        return new DailyAttendanceEntry(member.id(), member.staffId(), staffName, status, clockIn, clockOut);
+        return new DailyAttendanceEntry(member.id(), member.staffId(), staffName, status, clockIn, clockOut, null);
     }
 
     /** Accepts either a real StaffMember.id or its human-readable staffId code — a device/admin naturally has the code, not the internal id. */
