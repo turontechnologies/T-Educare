@@ -8,7 +8,11 @@ import java.time.Instant;
  * AttendanceSettings} at read time. {@code status} is one of "PRESENT"
  * (clocked in within the grace period), "LATE" (clocked in after it),
  * "ABSENT" (a past workday with no clock-in at all), "NOT_CLOCKED_IN"
- * (today, a workday, not yet arrived), or "NON_WORKDAY".
+ * (today, a workday, not yet arrived), "ON_LEAVE" (an APPROVED leave
+ * request from {@code com.teducare.leave} covers this day — checked and
+ * takes priority over every other status, including on a non-workday),
+ * or "NON_WORKDAY". {@code leaveTypeName} is only present when {@code
+ * status} is "ON_LEAVE".
  */
 public record DailyAttendanceEntry(
         String staffId,
@@ -16,5 +20,6 @@ public record DailyAttendanceEntry(
         String staffName,
         String status,
         Instant clockInAt,
-        Instant clockOutAt) {
+        Instant clockOutAt,
+        String leaveTypeName) {
 }
