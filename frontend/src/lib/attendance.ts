@@ -46,3 +46,8 @@ export function formatClockTime(instant?: string): string {
 export function formatDisplayDate(isoDate: string): string {
   return format(new Date(`${isoDate}T00:00:00`), "EEEE, d MMMM yyyy");
 }
+
+/** Compact form ("2 Nov") for tight table cells — e.g. a date-range column that needs to leave room for other columns beside it. */
+export function formatShortDate(isoDate: string): string {
+  return format(new Date(`${isoDate}T00:00:00`), "d MMM");
+}

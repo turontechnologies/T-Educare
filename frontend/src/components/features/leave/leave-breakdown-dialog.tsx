@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDisplayDate } from "@/lib/attendance";
+import { formatShortDate } from "@/lib/attendance";
 import { cn } from "@/lib/utils";
 import type { LeaveBalance, LeaveRequest } from "@/types/leave";
 
@@ -59,7 +59,7 @@ export function LeaveBreakdownDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-xl gap-0 overflow-hidden p-0"
+        className="w-full max-w-3xl gap-0 overflow-hidden p-0"
       >
         <div className="flex items-center justify-between bg-primary px-6 py-4">
           <DialogTitle className="text-base font-medium text-white">
@@ -111,68 +111,71 @@ export function LeaveBreakdownDialog({
             <h4 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               What counted toward &quot;Used&quot;
             </h4>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Dates</TableHead>
-                  <TableHead>Planned</TableHead>
-                  <TableHead>Counted</TableHead>
-                  <TableHead>Note</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {relevant.map((request) => {
-                  const { days, note } = effectiveDaysLabel(request);
-                  const restored = request.daysRestored ?? 0;
-                  return (
-                    <TableRow key={request.id}>
-                      <TableCell className="text-muted-foreground">
-                        {formatDisplayDate(request.startDate)} –{" "}
-                        {formatDisplayDate(request.endDate)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {request.totalDays}
-                      </TableCell>
-                      <TableCell className="font-medium text-foreground">
-                        {days ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        {request.isAutoExtending ? (
-                          <Badge className="gap-1 bg-amber-500/10 text-amber-700">
-                            <AlertTriangle className="size-3" />
-                            {note}
-                          </Badge>
-                        ) : restored > 0 ? (
-                          <Badge className="gap-1 bg-emerald-500/10 text-emerald-600">
-                            <Minus className="size-3" />
-                            {restored} restored
-                          </Badge>
-                        ) : restored < 0 ? (
-                          <Badge className="gap-1 bg-destructive/10 text-destructive">
-                            <Plus className="size-3" />
-                            {Math.abs(restored)} extra
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            As planned
-                          </span>
-                        )}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Dates</TableHead>
+                    <TableHead>Planned</TableHead>
+                    <TableHead>Counted</TableHead>
+                    <TableHead>Note</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {relevant.map((request) => {
+                    const { days, note } = effectiveDaysLabel(request);
+                    const restored = request.daysRestored ?? 0;
+                    return (
+                      <TableRow key={request.id}>
+                        <TableCell className="text-muted-foreground">
+                          {formatShortDate(request.startDate)} –{" "}
+                          {formatShortDate(request.endDate)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {request.totalDays}
+                        </TableCell>
+                        <TableCell className="font-medium text-foreground">
+                          {days ?? "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {request.isAutoExtending ? (
+                            <Badge className="gap-1 bg-amber-500/10 text-amber-700">
+                              <AlertTriangle className="size-3 shrink-0" />
+                              {note}
+                            </Badge>
+                          ) : restored > 0 ? (
+                            <Badge className="gap-1 bg-emerald-500/10 text-emerald-600">
+                              <Minus className="size-3 shrink-0" />
+                              {restored} restored
+                            </Badge>
+                          ) : restored < 0 ? (
+                            <Badge className="gap-1 bg-destructive/10 text-destructive">
+                              <Plus className="size-3 shrink-0" />
+                              {Math.abs(restored)} extra
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              As planned
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {relevant.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="py-8 text-center text-muted-foreground"
+                      >
+                        No approved leave counted against this type yet this
+                        year.
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-                {relevant.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="py-8 text-center text-muted-foreground"
-                    >
-                      No approved leave counted against this type yet this year.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
       </DialogContent>
