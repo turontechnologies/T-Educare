@@ -173,11 +173,7 @@ export function MyLeaveView() {
                         {request.status}
                       </Badge>
                       {request.status === "APPROVED" && (
-                        <span className="text-xs text-muted-foreground">
-                          {request.resumedAt
-                            ? "Resumption report submitted"
-                            : "Resumption report pending"}
-                        </span>
+                        <ResumptionStatusHint request={request} />
                       )}
                       {request.status === "REJECTED" && request.reviewNote && (
                         <span className="text-xs text-muted-foreground">
@@ -196,15 +192,23 @@ export function MyLeaveView() {
                         Cancel
                       </button>
                     )}
-                    {request.status === "APPROVED" && !request.resumedAt && (
-                      <button
-                        type="button"
-                        onClick={() => setResumingFor(request)}
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-secondary transition-colors hover:bg-secondary/10"
-                      >
-                        Submit Resumption
-                      </button>
-                    )}
+                    {request.status === "APPROVED" &&
+                      request.resumptionStatus !== "PENDING" &&
+                      request.resumptionStatus !== "APPROVED" && (
+                        <button
+                          type="button"
+                          onClick={() => setResumingFor(request)}
+                          className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                            request.isAutoExtending
+                              ? "text-amber-700 hover:bg-amber-500/10"
+                              : "text-secondary hover:bg-secondary/10"
+                          }`}
+                        >
+                          {request.isAutoExtending
+                            ? "Appeal — Report Resumption"
+                            : "Submit Resumption"}
+                        </button>
+                      )}
                   </TableCell>
                 </TableRow>
               ))}
