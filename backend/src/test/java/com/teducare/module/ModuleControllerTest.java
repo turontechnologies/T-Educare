@@ -35,7 +35,7 @@ class ModuleControllerTest {
         mockMvc.perform(get("/api/modules")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(23))
+                .andExpect(jsonPath("$.data.length()").value(24))
                 .andExpect(jsonPath("$.data[0].key").value("registration"))
                 .andExpect(jsonPath("$.data[0].label").value("Registration"));
     }

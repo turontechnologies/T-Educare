@@ -259,6 +259,17 @@ public class AttendanceService {
                 date.toString(), isWorkday, staff.size(), present, late, absent, notClockedIn, onLeave, entries);
     }
 
+    /** The Overview's trend chart — one aggregate point per day for the last {@code days} days (today inclusive), oldest first. */
+    public List<AttendanceTrendPoint> getTrend(String institutionId, int days) {
+        int safeDays = Math.max(1, Math.min(days, 90));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        List<AttendanceTrendPoint> points = new ArrayList<>();
+        for (int i = safeDays - 1; i >= 0; i--) {
+            points.add(AttendanceTrendPoint.from(getOverview(institutionId, today.minusDays(i))));
+        }
+        return points;
+    }
+
     public List<DailyAttendanceEntry> getStaffHistory(String institutionId, String staffId, LocalDate from, LocalDate to) {
         String staffInternalId = resolveStaffInternalId(institutionId, staffId);
         return buildHistory(institutionId, staffInternalId, from, to);
