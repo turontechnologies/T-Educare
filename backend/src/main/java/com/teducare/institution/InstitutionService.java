@@ -89,7 +89,7 @@ public class InstitutionService {
 
     public InstitutionResponse create(CreateInstitutionRequest request) {
         String id = "inst-" + UUID.randomUUID();
-        String code = String.format("%03d", repository.count() + 1);
+        String code = nextCode();
 
         Institution institution = new Institution(
                 id,
@@ -127,6 +127,17 @@ public class InstitutionService {
                 saved.getName() + " was added to the platform.",
                 SUPER_ADMIN_HREF);
         return InstitutionResponse.from(saved);
+    }
+
+    /** See InstitutionRepository.maxNumericCode()'s doc comment for why this isn't repository.count() + 1. */
+    private String nextCode() {
+        int next = (repository.maxNumericCode() == null ? 0 : repository.maxNumericCode()) + 1;
+        String code = String.format("%03d", next);
+        while (repository.existsByCode(code)) {
+            next++;
+            code = String.format("%03d", next);
+        }
+        return code;
     }
 
     public InstitutionResponse update(String id, UpdateInstitutionRequest request) {
