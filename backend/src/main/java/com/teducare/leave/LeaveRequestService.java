@@ -5,9 +5,11 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -138,13 +140,31 @@ public class LeaveRequestService {
         return enrichOne(institutionId, repository.save(leaveRequest));
     }
 
-    /** Every staff member's balance across every active leave type — the admin overview table. */
+    /**
+     * Every staff member's balance across every active leave type — the
+     * admin overview table. Deliberately batched: with hundreds of staff,
+     * calling {@link #balancesFor} once per staff member would mean a
+     * leave-types query, a staff lookup, and an attendance-settings query
+     * repeated per staff, plus a separate leave-requests query per staff
+     * per leave type. Here every one of those is loaded exactly once for
+     * the whole institution and the per-staff math runs entirely in
+     * memory against the shared, pre-grouped data.
+     */
     public List<StaffLeaveBalances> listBalancesForInstitution(String institutionId, int year) {
         List<StaffMemberResponse> staff = staffMemberService.list(institutionId, null, null, false);
+        List<LeaveType> types = activeTypes(institutionId);
+        Set<String> workdays = workdaysFor(institutionId);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        Map<String, List<LeaveRequest>> requestsByStaffId = repository
+                .findApprovedStartingOnOrBefore(institutionId, LocalDate.of(year, 12, 31)).stream()
+                .collect(Collectors.groupingBy(LeaveRequest::getStaffId));
+
         return staff.stream()
                 .map(member -> new StaffLeaveBalances(
                         member.id(), member.staffId(), member.firstName() + " " + member.lastName(),
-                        balancesFor(institutionId, member.id(), year)))
+                        balancesFromRequests(
+                                types, workdays, member,
+                                requestsByStaffId.getOrDefault(member.id(), List.of()), year, today)))
                 .toList();
     }
 
@@ -234,14 +254,32 @@ public class LeaveRequestService {
     }
 
     public List<LeaveBalanceResponse> balancesFor(String institutionId, String staffId, int year) {
-        List<LeaveType> types = typeRepository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
+        List<LeaveType> types = activeTypes(institutionId);
+        StaffMemberResponse staff = staffMemberService.get(institutionId, staffId);
+        Set<String> workdays = workdaysFor(institutionId);
+        List<LeaveRequest> requests = repository
+                .findApprovedStartingOnOrBeforeForStaff(institutionId, staffId, LocalDate.of(year, 12, 31));
+        return balancesFromRequests(types, workdays, staff, requests, year, LocalDate.now(ZoneOffset.UTC));
+    }
+
+    private List<LeaveType> activeTypes(String institutionId) {
+        return typeRepository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
                 .filter(t -> t.getArchivedAt() == null)
                 .toList();
-        StaffMemberResponse staff = staffMemberService.get(institutionId, staffId);
+    }
 
+    /** The balance math itself, run entirely against already-loaded data — shared by both the single-staff and whole-institution paths so there is exactly one place this is computed. */
+    private List<LeaveBalanceResponse> balancesFromRequests(
+            List<LeaveType> types, Set<String> workdays, StaffMemberResponse staff,
+            List<LeaveRequest> requests, int year, LocalDate today) {
         return types.stream().map(type -> {
-            int used = usedDays(institutionId, staffId, type.getId(), year);
-            int rolloverDays = type.isRollover() ? rolloverDaysInto(institutionId, staffId, type, year, staff) : 0;
+            List<LeaveRequest> ofType = requests.stream()
+                    .filter(r -> r.getLeaveTypeId().equals(type.getId()))
+                    .toList();
+            int used = usedDaysFrom(ofType, workdays, year, today);
+            int rolloverDays = type.isRollover()
+                    ? rolloverDaysInto(ofType, workdays, type, year, staff, today)
+                    : 0;
             int allocated = type.getDefaultDaysPerYear() + rolloverDays;
             return new LeaveBalanceResponse(
                     type.getId(), type.getName(), year, type.getDefaultDaysPerYear(), rolloverDays, used, allocated - used);
@@ -258,7 +296,9 @@ public class LeaveRequestService {
      * hire or a freshly-created leave type must never show a rollover
      * credit out of nowhere.
      */
-    private int rolloverDaysInto(String institutionId, String staffId, LeaveType type, int year, StaffMemberResponse staff) {
+    private int rolloverDaysInto(
+            List<LeaveRequest> ofType, Set<String> workdays, LeaveType type, int year,
+            StaffMemberResponse staff, LocalDate today) {
         LocalDate lastYearStart = LocalDate.of(year - 1, 1, 1);
         boolean staffEligibleForLastYear =
                 !staff.employmentStartDate().atZone(ZoneOffset.UTC).toLocalDate().isAfter(lastYearStart);
@@ -268,22 +308,21 @@ public class LeaveRequestService {
             return 0;
         }
 
-        int lastYearUsed = usedDays(institutionId, staffId, type.getId(), year - 1);
+        int lastYearUsed = usedDaysFrom(ofType, workdays, year - 1, today);
         int lastYearUnused = Math.max(0, type.getDefaultDaysPerYear() - lastYearUsed);
         return type.getMaxRolloverDays() == null
                 ? lastYearUnused
                 : Math.min(lastYearUnused, type.getMaxRolloverDays());
     }
 
-    /** Real days consumed this year against this leave type — using each request's effective end date, not blindly its stored totalDays, so an early-return credit or a live/confirmed extension both show up correctly. */
-    private int usedDays(String institutionId, String staffId, String leaveTypeId, int year) {
+    /** Real days consumed in {@code year} against one leave type, from an already-loaded request list — using each request's effective end date, not blindly its stored totalDays, so an early-return credit or a live/confirmed extension both show up correctly. */
+    private int usedDaysFrom(List<LeaveRequest> ofType, Set<String> workdays, int year, LocalDate today) {
         LocalDate yearStart = LocalDate.of(year, 1, 1);
         LocalDate yearEnd = LocalDate.of(year, 12, 31);
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
-        return repository.findApprovedStartingOnOrBeforeForStaff(institutionId, staffId, yearEnd).stream()
-                .filter(r -> r.getLeaveTypeId().equals(leaveTypeId))
+        return ofType.stream()
+                .filter(r -> !r.getStartDate().isAfter(yearEnd))
                 .filter(r -> !effectiveEndDate(r, today).isBefore(yearStart))
-                .mapToInt(r -> effectiveDaysUsed(institutionId, r, today))
+                .mapToInt(r -> effectiveDaysUsedFrom(r, workdays, today))
                 .sum();
     }
 
@@ -324,11 +363,16 @@ public class LeaveRequestService {
     }
 
     private int effectiveDaysUsed(String institutionId, LeaveRequest r, LocalDate today) {
+        return effectiveDaysUsedFrom(r, workdaysFor(institutionId), today);
+    }
+
+    /** Same as {@link #effectiveDaysUsed}, against an already-loaded workdays set — the batched-list path's version, with no query per call. */
+    private int effectiveDaysUsedFrom(LeaveRequest r, Set<String> workdays, LocalDate today) {
         LocalDate effectiveEnd = effectiveEndDate(r, today);
         if (effectiveEnd.isBefore(r.getStartDate())) {
             return 0;
         }
-        return countWorkdays(institutionId, r.getStartDate(), effectiveEnd);
+        return countWorkdaysFrom(workdays, r.getStartDate(), effectiveEnd);
     }
 
     private boolean isAutoExtending(LeaveRequest r, LocalDate today) {
@@ -349,10 +393,17 @@ public class LeaveRequestService {
     // --- shared helpers ---
 
     private int countWorkdays(String institutionId, LocalDate start, LocalDate end) {
+        return countWorkdaysFrom(workdaysFor(institutionId), start, end);
+    }
+
+    private Set<String> workdaysFor(String institutionId) {
         AttendanceSettings settings = attendanceSettingsRepository.findByInstitutionId(institutionId).orElse(null);
-        Set<String> workdays = settings == null
+        return settings == null
                 ? Set.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")
                 : Set.of(settings.getWorkdays().split(","));
+    }
+
+    private static int countWorkdaysFrom(Set<String> workdays, LocalDate start, LocalDate end) {
         int count = 0;
         for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
             if (workdays.contains(date.getDayOfWeek().name())) {
@@ -362,8 +413,44 @@ public class LeaveRequestService {
         return Math.max(count, 1);
     }
 
+    /**
+     * Batched the same way as {@link #listBalancesForInstitution}: a list
+     * of requests can span hundreds of staff, so the staff directory,
+     * leave-type names and workdays are each loaded once here instead of
+     * once per request via {@link #enrichOne}.
+     */
     private List<LeaveRequestResponse> enrich(String institutionId, List<LeaveRequest> requests) {
-        return requests.stream().map(r -> enrichOne(institutionId, r)).toList();
+        if (requests.isEmpty()) {
+            return List.of();
+        }
+        Map<String, StaffMemberResponse> staffById = staffMemberService.list(institutionId, null, null, true).stream()
+                .collect(Collectors.toMap(StaffMemberResponse::id, s -> s));
+        Map<String, String> typeNameById = typeRepository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
+                .collect(Collectors.toMap(LeaveType::getId, LeaveType::getName));
+        Set<String> workdays = workdaysFor(institutionId);
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        return requests.stream()
+                .map(r -> enrichWith(r, staffById, typeNameById, workdays, today))
+                .toList();
+    }
+
+    private LeaveRequestResponse enrichWith(
+            LeaveRequest r, Map<String, StaffMemberResponse> staffById, Map<String, String> typeNameById,
+            Set<String> workdays, LocalDate today) {
+        StaffMemberResponse staff = staffById.get(r.getStaffId());
+        String typeName = typeNameById.getOrDefault(r.getLeaveTypeId(), "—");
+        Integer daysRestored = "APPROVED".equals(r.getResumptionStatus())
+                ? r.getTotalDays() - effectiveDaysUsedFrom(r, workdays, today)
+                : null;
+        return new LeaveRequestResponse(
+                r.getId(), staff.id(), staff.staffId(), staff.firstName() + " " + staff.lastName(),
+                r.getLeaveTypeId(), typeName,
+                r.getStartDate(), r.getEndDate(), r.getTotalDays(), r.getReason(), r.getStatus(),
+                r.getReviewedBy(), r.getReviewedAt(), r.getReviewNote(),
+                r.getResumptionDate(), r.getResumptionReportedAt(), r.getResumptionNote(),
+                r.getResumptionLateReason(), r.getResumptionStatus(),
+                r.getResumptionReviewedBy(), r.getResumptionReviewedAt(), r.getResumptionReviewNote(),
+                isAutoExtending(r, today), daysRestored, r.getCreatedAt());
     }
 
     private LeaveRequestResponse enrichOne(String institutionId, LeaveRequest r) {
