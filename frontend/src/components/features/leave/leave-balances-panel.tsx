@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
@@ -9,11 +10,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useLeaveBalances } from "@/hooks/use-leave";
+import { useLeaveBalances, useLeaveRequests } from "@/hooks/use-leave";
 import { cn } from "@/lib/utils";
+import { LeaveBreakdownDialog } from "./leave-breakdown-dialog";
+import type { LeaveBalance } from "@/types/leave";
 
 export function LeaveBalancesPanel() {
   const { data: staffBalances = [] } = useLeaveBalances();
+  const [breakdownFor, setBreakdownFor] = useState<
+    { staffId: string; staffName: string; balance: LeaveBalance } | undefined
+  >();
+
+  const { data: breakdownRequests = [] } = useLeaveRequests(
+    breakdownFor ? { staffId: breakdownFor.staffId } : {},
+    { enabled: !!breakdownFor },
+  );
 
   const rows = staffBalances.flatMap((staff) =>
     staff.balances.map((balance) => ({ staff, balance })),
@@ -28,7 +39,7 @@ export function LeaveBalancesPanel() {
         <p className="text-xs text-muted-foreground">
           Allocated and remaining days per staff member, per leave type.
           Computed live from approved requests — never a stored number that can
-          drift.
+          drift. Click a row to see the full breakdown.
         </p>
       </CardHeader>
       <CardContent>
@@ -47,7 +58,14 @@ export function LeaveBalancesPanel() {
             {rows.map(({ staff, balance }) => (
               <TableRow
                 key={`${staff.staffId}-${balance.leaveTypeId}`}
-                className="animate-in fade-in duration-300"
+                onClick={() =>
+                  setBreakdownFor({
+                    staffId: staff.staffId,
+                    staffName: staff.staffName,
+                    balance,
+                  })
+                }
+                className="animate-in fade-in cursor-pointer duration-300 hover:bg-muted/50"
               >
                 <TableCell>
                   <p className="font-medium text-foreground">
@@ -94,6 +112,14 @@ export function LeaveBalancesPanel() {
           </TableBody>
         </Table>
       </CardContent>
+
+      <LeaveBreakdownDialog
+        open={!!breakdownFor}
+        onOpenChange={(open) => !open && setBreakdownFor(undefined)}
+        balance={breakdownFor?.balance}
+        requests={breakdownRequests}
+        staffName={breakdownFor?.staffName}
+      />
     </Card>
   );
 }

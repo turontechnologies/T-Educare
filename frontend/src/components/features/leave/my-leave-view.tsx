@@ -21,9 +21,14 @@ import {
   useMyLeaveRequests,
 } from "@/hooks/use-leave";
 import { formatDisplayDate } from "@/lib/attendance";
+import { LeaveBreakdownDialog } from "./leave-breakdown-dialog";
 import { RequestLeaveDialog } from "./request-leave-dialog";
 import { ResumptionReportDialog } from "./resumption-report-dialog";
-import type { LeaveRequest, LeaveRequestStatus } from "@/types/leave";
+import type {
+  LeaveBalance,
+  LeaveRequest,
+  LeaveRequestStatus,
+} from "@/types/leave";
 
 const STATUS_BADGE: Record<LeaveRequestStatus, string> = {
   PENDING: "bg-amber-500/10 text-amber-600",
@@ -81,6 +86,7 @@ export function MyLeaveView() {
   const [requestOpen, setRequestOpen] = useState(false);
   const [resumingFor, setResumingFor] = useState<LeaveRequest | undefined>();
   const [pendingCancel, setPendingCancel] = useState<LeaveRequest | null>(null);
+  const [breakdownFor, setBreakdownFor] = useState<LeaveBalance | undefined>();
 
   return (
     <div className="space-y-6">
@@ -100,32 +106,34 @@ export function MyLeaveView() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {balances.map((balance) => (
-          <Card
+          <button
             key={balance.leaveTypeId}
-            className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500"
+            type="button"
+            onClick={() => setBreakdownFor(balance)}
+            className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both cursor-pointer text-left duration-500"
           >
-            <CardContent className="flex items-start gap-3 p-4">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-secondary">
-                <CalendarOff className="size-4" />
-              </span>
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  {balance.leaveTypeName}
-                </p>
-                <p className="mt-0.5 text-lg font-semibold text-foreground">
-                  {balance.remainingDays}{" "}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    of {balance.allocatedDays} days left
-                  </span>
-                </p>
-                {balance.rolloverDays > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Includes {balance.rolloverDays} rolled over
+            <Card className="transition-colors hover:border-secondary/50">
+              <CardContent className="flex items-start gap-3 p-4">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+                  <CalendarOff className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {balance.leaveTypeName}
                   </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  <p className="mt-0.5 text-lg font-semibold text-foreground">
+                    {balance.remainingDays}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      of {balance.allocatedDays} days left
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs text-secondary hover:underline">
+                    View breakdown
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </button>
         ))}
         {balances.length === 0 && (
           <p className="col-span-full py-6 text-center text-sm text-muted-foreground">
@@ -227,6 +235,12 @@ export function MyLeaveView() {
         </CardContent>
       </Card>
 
+      <LeaveBreakdownDialog
+        open={!!breakdownFor}
+        onOpenChange={(open) => !open && setBreakdownFor(undefined)}
+        balance={breakdownFor}
+        requests={requests}
+      />
       <RequestLeaveDialog open={requestOpen} onOpenChange={setRequestOpen} />
       <ResumptionReportDialog
         open={!!resumingFor}
