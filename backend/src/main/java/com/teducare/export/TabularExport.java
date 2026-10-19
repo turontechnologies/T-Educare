@@ -15,7 +15,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
-import com.lowagie.text.Font.FontFamily;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
@@ -107,14 +106,16 @@ public final class TabularExport {
             PdfWriter.getInstance(document, out);
             document.open();
 
-            com.lowagie.text.Font titleFont = new com.lowagie.text.Font(FontFamily.HELVETICA, 14, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font titleFont =
+                    new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 14, com.lowagie.text.Font.BOLD);
             document.add(new Paragraph("Export", titleFont));
             document.add(new Paragraph(" "));
 
             PdfPTable table = new PdfPTable(headers.size());
             table.setWidthPercentage(100);
 
-            com.lowagie.text.Font headerFont = new com.lowagie.text.Font(FontFamily.HELVETICA, 10, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font headerFont =
+                    new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 10, com.lowagie.text.Font.BOLD);
             for (String header : headers) {
                 PdfPCell cell = new PdfPCell(new Phrase(header, headerFont));
                 cell.setHorizontalAlignment(Element.ALIGN_LEFT);
@@ -122,7 +123,7 @@ public final class TabularExport {
                 table.addCell(cell);
             }
 
-            com.lowagie.text.Font cellFont = new com.lowagie.text.Font(FontFamily.HELVETICA, 9);
+            com.lowagie.text.Font cellFont = new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 9);
             for (List<String> row : rows) {
                 for (String value : row) {
                     PdfPCell cell = new PdfPCell(new Phrase(value == null ? "" : value, cellFont));
