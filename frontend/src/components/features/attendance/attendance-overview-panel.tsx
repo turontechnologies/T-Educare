@@ -186,6 +186,13 @@ export function AttendanceOverviewPanel() {
           <Select
             value={departmentId}
             onValueChange={(value) => setDepartmentId(value ?? "")}
+            items={[
+              { label: "All Departments", value: "" },
+              ...activeDepartments.map((department) => ({
+                label: department.name,
+                value: department.id,
+              })),
+            ]}
           >
             <SelectTrigger
               id="attendance-department-filter"
