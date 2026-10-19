@@ -1694,6 +1694,7 @@ JSON bodies.
 | POST   | `/courses/:id/restore` | —                                                   | sets `archivedAt = null` |
 | POST   | `/courses/import` | multipart CSV upload, field name `file`                | `200, { "imported": 12, "skipped": 2 }` — same shape as the documented `/students/import` (7.2); skips (does not fail the batch for) rows missing `name`/`code`/`departmentId`/`schoolId`, reusing an existing non-archived `code`, or naming a `departmentId`/`schoolId` that doesn't resolve for this institution |
 | GET    | `/courses/export?includeArchived=false` | —                                  | CSV download (`Content-Type: text/csv`, `Content-Disposition: attachment`) of `id,name,code,departmentId,schoolId,createdAt,archivedAt` for the matching courses |
+| GET    | `/courses/import-template` | —                                             | CSV download, header + one real example row — `departmentId`/`schoolId`/`programLevelId` are the institution's own first department/its `schoolId`/first program level, so a straight re-import of the file (with `name`/`code` edited) just works |
 
 Status codes corrected to `409`/`404` (not the original `422`), same
 real-precedent correction already made for every prior resource above.
@@ -1736,6 +1737,7 @@ rather than a dedicated "roles" resource, since none exists.
 | POST   | `/staff/bulk-archive`     | `{ "ids": ["stf_1", "stf_2"] }` | archives every id in one call — backs the "All Staff" table's bulk-select "Delete Selected" action |
 | POST   | `/staff/import`           | multipart CSV upload | `200, { "imported": 12, "skipped": 2 }` — same shape as `/students/import` (7.2) |
 | GET    | `/staff/export?includeArchived=false` | — | CSV download of the matching staff |
+| GET    | `/staff/import-template`  | — | CSV download, header + one real example row — `departmentId`/`roleId`/`designationId` are the institution's own first department/designation, so a straight re-import of the file (with name/contact fields edited) just works |
 
 A staff member's display name is always the composition of `firstName`/
 `middleName`/`lastName` — the frontend's canonical assembly point is
@@ -1760,6 +1762,7 @@ simplify away into two separate nullable FKs.
 | POST   | `/lecturers/:id/restore` | —   | sets `archivedAt = null` |
 | POST   | `/lecturers/import`  | multipart CSV upload | `200, { "imported": 12, "skipped": 2 }` — same shape as `/students/import` (7.2) |
 | GET    | `/lecturers/export?includeArchived=false` | — | CSV download of the matching lecturers |
+| GET    | `/lecturers/import-template` | — | CSV download, header + one real example row — `assignmentType` defaults to `"school"` with the institution's own first school id, so a straight re-import of the file (with `username`/name/contact fields edited) just works |
 
 `position` is a fixed set distinct from `/staff-designations` (§8) —
 "Dean of a Faculty", "Head of Department", "Provost", "Professor",
@@ -2030,15 +2033,21 @@ Attendance reads Leave, Leave never reads Attendance).
   the real internal id or the human-readable staff code.
 - `POST /attendance/manual-entries` (admin, JWT) — a note is required, same
   audit-trail convention as a disciplinary action's reason.
-- `GET /attendance/overview?date=` — today's (or any date's) whole
-  institution: `workday`, `totalStaff`, `presentCount`/`lateCount`/
-  `absentCount`/`notClockedInCount`/`onLeaveCount`, and one `entries[]` row
-  per staff member.
-- `GET /attendance/trend?days=14` — the Overview's chart data: one
-  aggregate point per day (same shape as the overview's counts, minus
-  `entries`), oldest first, for the requested window (1-90 days). Computed
-  by calling the overview logic once per day — accepted cost at this scale,
-  same philosophy as everything else in this module.
+- `GET /attendance/overview?date=&departmentId=` — today's (or any date's)
+  whole institution, or one department's slice of it: `workday`,
+  `totalStaff`, `presentCount`/`lateCount`/`absentCount`/
+  `notClockedInCount`/`onLeaveCount`, and one `entries[]` row per staff
+  member. `departmentId` filters the underlying staff list the same way
+  Staff Members' own `?departmentId=` does (§8.1) — omit it for the whole
+  institution.
+- `GET /attendance/trend?days=14&departmentId=` — the Overview's chart
+  data: one aggregate point per day (same shape as the overview's counts,
+  minus `entries`), oldest first, for the requested window (1-90 days).
+  Computed by calling the overview logic once per day — accepted cost at
+  this scale, same philosophy as everything else in this module.
+  `departmentId` scopes it exactly like `/overview` above, so the trend
+  and the table it sits above always agree on who's being counted — the
+  frontend's department filter drives both from one piece of state.
 - `GET /attendance/staff/{staffId}/history?from=&to=` (admin) and
   `GET /attendance/my/today` / `GET /attendance/my/history?from=&to=`
   (self-service) — same per-day entry shape as the overview. Self-service
@@ -2046,6 +2055,19 @@ Attendance reads Leave, Leave never reads Attendance).
   (`AuthenticatedUser.staffId`, linked via User Manager the same way
   `lecturerId` is, see §4.5), **never** accepted from the client — one
   staff member can never read another's clock-in/clock-out times.
+- `GET /attendance/manual-entries/import-template` — CSV download, header
+  + one real example row (`staffId,eventType,occurredAt,note`) built from
+  the institution's own first staff member, same "real example row"
+  convention as every import-template below.
+- `POST /attendance/manual-entries/import` (multipart CSV, field `file`) —
+  `200, { "imported": 12, "skipped": 2 }`. Every imported row becomes a
+  MANUAL event attributed to the importing admin, same as one typed
+  through `/attendance/manual-entries` by hand; skips rows missing a
+  required column, naming a staff member that doesn't resolve, an
+  unrecognized `eventType`, or an unparsable `occurredAt`.
+- `GET /attendance/manual-entries/export?from=&to=` — CSV download
+  (`staffId,staffName,eventType,occurredAt,source,note`) of every clock
+  event (device or manual) in the range.
 
 ```json
 {
@@ -2104,7 +2126,28 @@ leave approval not being hard-capped at the balance (see 13.3).
 to render a row (same convention as `DailyAttendanceEntry` carrying
 `staffName`/`staffCode` directly). `GET /leave/balances?year=` returns
 every staff member's balance across every active leave type in one call —
-the admin overview table.
+the admin overview table. Both of these are batched rather than computed
+per staff member (preload the staff directory, leave types, and workdays
+settings once, then run the per-staff math in memory) — with hundreds of
+staff, the naive per-staff version meant a leave-types query, a staff
+lookup, and an attendance-settings query repeated per staff, plus a
+separate leave-requests query per staff per leave type.
+
+`GET /leave/requests/import-template` — CSV download, header + one real
+example row (`staffId,leaveType,startDate,endDate,reason,status`) built
+from the institution's own first staff member and first active leave
+type; `leaveType` is matched by **name** on import (not the opaque
+`leaveTypeId`), so a human filling the sheet never needs to know internal
+IDs. `POST /leave/requests/import` (multipart CSV, field `file`) —
+`200, { "imported": 12, "skipped": 2 }`; every imported request starts
+clean (no review, no resumption) regardless of `status` — this is for
+seeding historical records, not replaying a live workflow — and skips
+rows missing a required column, naming a staff member or leave type that
+doesn't resolve, with `endDate` before `startDate`, an unrecognized
+`status`, or overlapping that staff member's existing pending/approved
+leave. `GET /leave/requests/export?status=` — CSV download
+(`staffId,staffName,leaveType,startDate,endDate,totalDays,reason,status,createdAt`)
+of the matching requests.
 
 ### 13.3 Self-service (`/api/leave/my`)
 

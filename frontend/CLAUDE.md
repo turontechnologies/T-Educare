@@ -1077,6 +1077,80 @@ menu items)"`), and `Status` reads a new `summary.institutionStatus`
   Replace a placeholder with a real page (reusing `<PageHeader>` for the
   breadcrumb/date row) as its mockup arrives, rather than building ahead of
   the reference images.
+- **Leave/Attendance table consistency pass (2026-10-19)**, triggered by direct
+  feedback that the Leave Management tables (built in an earlier session)
+  didn't match the rest of the app's established Card→Show-entries/search→
+  Table→Previous/numbered-pages/Next pattern. Reworked `leave-requests-panel`,
+  `leave-balances-panel`, `leave-types-panel`, `attendance-overview-panel`, and
+  `attendance-devices-panel` onto that pattern. **Found a real scale bug while
+  doing it**: the established pagination footer renders every page-number
+  button unconditionally (`Array.from({length: totalPages}, ...)`), already
+  present in ~19 other tables including "All Staff" — at 400+ staff and a page
+  size of 10 that's 40 buttons in one row. Extracted a shared
+  `components/shared/table-pagination.tsx` (`TablePagination`) that windows
+  page numbers around the current page with "…" gaps once there are more than
+  7, and swapped every page listed above onto it (the older ~19 tables still
+  use their own inline copy — not yet migrated, same windowing bug remains
+  there until they are). Also converted the Leave Types/Requests action
+  columns from inline Edit/Delete-style buttons to the same `DropdownMenu`
+  "…" trigger every other established table uses (Courses, Students, Staff,
+  User Management) — confirmed via grep that inline buttons only appear on a
+  single-action row (e.g. a lone "Restore"), never a multi-action one.
+- **A real, systemic dialog-overflow bug found and fixed the same day**,
+  prompted by the user pointing at screenshots of "Manage Borrowing" (a long
+  department name truncating its column into the sibling "Unit Override"
+  field, both eventually hard-clipping past the dialog's edge with no
+  ellipsis) and "Elective Groups" (a placeholder hard-clipped mid-word,
+  "Select depa"). Root cause: `NotchedSelectField`/`NotchedComboboxField`
+  (`components/shared/notched-field.tsx`) — used by nearly every dropdown
+  inside a dialog app-wide — never set `min-w-0` on their trigger. A flex/grid
+  item's default `min-width: auto` means it refuses to shrink below its
+  content's intrinsic width; with `whitespace-nowrap` text and no `min-w-0`
+  escape hatch, a long selected value forces the grid track (or just the
+  trigger box) wider than its share, and since `DialogContent` has
+  `overflow-hidden`, the overflow turns into a silent hard clip instead of a
+  visible scrollbar or an ellipsis. Fixed once, in the shared component
+  (`min-w-0` on the `SelectTrigger`/`PopoverTrigger` and the inner value
+  span) — `NotchedDateField`/`NotchedTimeField` already had this right
+  (`min-w-0 truncate` on their value span), which is what made the gap in
+  the other two obvious once spotted. Live-verified against the exact
+  "Manage Borrowing" repro (a course whose home department is "Department of
+  Electrical Engineering") — the borrow-select now properly ellipsis-
+  truncates instead of overflowing the dialog.
+- **Import/export unified into one shared component (2026-10-19)**: every
+  page that had its own bespoke Import/Export button pair (Courses, Staff,
+  Lecturers) re-implemented the same file-input-ref/toast/blob-download
+  boilerplate with small inconsistencies (Courses' buttons literally said
+  "Import Users"/"Export Users", a copy-paste leftover — fixed). Extracted
+  `components/shared/import-export-bar.tsx` (`ImportExportBar`) — one
+  implementation of Download-Template/Import/Export with consistent toasts
+  and file naming — and pointed all three existing pages at it (gaining a
+  template button for free) plus the two new ones (Leave Requests,
+  Attendance). The Import-button-uses-a-Download-icon /
+  Export-button-uses-an-Upload-icon pairing looks backwards but matches the
+  convention every pre-existing page already used; kept deliberately rather
+  than "fixed," since changing it would introduce a new inconsistency instead
+  of removing one.
+- **Attendance Trend chart: department filter + click-through drill-down
+  (2026-10-19)**, the user's chosen direction (over a heatmap or a pure
+  restyle) for "something more modern that will help track for large numbers
+  of staff." A `Department` `Select` next to the date-nav scopes the stat
+  cards, the table, and the trend chart together from one piece of state
+  (`departmentId`) — confirmed live that narrowing to one department
+  correctly shrinks the counts and the chart's y-axis. Clicking a bar in the
+  trend chart jumps the Overview table above to that date
+  (`AttendanceTrendChart`'s new `onBarClick` prop, wired through recharts'
+  `Bar.onClick`'s `payload.date`) — the fastest path from "this day looks
+  bad" to "here's exactly who was out," without a separate drill-down modal.
+  **Found and fixed a real bug while wiring the department `Select`**: using
+  the bare `components/ui/select.tsx` `Select` without passing its `items`
+  prop means `<SelectValue>` can't resolve the selected id back to its label
+  and silently displays the raw value instead — the same documented gotcha
+  `NotchedSelectField` exists to avoid, but this spot used `Select` directly
+  rather than through that wrapper. Caught via a real screenshot (the
+  trigger showed the department's raw UUID, not its name), not by reasoning
+  about the code — fixed by passing `items={[{label, value}, ...]}` matching
+  the pattern already established in `leave-requests-panel`'s status filter.
 
 ## Commands
 
