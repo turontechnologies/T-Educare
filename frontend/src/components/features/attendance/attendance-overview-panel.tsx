@@ -47,6 +47,7 @@ import {
 } from "@/lib/attendance";
 import { ImportExportBar } from "@/components/shared/import-export-bar";
 import { TablePagination } from "@/components/shared/table-pagination";
+import { useDepartmentsStore } from "@/store/departments.store";
 import { AttendanceTrendChart } from "./attendance-trend-chart";
 import { ManualEntryDialog } from "./manual-entry-dialog";
 import { StaffHistoryDialog } from "./staff-history-dialog";
@@ -88,7 +89,16 @@ const STAT_CARDS = [
 
 export function AttendanceOverviewPanel() {
   const [date, setDate] = useState(todayIsoDate());
-  const { data: overview } = useAttendanceOverview(date);
+  const [departmentId, setDepartmentId] = useState("");
+  const { data: overview } = useAttendanceOverview(
+    date,
+    departmentId || undefined,
+  );
+  const departments = useDepartmentsStore((state) => state.departments);
+  const activeDepartments = useMemo(
+    () => departments.filter((d) => !d.archivedAt),
+    [departments],
+  );
 
   const downloadTemplate = useDownloadAttendanceTemplate();
   const importAttendance = useImportAttendance();
@@ -171,6 +181,30 @@ export function AttendanceOverviewPanel() {
           </Button>
         </div>
 
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Label htmlFor="attendance-department-filter">Department:</Label>
+          <Select
+            value={departmentId}
+            onValueChange={(value) => setDepartmentId(value ?? "")}
+          >
+            <SelectTrigger
+              id="attendance-department-filter"
+              size="sm"
+              className="w-48"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Departments</SelectItem>
+              {activeDepartments.map((department) => (
+                <SelectItem key={department.id} value={department.id}>
+                  {department.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex flex-wrap gap-2">
           <ImportExportBar
             resourceLabel="Attendance"
@@ -229,7 +263,10 @@ export function AttendanceOverviewPanel() {
         ))}
       </div>
 
-      <AttendanceTrendChart />
+      <AttendanceTrendChart
+        departmentId={departmentId || undefined}
+        onBarClick={setDate}
+      />
 
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
         <CardHeader className="flex flex-wrap items-center justify-between gap-4">

@@ -77,18 +77,24 @@ export const attendanceService = {
     return data;
   },
 
-  async getOverview(date?: string): Promise<AttendanceOverview> {
+  async getOverview(
+    date?: string,
+    departmentId?: string,
+  ): Promise<AttendanceOverview> {
     const { data } = await apiClient.get<AttendanceOverview>(
       "/attendance/overview",
-      { params: { date } },
+      { params: { date, departmentId } },
     );
     return data;
   },
 
-  async getTrend(days = 14): Promise<AttendanceTrendPoint[]> {
+  async getTrend(
+    days = 14,
+    departmentId?: string,
+  ): Promise<AttendanceTrendPoint[]> {
     const { data } = await apiClient.get<AttendanceTrendPoint[]>(
       "/attendance/trend",
-      { params: { days } },
+      { params: { days, departmentId } },
     );
     return data;
   },

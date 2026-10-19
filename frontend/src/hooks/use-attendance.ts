@@ -64,11 +64,12 @@ export function useRevokeAttendanceDevice() {
 
 export function useAttendanceOverview(
   date: string,
+  departmentId?: string,
   options: { enabled?: boolean } = {},
 ) {
   return useQuery({
-    queryKey: [OVERVIEW_KEY, date],
-    queryFn: () => attendanceService.getOverview(date),
+    queryKey: [OVERVIEW_KEY, date, departmentId],
+    queryFn: () => attendanceService.getOverview(date, departmentId),
     enabled: options.enabled ?? true,
     refetchInterval: 60_000,
   });
@@ -76,11 +77,12 @@ export function useAttendanceOverview(
 
 export function useAttendanceTrend(
   days = 14,
+  departmentId?: string,
   options: { enabled?: boolean } = {},
 ) {
   return useQuery({
-    queryKey: ["attendance-trend", days],
-    queryFn: () => attendanceService.getTrend(days),
+    queryKey: ["attendance-trend", days, departmentId],
+    queryFn: () => attendanceService.getTrend(days, departmentId),
     enabled: options.enabled ?? true,
     refetchInterval: 60_000,
   });

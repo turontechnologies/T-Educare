@@ -41,15 +41,25 @@ const SERIES = [
   },
 ] as const;
 
+interface AttendanceTrendChartProps {
+  /** Scopes the trend to one department — the same filter the Overview table above is scoped by, so the two always agree on who's being counted. */
+  departmentId?: string;
+  /** Clicking a day's bar jumps the Overview table above to that date — the quickest way from "this day looks bad" to "here's exactly who was out." */
+  onBarClick?: (date: string) => void;
+}
+
 /**
  * Daily attendance composition over time — a stacked bar per day so an
  * admin can read both the headcount and its breakdown at a glance (e.g.
  * "lateness spikes every Monday"), not just today's single-day snapshot
  * the stat cards above already show.
  */
-export function AttendanceTrendChart() {
+export function AttendanceTrendChart({
+  departmentId,
+  onBarClick,
+}: AttendanceTrendChartProps) {
   const [days, setDays] = useState(14);
-  const { data = [] } = useAttendanceTrend(days);
+  const { data = [] } = useAttendanceTrend(days, departmentId);
 
   const chartData = useMemo(
     () =>
@@ -145,6 +155,15 @@ export function AttendanceTrendChart() {
                       : series.key === "presentCount"
                         ? [2, 2, 0, 0]
                         : undefined
+                  }
+                  className={onBarClick ? "cursor-pointer" : undefined}
+                  onClick={
+                    onBarClick
+                      ? (barData: { payload?: { date?: string } }) => {
+                          const clickedDate = barData?.payload?.date;
+                          if (clickedDate) onBarClick(clickedDate);
+                        }
+                      : undefined
                   }
                 />
               ))}
