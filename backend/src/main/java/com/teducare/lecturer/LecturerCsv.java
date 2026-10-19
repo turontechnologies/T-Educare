@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.teducare.school.SchoolResponse;
+
 /** Minimal CSV read/write for lecturer import/export — same quoting convention as StaffCsv/CourseCsv. */
 final class LecturerCsv {
 
@@ -58,6 +60,27 @@ final class LecturerCsv {
                     String.valueOf(l.getCreatedAt()),
                     l.getArchivedAt() == null ? "" : String.valueOf(l.getArchivedAt()))));
         }
+        return sb.toString();
+    }
+
+    /** Header + one real, currently-valid example row — assignmentType defaults to "school" with the institution's own first school ID, so a straight re-import of this file (with username/name/contact fields edited) just works. */
+    static String template(SchoolResponse exampleSchool) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(csvLine(List.of(
+                "username", "firstName", "middleName", "lastName", "otherName", "gender", "position",
+                "assignmentType", "assignmentId", "email", "phone")));
+        sb.append(csvLine(List.of(
+                "jdoe2026",
+                "Jane",
+                "",
+                "Doe",
+                "",
+                "Female",
+                "Lecturer II",
+                "school",
+                exampleSchool == null ? "school-id-goes-here" : exampleSchool.id(),
+                "jane.doe@example.edu.ng",
+                "08000000000")));
         return sb.toString();
     }
 

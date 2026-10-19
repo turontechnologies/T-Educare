@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.faculty.FacultyService;
+import com.teducare.school.SchoolResponse;
 import com.teducare.school.SchoolService;
 
 @Service
@@ -198,6 +199,11 @@ public class LecturerService {
         }
 
         return new LecturerImportResult(imported, skipped);
+    }
+
+    public String templateCsv(String institutionId) {
+        List<SchoolResponse> schools = schoolService.list(institutionId, false);
+        return LecturerCsv.template(schools.isEmpty() ? null : schools.get(0));
     }
 
     public String exportCsv(String institutionId, boolean includeArchived) {

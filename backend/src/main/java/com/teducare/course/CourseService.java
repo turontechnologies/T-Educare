@@ -10,7 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.teducare.department.DepartmentResponse;
 import com.teducare.department.DepartmentService;
+import com.teducare.programlevel.ProgramLevelResponse;
 import com.teducare.programlevel.ProgramLevelService;
 import com.teducare.school.SchoolService;
 import com.teducare.staff.StaffMemberService;
@@ -201,6 +203,14 @@ public class CourseService {
         }
 
         return new CourseImportResult(imported, skipped);
+    }
+
+    public String templateCsv(String institutionId) {
+        List<DepartmentResponse> departments = departmentService.list(institutionId, null, null, false);
+        List<ProgramLevelResponse> levels = programLevelService.list(institutionId, false);
+        return CourseCsv.template(
+                departments.isEmpty() ? null : departments.get(0),
+                levels.isEmpty() ? null : levels.get(0));
     }
 
     public String exportCsv(String institutionId, boolean includeArchived) {

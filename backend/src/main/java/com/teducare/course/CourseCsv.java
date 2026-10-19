@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.teducare.department.DepartmentResponse;
+import com.teducare.programlevel.ProgramLevelResponse;
+
 /**
  * Minimal CSV read/write for course import/export (API_CONTRACT.md
  * §7.10) — handles quoted fields with embedded commas/escaped quotes
@@ -61,6 +64,22 @@ final class CourseCsv {
                     String.valueOf(course.getCreatedAt()),
                     course.getArchivedAt() == null ? "" : String.valueOf(course.getArchivedAt()))));
         }
+        return sb.toString();
+    }
+
+    /** Header + one real, currently-valid example row — the department's own schoolId is reused (rather than an independently-picked school) so the pairing is guaranteed coherent, and a straight re-import of this file (with name/code edited) just works. */
+    static String template(DepartmentResponse exampleDepartment, ProgramLevelResponse exampleLevel) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(csvLine(List.of(
+                "name", "code", "departmentId", "schoolId", "programLevelId", "unit", "semesterNumber")));
+        sb.append(csvLine(List.of(
+                "Example Course",
+                "EXC101",
+                exampleDepartment == null ? "department-id-goes-here" : exampleDepartment.id(),
+                exampleDepartment == null ? "school-id-goes-here" : exampleDepartment.schoolId(),
+                exampleLevel == null ? "program-level-id-goes-here" : exampleLevel.id(),
+                "3",
+                "1")));
         return sb.toString();
     }
 
