@@ -35,6 +35,8 @@ export interface AttendanceImportResult {
   skipped: number;
 }
 
+export type AttendanceExportFormat = "csv" | "xlsx" | "pdf";
+
 export const attendanceService = {
   async getSettings(): Promise<AttendanceSettings> {
     const { data } = await apiClient.get<AttendanceSettings>(
@@ -131,9 +133,13 @@ export const attendanceService = {
     return data;
   },
 
-  async exportManualEntries(from: string, to: string): Promise<Blob> {
+  async exportManualEntries(
+    from: string,
+    to: string,
+    format: AttendanceExportFormat = "csv",
+  ): Promise<Blob> {
     const { data } = await apiClient.get("/attendance/manual-entries/export", {
-      params: { from, to },
+      params: { from, to, format },
       responseType: "blob",
     });
     return data;

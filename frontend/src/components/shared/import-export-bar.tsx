@@ -15,7 +15,10 @@ interface ImportExportBarProps {
   resourceLabel: string;
   onDownloadTemplate: () => Promise<Blob>;
   onImport: (file: File) => Promise<ImportResult>;
-  onExport: () => Promise<Blob>;
+  /** Immediate "download now" export — ignored if `onExportClick` is passed instead. */
+  onExport?: () => Promise<Blob>;
+  /** Opt out of the immediate-download Export button and handle the click yourself — e.g. to open an options dialog (date range, format) before actually exporting, as Attendance does. */
+  onExportClick?: () => void;
   templatePending?: boolean;
   importPending?: boolean;
   exportPending?: boolean;
@@ -47,6 +50,7 @@ export function ImportExportBar({
   onDownloadTemplate,
   onImport,
   onExport,
+  onExportClick,
   templatePending,
   importPending,
   exportPending,
@@ -84,6 +88,7 @@ export function ImportExportBar({
   };
 
   const handleExport = async () => {
+    if (!onExport) return;
     try {
       const blob = await onExport();
       downloadBlob(
@@ -120,7 +125,7 @@ export function ImportExportBar({
         variant="outline"
         className="gap-1.5 rounded-md"
         disabled={exportPending}
-        onClick={handleExport}
+        onClick={onExportClick ?? handleExport}
       >
         <Upload className="size-4" />
         Export {resourceLabel}

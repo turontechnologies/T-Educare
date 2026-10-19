@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   attendanceService,
+  type AttendanceExportFormat,
   type CreateAttendanceDevicePayload,
   type RecordManualAttendancePayload,
   type UpdateAttendanceSettingsPayload,
@@ -126,8 +127,15 @@ export function useImportAttendance() {
 
 export function useExportAttendance() {
   return useMutation({
-    mutationFn: ({ from, to }: { from: string; to: string }) =>
-      attendanceService.exportManualEntries(from, to),
+    mutationFn: ({
+      from,
+      to,
+      format,
+    }: {
+      from: string;
+      to: string;
+      format?: AttendanceExportFormat;
+    }) => attendanceService.exportManualEntries(from, to, format),
   });
 }
 

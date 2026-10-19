@@ -35,7 +35,6 @@ import {
 import {
   useAttendanceOverview,
   useDownloadAttendanceTemplate,
-  useExportAttendance,
   useImportAttendance,
 } from "@/hooks/use-attendance";
 import {
@@ -48,6 +47,7 @@ import {
 import { ImportExportBar } from "@/components/shared/import-export-bar";
 import { TablePagination } from "@/components/shared/table-pagination";
 import { useDepartmentsStore } from "@/store/departments.store";
+import { AttendanceExportDialog } from "./attendance-export-dialog";
 import { AttendanceTrendChart } from "./attendance-trend-chart";
 import { ManualEntryDialog } from "./manual-entry-dialog";
 import { StaffHistoryDialog } from "./staff-history-dialog";
@@ -102,9 +102,9 @@ export function AttendanceOverviewPanel() {
 
   const downloadTemplate = useDownloadAttendanceTemplate();
   const importAttendance = useImportAttendance();
-  const exportAttendance = useExportAttendance();
 
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [historyFor, setHistoryFor] = useState<
     { staffId: string; staffName: string } | undefined
   >();
@@ -217,15 +217,9 @@ export function AttendanceOverviewPanel() {
             resourceLabel="Attendance"
             onDownloadTemplate={() => downloadTemplate.mutateAsync()}
             onImport={(file) => importAttendance.mutateAsync(file)}
-            onExport={() =>
-              exportAttendance.mutateAsync({
-                from: format(subDays(new Date(), 29), "yyyy-MM-dd"),
-                to: todayIsoDate(),
-              })
-            }
+            onExportClick={() => setExportDialogOpen(true)}
             templatePending={downloadTemplate.isPending}
             importPending={importAttendance.isPending}
-            exportPending={exportAttendance.isPending}
           />
           <Button
             variant="outline"
@@ -401,6 +395,10 @@ export function AttendanceOverviewPanel() {
       <ManualEntryDialog
         open={manualEntryOpen}
         onOpenChange={setManualEntryOpen}
+      />
+      <AttendanceExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
       />
       <StaffHistoryDialog
         open={!!historyFor}
