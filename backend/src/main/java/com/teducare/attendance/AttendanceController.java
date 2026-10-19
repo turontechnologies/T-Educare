@@ -27,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.auth.AuthDirectory;
 import com.teducare.auth.AuthenticatedUserDto;
+import com.teducare.export.ExportFormat;
 
 import jakarta.validation.Valid;
 
@@ -117,11 +118,22 @@ public class AttendanceController {
 
     @GetMapping("/manual-entries/export")
     public ResponseEntity<byte[]> export(
-            Authentication authentication, @RequestParam String from, @RequestParam String to) {
+            Authentication authentication,
+            @RequestParam String from,
+            @RequestParam String to,
+            @RequestParam(required = false) String format) {
         Instant fromInstant = LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant toInstant = LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-        return csvResponse(
-                service.exportCsv(requireInstitutionId(authentication), fromInstant, toInstant), "attendance.csv");
+        ExportFormat resolvedFormat = ExportFormat.from(format);
+        byte[] body = service.export(requireInstitutionId(authentication), fromInstant, toInstant, resolvedFormat);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(resolvedFormat.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename("attendance." + resolvedFormat.extension())
+                                .build()
+                                .toString())
+                .body(body);
     }
 
     @PostMapping(value = "/manual-entries/import", consumes = "multipart/form-data")
