@@ -127,6 +127,17 @@ public class StaffMemberController {
         }
     }
 
+    @GetMapping("/import-template")
+    public ResponseEntity<byte[]> importTemplate(Authentication authentication) {
+        String csv = service.templateCsv(requireInstitutionId(authentication));
+        byte[] body = csv.getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename("staff-members-template.csv").build().toString())
+                .body(body);
+    }
+
     @GetMapping("/export")
     public ResponseEntity<byte[]> export(
             Authentication authentication, @RequestParam(defaultValue = "false") boolean includeArchived) {

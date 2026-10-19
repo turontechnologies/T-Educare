@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.teducare.department.DepartmentResponse;
+import com.teducare.staffdesignation.StaffDesignationResponse;
+
 /** Minimal CSV read/write for staff import/export (API_CONTRACT.md §8.1) — same quoting convention as CourseCsv. Qualifications are not included; they're a nested per-staff list, out of scope for a flat CSV row. */
 final class StaffCsv {
 
@@ -67,6 +70,33 @@ final class StaffCsv {
                     String.valueOf(s.getCreatedAt()),
                     s.getArchivedAt() == null ? "" : String.valueOf(s.getArchivedAt()))));
         }
+        return sb.toString();
+    }
+
+    /** Header + one real, currently-valid example row — the department/designation IDs are the institution's own, so a straight re-import of this file (with staffId/name/contact fields edited) just works. */
+    static String template(DepartmentResponse exampleDepartment, StaffDesignationResponse exampleDesignation) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(csvLine(List.of(
+                "staffId", "roleId", "designationId", "departmentId", "gender", "firstName", "middleName",
+                "lastName", "otherName", "maritalStatus", "email", "phone", "emergencyContact", "dateOfBirth",
+                "employmentStartDate", "contactAddress")));
+        sb.append(csvLine(List.of(
+                "SU-ST-2001",
+                exampleDesignation == null ? "role-id-goes-here" : exampleDesignation.id(),
+                exampleDesignation == null ? "designation-id-goes-here" : exampleDesignation.id(),
+                exampleDepartment == null ? "department-id-goes-here" : exampleDepartment.id(),
+                "Female",
+                "Jane",
+                "",
+                "Doe",
+                "",
+                "Single",
+                "jane.doe@example.edu.ng",
+                "08000000000",
+                "08011111111",
+                "1995-05-14T00:00:00Z",
+                "2026-01-06T00:00:00Z",
+                "12 Example Street, Lagos")));
         return sb.toString();
     }
 
