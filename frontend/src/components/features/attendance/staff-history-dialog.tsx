@@ -52,7 +52,7 @@ export function StaffHistoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-xl gap-0 overflow-hidden p-0"
+        className="w-full max-w-2xl gap-0 overflow-hidden p-0"
       >
         <div className="flex items-center justify-between bg-primary px-6 py-4">
           <DialogTitle className="text-base font-medium text-white">
@@ -78,53 +78,55 @@ export function StaffHistoryDialog({
             <NotchedDateField label="To" value={to} onValueChange={setTo} />
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Clock In</TableHead>
-                <TableHead>Clock Out</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {entries.map((entry, index) => (
-                <TableRow key={`${entry.staffId}-${index}`}>
-                  <TableCell className="text-muted-foreground">
-                    {/* The backend returns one entry per day in range, in order — index maps directly back to the from-date offset. */}
-                    {format(
-                      new Date(
-                        new Date(`${from}T00:00:00`).getTime() +
-                          index * 86_400_000,
-                      ),
-                      "d MMM yyyy",
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={STATUS_BADGE_CLASSES[entry.status]}>
-                      {STATUS_LABELS[entry.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatClockTime(entry.clockInAt)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatClockTime(entry.clockOutAt)}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!isLoading && entries.length === 0 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="py-10 text-center text-muted-foreground"
-                  >
-                    No records in this range.
-                  </TableCell>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Clock In</TableHead>
+                  <TableHead>Clock Out</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {entries.map((entry, index) => (
+                  <TableRow key={`${entry.staffId}-${index}`}>
+                    <TableCell className="text-muted-foreground">
+                      {/* The backend returns one entry per day in range, in order — index maps directly back to the from-date offset. */}
+                      {format(
+                        new Date(
+                          new Date(`${from}T00:00:00`).getTime() +
+                            index * 86_400_000,
+                        ),
+                        "d MMM yyyy",
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={STATUS_BADGE_CLASSES[entry.status]}>
+                        {STATUS_LABELS[entry.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatClockTime(entry.clockInAt)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatClockTime(entry.clockOutAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!isLoading && entries.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-10 text-center text-muted-foreground"
+                    >
+                      No records in this range.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

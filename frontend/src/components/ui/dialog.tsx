@@ -53,7 +53,21 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:slide-in-from-bottom-6 data-open:duration-300 data-open:ease-out data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:slide-out-to-bottom-4 data-closed:duration-200 data-closed:ease-in",
+          // w-[calc(100%-2rem)] (a real `width`, not `max-width`) is the
+          // narrow-viewport safety net, and it's load-bearing: a consumer's
+          // `className` override only ever replaces `max-w-sm` below (same
+          // Tailwind "slot", so tailwind-merge correctly swaps it) and can
+          // never touch this `width` declaration, no matter what custom
+          // max-w-* it passes. Previously this safety net was itself a
+          // `max-width` (`max-w-[calc(100%-2rem)]`) gated behind `sm:`,
+          // which meant a bare override (e.g. `max-w-3xl`, used by nearly
+          // every dialog in this app) left the `sm:max-w-sm` slot
+          // untouched — at >=640px viewports *every* such dialog was
+          // silently capped at 384px regardless of its intended width,
+          // and below 640px the override applied with no viewport cap at
+          // all, overflowing the screen. Verified both failure modes with
+          // real computed-style measurements before this fix.
+          "fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:slide-in-from-bottom-6 data-open:duration-300 data-open:ease-out data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:slide-out-to-bottom-4 data-closed:duration-200 data-closed:ease-in",
           className,
         )}
         {...props}
