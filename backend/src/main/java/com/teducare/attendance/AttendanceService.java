@@ -284,9 +284,9 @@ public class AttendanceService {
 
     // --- Overview & history ---
 
-    public AttendanceOverviewResponse getOverview(String institutionId, LocalDate date) {
+    public AttendanceOverviewResponse getOverview(String institutionId, LocalDate date, String departmentId) {
         AttendanceSettings settings = requireSettings(institutionId);
-        List<StaffMemberResponse> staff = staffMemberService.list(institutionId, null, null, false);
+        List<StaffMemberResponse> staff = staffMemberService.list(institutionId, departmentId, null, false);
 
         Instant dayStart = date.atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant dayEnd = date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
@@ -330,13 +330,13 @@ public class AttendanceService {
                 date.toString(), isWorkday, staff.size(), present, late, absent, notClockedIn, onLeave, entries);
     }
 
-    /** The Overview's trend chart — one aggregate point per day for the last {@code days} days (today inclusive), oldest first. */
-    public List<AttendanceTrendPoint> getTrend(String institutionId, int days) {
+    /** The Overview's trend chart — one aggregate point per day for the last {@code days} days (today inclusive), oldest first. {@code departmentId} scopes it the same way the Overview table itself can be scoped, so an admin can isolate one department's trend instead of the whole institution's. */
+    public List<AttendanceTrendPoint> getTrend(String institutionId, int days, String departmentId) {
         int safeDays = Math.max(1, Math.min(days, 90));
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         List<AttendanceTrendPoint> points = new ArrayList<>();
         for (int i = safeDays - 1; i >= 0; i--) {
-            points.add(AttendanceTrendPoint.from(getOverview(institutionId, today.minusDays(i))));
+            points.add(AttendanceTrendPoint.from(getOverview(institutionId, today.minusDays(i), departmentId)));
         }
         return points;
     }

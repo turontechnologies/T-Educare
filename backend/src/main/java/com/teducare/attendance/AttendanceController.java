@@ -78,15 +78,19 @@ public class AttendanceController {
 
     @GetMapping("/overview")
     public AttendanceOverviewResponse getOverview(
-            Authentication authentication, @RequestParam(required = false) String date) {
+            Authentication authentication,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String departmentId) {
         LocalDate resolvedDate = isPresent(date) ? LocalDate.parse(date) : LocalDate.now();
-        return service.getOverview(requireInstitutionId(authentication), resolvedDate);
+        return service.getOverview(requireInstitutionId(authentication), resolvedDate, departmentId);
     }
 
     @GetMapping("/trend")
     public List<AttendanceTrendPoint> getTrend(
-            Authentication authentication, @RequestParam(defaultValue = "14") int days) {
-        return service.getTrend(requireInstitutionId(authentication), days);
+            Authentication authentication,
+            @RequestParam(defaultValue = "14") int days,
+            @RequestParam(required = false) String departmentId) {
+        return service.getTrend(requireInstitutionId(authentication), days, departmentId);
     }
 
     @GetMapping("/staff/{staffId}/history")
