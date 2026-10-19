@@ -111,6 +111,30 @@ export function useRecordManualAttendance() {
   });
 }
 
+export function useImportAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => attendanceService.importManualEntries(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [OVERVIEW_KEY] });
+      queryClient.invalidateQueries({ queryKey: [STAFF_HISTORY_KEY] });
+    },
+  });
+}
+
+export function useExportAttendance() {
+  return useMutation({
+    mutationFn: ({ from, to }: { from: string; to: string }) =>
+      attendanceService.exportManualEntries(from, to),
+  });
+}
+
+export function useDownloadAttendanceTemplate() {
+  return useMutation({
+    mutationFn: () => attendanceService.downloadManualEntriesTemplate(),
+  });
+}
+
 export function useMyAttendanceToday(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: [MY_TODAY_KEY],

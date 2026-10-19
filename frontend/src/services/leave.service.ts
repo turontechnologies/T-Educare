@@ -32,6 +32,11 @@ export type SubmitResumptionPayload = {
   lateReason?: string;
 };
 
+export interface LeaveImportResult {
+  imported: number;
+  skipped: number;
+}
+
 export const leaveService = {
   // --- Admin: leave types ---
   async listTypes(): Promise<LeaveType[]> {
@@ -121,6 +126,31 @@ export const leaveService = {
       "/leave/balances",
       { params: { year } },
     );
+    return data;
+  },
+
+  async importRequests(file: File): Promise<LeaveImportResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await apiClient.post<LeaveImportResult>(
+      "/leave/requests/import",
+      formData,
+    );
+    return data;
+  },
+
+  async exportRequests(status?: string): Promise<Blob> {
+    const { data } = await apiClient.get("/leave/requests/export", {
+      params: { status },
+      responseType: "blob",
+    });
+    return data;
+  },
+
+  async downloadRequestsTemplate(): Promise<Blob> {
+    const { data } = await apiClient.get("/leave/requests/import-template", {
+      responseType: "blob",
+    });
     return data;
   },
 

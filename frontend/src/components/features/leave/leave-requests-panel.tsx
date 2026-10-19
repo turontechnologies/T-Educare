@@ -27,8 +27,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ImportExportBar } from "@/components/shared/import-export-bar";
 import { TablePagination } from "@/components/shared/table-pagination";
-import { useLeaveRequests } from "@/hooks/use-leave";
+import {
+  useDownloadLeaveRequestsTemplate,
+  useExportLeaveRequests,
+  useImportLeaveRequests,
+  useLeaveRequests,
+} from "@/hooks/use-leave";
 import { formatDisplayDate } from "@/lib/attendance";
 import { ReviewLeaveRequestDialog } from "./review-leave-request-dialog";
 import { ReviewResumptionDialog } from "./review-resumption-dialog";
@@ -54,6 +60,10 @@ const PAGE_SIZE_OPTIONS = ["10", "25", "50"];
 export function LeaveRequestsPanel() {
   const [status, setStatus] = useState("PENDING");
   const { data: requests = [] } = useLeaveRequests(status ? { status } : {});
+
+  const downloadTemplate = useDownloadLeaveRequestsTemplate();
+  const importRequests = useImportLeaveRequests();
+  const exportRequests = useExportLeaveRequests();
 
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState("10");
@@ -89,6 +99,18 @@ export function LeaveRequestsPanel() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <ImportExportBar
+          resourceLabel="Leave Requests"
+          onDownloadTemplate={() => downloadTemplate.mutateAsync()}
+          onImport={(file) => importRequests.mutateAsync(file)}
+          onExport={() => exportRequests.mutateAsync(status || undefined)}
+          templatePending={downloadTemplate.isPending}
+          importPending={importRequests.isPending}
+          exportPending={exportRequests.isPending}
+        />
+      </div>
+
       <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
         <CardHeader className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -128,6 +128,26 @@ export function useRejectResumption() {
   });
 }
 
+export function useImportLeaveRequests() {
+  const invalidate = useInvalidateRequests();
+  return useMutation({
+    mutationFn: (file: File) => leaveService.importRequests(file),
+    onSuccess: invalidate,
+  });
+}
+
+export function useExportLeaveRequests() {
+  return useMutation({
+    mutationFn: (status?: string) => leaveService.exportRequests(status),
+  });
+}
+
+export function useDownloadLeaveRequestsTemplate() {
+  return useMutation({
+    mutationFn: () => leaveService.downloadRequestsTemplate(),
+  });
+}
+
 export function useLeaveBalances(
   year?: number,
   options: { enabled?: boolean } = {},

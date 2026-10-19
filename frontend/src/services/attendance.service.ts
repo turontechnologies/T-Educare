@@ -30,6 +30,11 @@ export type RecordManualAttendancePayload = {
   note: string;
 };
 
+export interface AttendanceImportResult {
+  imported: number;
+  skipped: number;
+}
+
 export const attendanceService = {
   async getSettings(): Promise<AttendanceSettings> {
     const { data } = await apiClient.get<AttendanceSettings>(
@@ -106,6 +111,32 @@ export const attendanceService = {
     const { data } = await apiClient.post<AttendanceEvent>(
       "/attendance/manual-entries",
       payload,
+    );
+    return data;
+  },
+
+  async importManualEntries(file: File): Promise<AttendanceImportResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const { data } = await apiClient.post<AttendanceImportResult>(
+      "/attendance/manual-entries/import",
+      formData,
+    );
+    return data;
+  },
+
+  async exportManualEntries(from: string, to: string): Promise<Blob> {
+    const { data } = await apiClient.get("/attendance/manual-entries/export", {
+      params: { from, to },
+      responseType: "blob",
+    });
+    return data;
+  },
+
+  async downloadManualEntriesTemplate(): Promise<Blob> {
+    const { data } = await apiClient.get(
+      "/attendance/manual-entries/import-template",
+      { responseType: "blob" },
     );
     return data;
   },
