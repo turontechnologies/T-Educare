@@ -86,6 +86,109 @@ public class LeaveRequestService {
         return enrich(institutionId, requests);
     }
 
+    private static final Set<String> VALID_IMPORT_STATUSES = Set.of("PENDING", "APPROVED", "REJECTED", "CANCELLED");
+
+    /** Header + one real, currently-valid example row — see LeaveCsv.template. */
+    public String templateCsv(String institutionId) {
+        List<StaffMemberResponse> staff = staffMemberService.list(institutionId, null, null, false);
+        List<LeaveType> types = activeTypes(institutionId);
+        return LeaveCsv.template(staff.isEmpty() ? null : staff.get(0), types.isEmpty() ? null : types.get(0));
+    }
+
+    public String exportCsv(String institutionId, String status) {
+        List<LeaveRequest> requests = isPresent(status)
+                ? repository.findByInstitutionIdAndStatusOrderByCreatedAtDesc(institutionId, status.toUpperCase())
+                : repository.findByInstitutionIdOrderByCreatedAtDesc(institutionId);
+        Map<String, StaffMemberResponse> staffById = staffMemberService.list(institutionId, null, null, true).stream()
+                .collect(Collectors.toMap(StaffMemberResponse::id, s -> s));
+        Map<String, String> typeNameById = typeRepository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
+                .collect(Collectors.toMap(LeaveType::getId, LeaveType::getName));
+        return LeaveCsv.write(requests, staffById, typeNameById);
+    }
+
+    /** Skips rows missing a required column, naming a staff member or leave type that doesn't resolve, with endDate before startDate, an unrecognized status, or overlapping that staff member's existing pending/approved leave — same "skip and count" convention as StaffMemberService.importCsv. Imported requests start clean (no review, no resumption) regardless of status, since this is for seeding historical records, not replaying a live workflow. */
+    public LeaveImportResult importCsv(String institutionId, String csvText) {
+        List<Map<String, String>> rows = LeaveCsv.parse(csvText);
+        List<LeaveType> types = activeTypes(institutionId);
+        Set<String> workdays = workdaysFor(institutionId);
+        int imported = 0;
+        int skipped = 0;
+
+        for (Map<String, String> row : rows) {
+            String staffIdText = row.getOrDefault("staffid", "").trim();
+            String leaveTypeName = row.getOrDefault("leavetype", "").trim();
+            String startDateText = row.getOrDefault("startdate", "").trim();
+            String endDateText = row.getOrDefault("enddate", "").trim();
+            String reason = row.getOrDefault("reason", "").trim();
+            String statusText = row.getOrDefault("status", "").trim().toUpperCase();
+            if (statusText.isEmpty()) {
+                statusText = "PENDING";
+            }
+
+            if (staffIdText.isEmpty() || leaveTypeName.isEmpty() || startDateText.isEmpty()
+                    || endDateText.isEmpty() || reason.isEmpty() || !VALID_IMPORT_STATUSES.contains(statusText)) {
+                skipped++;
+                continue;
+            }
+
+            String staffInternalId;
+            try {
+                staffInternalId = resolveStaffInternalId(institutionId, staffIdText);
+            } catch (ResponseStatusException ex) {
+                skipped++;
+                continue;
+            }
+
+            LeaveType type = types.stream()
+                    .filter(t -> t.getName().equalsIgnoreCase(leaveTypeName))
+                    .findFirst()
+                    .orElse(null);
+            if (type == null) {
+                skipped++;
+                continue;
+            }
+
+            LocalDate start;
+            LocalDate end;
+            try {
+                start = LocalDate.parse(startDateText);
+                end = LocalDate.parse(endDateText);
+            } catch (DateTimeParseException ex) {
+                skipped++;
+                continue;
+            }
+            if (end.isBefore(start)) {
+                skipped++;
+                continue;
+            }
+            if (!repository.findActiveOverlapping(institutionId, staffInternalId, start, end).isEmpty()) {
+                skipped++;
+                continue;
+            }
+
+            int totalDays = countWorkdaysFrom(workdays, start, end);
+            LeaveRequest leaveRequest = new LeaveRequest(
+                    "leavereq-" + UUID.randomUUID(),
+                    institutionId,
+                    staffInternalId,
+                    type.getId(),
+                    start,
+                    end,
+                    totalDays,
+                    reason,
+                    statusText,
+                    null, null, null,
+                    Instant.now());
+            repository.save(leaveRequest);
+            imported++;
+        }
+
+        return new LeaveImportResult(imported, skipped);
+    }
+
+    public record LeaveImportResult(int imported, int skipped) {
+    }
+
     public LeaveRequestResponse approve(String institutionId, String id, String actorId, ReviewLeaveRequestRequest request) {
         LeaveRequest leaveRequest = requireOwnRequest(institutionId, id);
         requirePending(leaveRequest);

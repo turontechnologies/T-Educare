@@ -1,9 +1,14 @@
 package com.teducare.leave;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Year;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.auth.AuthDirectory;
@@ -106,6 +112,40 @@ public class LeaveController {
             Authentication authentication, @PathVariable String id, @RequestBody ReviewLeaveRequestRequest request) {
         AuthenticatedUserDto caller = requireCaller(authentication);
         return requestService.rejectResumption(caller.institutionId(), id, caller.id(), request);
+    }
+
+    @GetMapping("/requests/import-template")
+    public ResponseEntity<byte[]> importTemplate(Authentication authentication) {
+        return csvResponse(requestService.templateCsv(requireInstitutionId(authentication)), "leave-requests-template.csv");
+    }
+
+    @GetMapping("/requests/export")
+    public ResponseEntity<byte[]> export(
+            Authentication authentication, @RequestParam(required = false) String status) {
+        return csvResponse(requestService.exportCsv(requireInstitutionId(authentication), status), "leave-requests.csv");
+    }
+
+    @PostMapping(value = "/requests/import", consumes = "multipart/form-data")
+    public LeaveRequestService.LeaveImportResult importCsv(
+            Authentication authentication, @RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No file provided.");
+        }
+        try {
+            String text = new String(file.getBytes(), StandardCharsets.UTF_8);
+            return requestService.importCsv(requireInstitutionId(authentication), text);
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read the uploaded file.");
+        }
+    }
+
+    private ResponseEntity<byte[]> csvResponse(String csv, String filename) {
+        byte[] body = csv.getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(filename).build().toString())
+                .body(body);
     }
 
     @GetMapping("/balances")
