@@ -43,7 +43,8 @@
       "Bash(curl -s -i http://localhost:3000/)",
       "Bash(curl -s -i http://localhost:3000/login)",
       "Bash(curl -s -D - -o /tmp/login-body.html http://localhost:3000/login)",
-      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\")"
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\")",
+      "Bash(npx --yes pdf-to-png-converter)"
     ]
   }
 }
