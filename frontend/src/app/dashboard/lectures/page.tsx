@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ImportExportBar } from "@/components/shared/import-export-bar";
 import { PageHeader } from "@/components/shared/page-header";
 import { ChangeRequestsPanel } from "@/components/features/lectures/change-requests-panel";
 import { LectureAssignmentDetailsDialog } from "@/components/features/lectures/lecture-assignment-details-dialog";
@@ -63,6 +64,7 @@ import {
 } from "@/hooks/use-lecture-assignments";
 import {
   useArchiveLecturer,
+  useDownloadLecturersTemplate,
   useExportLecturers,
   useImportLecturers,
   useRestoreLecturer,
@@ -172,74 +174,20 @@ function AdminLectureManagement() {
 }
 
 function ImportExportButtons() {
+  const downloadTemplate = useDownloadLecturersTemplate();
   const importLecturers = useImportLecturers();
   const exportLecturers = useExportLecturers();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleExport = async () => {
-    try {
-      const blob = await exportLecturers.mutateAsync(false);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `lecturers-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success("Lecturers exported");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to export lecturers",
-      );
-    }
-  };
-
-  const handleImportFile = async (file: File) => {
-    try {
-      const result = await importLecturers.mutateAsync(file);
-      toast.success(
-        `${result.imported} lecturers imported${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`,
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to import lecturers",
-      );
-    }
-  };
 
   return (
-    <>
-      <Button
-        variant="outline"
-        className="gap-1.5 rounded-md"
-        disabled={importLecturers.isPending}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <Download className="size-4" />
-        Import Lecturers
-      </Button>
-      <Button
-        variant="outline"
-        className="gap-1.5 rounded-md"
-        disabled={exportLecturers.isPending}
-        onClick={handleExport}
-      >
-        <Upload className="size-4" />
-        Export Lecturers
-      </Button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".csv"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) handleImportFile(file);
-          event.target.value = "";
-        }}
-        className="sr-only"
-      />
-    </>
+    <ImportExportBar
+      resourceLabel="Lecturers"
+      onDownloadTemplate={() => downloadTemplate.mutateAsync()}
+      onImport={(file) => importLecturers.mutateAsync(file)}
+      onExport={() => exportLecturers.mutateAsync(false)}
+      templatePending={downloadTemplate.isPending}
+      importPending={importLecturers.isPending}
+      exportPending={exportLecturers.isPending}
+    />
   );
 }
 

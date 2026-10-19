@@ -81,6 +81,12 @@ export function useExportStaffMembers() {
   });
 }
 
+export function useDownloadStaffMembersTemplate() {
+  return useMutation({
+    mutationFn: () => staffMemberService.downloadTemplate(),
+  });
+}
+
 export function useStaffDisciplinaryRecords(
   staffId: string | undefined,
   options: { enabled?: boolean } = {},

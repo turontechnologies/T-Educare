@@ -32,7 +32,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useAttendanceOverview } from "@/hooks/use-attendance";
+import {
+  useAttendanceOverview,
+  useDownloadAttendanceTemplate,
+  useExportAttendance,
+  useImportAttendance,
+} from "@/hooks/use-attendance";
 import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
@@ -40,6 +45,7 @@ import {
   formatDisplayDate,
   todayIsoDate,
 } from "@/lib/attendance";
+import { ImportExportBar } from "@/components/shared/import-export-bar";
 import { TablePagination } from "@/components/shared/table-pagination";
 import { AttendanceTrendChart } from "./attendance-trend-chart";
 import { ManualEntryDialog } from "./manual-entry-dialog";
@@ -83,6 +89,10 @@ const STAT_CARDS = [
 export function AttendanceOverviewPanel() {
   const [date, setDate] = useState(todayIsoDate());
   const { data: overview } = useAttendanceOverview(date);
+
+  const downloadTemplate = useDownloadAttendanceTemplate();
+  const importAttendance = useImportAttendance();
+  const exportAttendance = useExportAttendance();
 
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [historyFor, setHistoryFor] = useState<
@@ -161,14 +171,30 @@ export function AttendanceOverviewPanel() {
           </Button>
         </div>
 
-        <Button
-          variant="outline"
-          className="gap-1.5 rounded-md border-tertiary text-tertiary-foreground"
-          onClick={() => setManualEntryOpen(true)}
-        >
-          <Plus className="size-4" />
-          Record Manual Entry
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <ImportExportBar
+            resourceLabel="Attendance"
+            onDownloadTemplate={() => downloadTemplate.mutateAsync()}
+            onImport={(file) => importAttendance.mutateAsync(file)}
+            onExport={() =>
+              exportAttendance.mutateAsync({
+                from: format(subDays(new Date(), 29), "yyyy-MM-dd"),
+                to: todayIsoDate(),
+              })
+            }
+            templatePending={downloadTemplate.isPending}
+            importPending={importAttendance.isPending}
+            exportPending={exportAttendance.isPending}
+          />
+          <Button
+            variant="outline"
+            className="gap-1.5 rounded-md border-tertiary text-tertiary-foreground"
+            onClick={() => setManualEntryOpen(true)}
+          >
+            <Plus className="size-4" />
+            Record Manual Entry
+          </Button>
+        </div>
       </div>
 
       {overview && !overview.workday && (

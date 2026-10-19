@@ -80,6 +80,13 @@ export const courseService = {
     return data;
   },
 
+  async downloadTemplate(): Promise<Blob> {
+    const { data } = await apiClient.get("/courses/import-template", {
+      responseType: "blob",
+    });
+    return data;
+  },
+
   async listOfferings(courseId: string): Promise<CourseDepartmentOffering[]> {
     const { data } = await apiClient.get<CourseDepartmentOffering[]>(
       `/courses/${courseId}/offerings`,

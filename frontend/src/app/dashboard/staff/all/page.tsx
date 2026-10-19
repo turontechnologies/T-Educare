@@ -1,15 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArchiveRestore,
-  Download,
   Eye,
   MoreHorizontal,
   Pencil,
   Plus,
   Trash2,
-  Upload,
   User,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -41,12 +39,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ImportExportBar } from "@/components/shared/import-export-bar";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { StaffDetailsDialog } from "@/components/features/staff/staff-details-dialog";
 import { StaffMemberDialog } from "@/components/features/staff/staff-member-dialog";
 import {
   useArchiveStaffMember,
+  useDownloadStaffMembersTemplate,
   useExportStaffMembers,
   useImportStaffMembers,
   useRestoreStaffMember,
@@ -116,74 +116,20 @@ export default function AllStaffPage() {
 }
 
 function ImportExportButtons() {
+  const downloadTemplate = useDownloadStaffMembersTemplate();
   const importStaff = useImportStaffMembers();
   const exportStaff = useExportStaffMembers();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleExport = async () => {
-    try {
-      const blob = await exportStaff.mutateAsync(false);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `staff-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success("Staff exported");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to export staff",
-      );
-    }
-  };
-
-  const handleImportFile = async (file: File) => {
-    try {
-      const result = await importStaff.mutateAsync(file);
-      toast.success(
-        `${result.imported} staff imported${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`,
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to import staff",
-      );
-    }
-  };
 
   return (
-    <>
-      <Button
-        variant="outline"
-        className="gap-1.5 rounded-md"
-        disabled={importStaff.isPending}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <Download className="size-4" />
-        Import Staff
-      </Button>
-      <Button
-        variant="outline"
-        className="gap-1.5 rounded-md"
-        disabled={exportStaff.isPending}
-        onClick={handleExport}
-      >
-        <Upload className="size-4" />
-        Export Staff
-      </Button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".csv"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) handleImportFile(file);
-          event.target.value = "";
-        }}
-        className="sr-only"
-      />
-    </>
+    <ImportExportBar
+      resourceLabel="Staff"
+      onDownloadTemplate={() => downloadTemplate.mutateAsync()}
+      onImport={(file) => importStaff.mutateAsync(file)}
+      onExport={() => exportStaff.mutateAsync(false)}
+      templatePending={downloadTemplate.isPending}
+      importPending={importStaff.isPending}
+      exportPending={exportStaff.isPending}
+    />
   );
 }
 

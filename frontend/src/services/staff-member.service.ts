@@ -169,4 +169,11 @@ export const staffMemberService = {
     });
     return data;
   },
+
+  async downloadTemplate(): Promise<Blob> {
+    const { data } = await apiClient.get("/staff-members/import-template", {
+      responseType: "blob",
+    });
+    return data;
+  },
 };

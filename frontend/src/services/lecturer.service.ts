@@ -73,4 +73,11 @@ export const lecturerService = {
     });
     return data;
   },
+
+  async downloadTemplate(): Promise<Blob> {
+    const { data } = await apiClient.get("/lecturers/import-template", {
+      responseType: "blob",
+    });
+    return data;
+  },
 };

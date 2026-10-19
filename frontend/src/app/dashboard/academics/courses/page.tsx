@@ -1,15 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArchiveRestore,
-  Download,
   MoreHorizontal,
   Pencil,
   Plus,
   Share2,
   Trash2,
-  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,12 +37,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ImportExportBar } from "@/components/shared/import-export-bar";
 import { PageHeader } from "@/components/shared/page-header";
 import { CourseDialog } from "@/components/features/academics/course-dialog";
 import { CourseOfferingsDialog } from "@/components/features/academics/course-offerings-dialog";
 import { ElectiveGroupsDialog } from "@/components/features/academics/elective-groups-dialog";
 import {
   useArchiveCourse,
+  useDownloadCoursesTemplate,
   useExportCourses,
   useImportCourses,
   useRestoreCourse,
@@ -129,74 +129,20 @@ export default function CoursesManagementPage() {
 }
 
 function ImportExportButtons() {
+  const downloadTemplate = useDownloadCoursesTemplate();
   const importCourses = useImportCourses();
   const exportCourses = useExportCourses();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleExport = async () => {
-    try {
-      const blob = await exportCourses.mutateAsync(false);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `courses-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      toast.success("Courses exported");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to export courses",
-      );
-    }
-  };
-
-  const handleImportFile = async (file: File) => {
-    try {
-      const result = await importCourses.mutateAsync(file);
-      toast.success(
-        `${result.imported} courses imported${result.skipped > 0 ? `, ${result.skipped} skipped` : ""}`,
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to import courses",
-      );
-    }
-  };
 
   return (
-    <>
-      <Button
-        variant="outline"
-        className="gap-1.5 rounded-md"
-        disabled={importCourses.isPending}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <Download className="size-4" />
-        Import Courses
-      </Button>
-      <Button
-        variant="outline"
-        className="gap-1.5 rounded-md"
-        disabled={exportCourses.isPending}
-        onClick={handleExport}
-      >
-        <Upload className="size-4" />
-        Export Courses
-      </Button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".csv"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) handleImportFile(file);
-          event.target.value = "";
-        }}
-        className="sr-only"
-      />
-    </>
+    <ImportExportBar
+      resourceLabel="Courses"
+      onDownloadTemplate={() => downloadTemplate.mutateAsync()}
+      onImport={(file) => importCourses.mutateAsync(file)}
+      onExport={() => exportCourses.mutateAsync(false)}
+      templatePending={downloadTemplate.isPending}
+      importPending={importCourses.isPending}
+      exportPending={exportCourses.isPending}
+    />
   );
 }
 

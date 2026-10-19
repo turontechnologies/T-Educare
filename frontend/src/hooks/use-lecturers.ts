@@ -74,3 +74,9 @@ export function useExportLecturers() {
       lecturerService.exportCsv(includeArchived),
   });
 }
+
+export function useDownloadLecturersTemplate() {
+  return useMutation({
+    mutationFn: () => lecturerService.downloadTemplate(),
+  });
+}

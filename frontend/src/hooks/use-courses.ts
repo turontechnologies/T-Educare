@@ -78,6 +78,12 @@ export function useExportCourses() {
   });
 }
 
+export function useDownloadCoursesTemplate() {
+  return useMutation({
+    mutationFn: () => courseService.downloadTemplate(),
+  });
+}
+
 export function useCourseOfferings(
   courseId: string | undefined,
   options: { enabled?: boolean } = {},
