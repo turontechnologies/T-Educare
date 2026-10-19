@@ -34,10 +34,15 @@ public final class TabularExport {
     }
 
     public static byte[] write(ExportFormat format, List<String> headers, List<List<String>> rows) {
+        return write(format, "Export", headers, rows);
+    }
+
+    /** {@code title} only matters for PDF, where it's the one format meant to be read/printed as a standalone report rather than opened in a spreadsheet. */
+    public static byte[] write(ExportFormat format, String title, List<String> headers, List<List<String>> rows) {
         return switch (format) {
             case CSV -> toCsv(headers, rows).getBytes(StandardCharsets.UTF_8);
             case XLSX -> toXlsx(headers, rows);
-            case PDF -> toPdf(headers, rows);
+            case PDF -> toPdf(title, headers, rows);
         };
     }
 
@@ -99,7 +104,7 @@ public final class TabularExport {
         }
     }
 
-    private static byte[] toPdf(List<String> headers, List<List<String>> rows) {
+    private static byte[] toPdf(String title, List<String> headers, List<List<String>> rows) {
         Document document = new Document(headers.size() > 5 ? PageSize.A4.rotate() : PageSize.A4, 24, 24, 24, 24);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
@@ -108,7 +113,7 @@ public final class TabularExport {
 
             com.lowagie.text.Font titleFont =
                     new com.lowagie.text.Font(com.lowagie.text.Font.HELVETICA, 14, com.lowagie.text.Font.BOLD);
-            document.add(new Paragraph("Export", titleFont));
+            document.add(new Paragraph(title, titleFont));
             document.add(new Paragraph(" "));
 
             PdfPTable table = new PdfPTable(headers.size());

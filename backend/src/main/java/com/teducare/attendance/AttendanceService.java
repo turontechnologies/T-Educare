@@ -226,7 +226,12 @@ public class AttendanceService {
                 eventRepository.findByInstitutionIdAndOccurredAtBetweenOrderByOccurredAtAsc(institutionId, from, to);
         Map<String, StaffMemberResponse> staffById = staffMemberService.list(institutionId, null, null, true).stream()
                 .collect(Collectors.toMap(StaffMemberResponse::id, s -> s));
-        return TabularExport.write(format, AttendanceCsv.HEADERS, AttendanceCsv.rows(events, staffById));
+        // `to` is the exclusive upper bound the repository query uses (the caller's last
+        // day + 1, at midnight) — subtract a day back off so the title shows the
+        // inclusive range the admin actually asked for, not one day past it.
+        String title = "Attendance Export — " + from.atZone(ZoneOffset.UTC).toLocalDate()
+                + " to " + to.atZone(ZoneOffset.UTC).toLocalDate().minusDays(1);
+        return TabularExport.write(format, title, AttendanceCsv.HEADERS, AttendanceCsv.rows(events, staffById));
     }
 
     /**
