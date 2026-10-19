@@ -19,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.teducare.export.ExportFormat;
+import com.teducare.export.TabularExport;
 import com.teducare.leave.LeaveRequest;
 import com.teducare.leave.LeaveRequestService;
 import com.teducare.staff.StaffMemberResponse;
@@ -218,12 +220,13 @@ public class AttendanceService {
         return AttendanceCsv.template(staff.isEmpty() ? null : staff.get(0));
     }
 
-    public String exportCsv(String institutionId, Instant from, Instant to) {
+    /** The matching clock events in whichever of the three formats {@code format} asks for (default CSV). */
+    public byte[] export(String institutionId, Instant from, Instant to, ExportFormat format) {
         List<AttendanceEvent> events =
                 eventRepository.findByInstitutionIdAndOccurredAtBetweenOrderByOccurredAtAsc(institutionId, from, to);
         Map<String, StaffMemberResponse> staffById = staffMemberService.list(institutionId, null, null, true).stream()
                 .collect(Collectors.toMap(StaffMemberResponse::id, s -> s));
-        return AttendanceCsv.write(events, staffById);
+        return TabularExport.write(format, AttendanceCsv.HEADERS, AttendanceCsv.rows(events, staffById));
     }
 
     /**

@@ -39,19 +39,30 @@ final class AttendanceCsv {
         return rows;
     }
 
-    static String write(List<AttendanceEvent> events, Map<String, StaffMemberResponse> staffById) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(csvLine(List.of(
-                "staffId", "staffName", "eventType", "occurredAt", "source", "note")));
+    static final List<String> HEADERS =
+            List.of("staffId", "staffName", "eventType", "occurredAt", "source", "note");
+
+    /** Same cell values {@link #write} puts in a CSV line, as a plain list-of-lists — the shape {@link com.teducare.export.TabularExport} needs for XLSX/PDF. */
+    static List<List<String>> rows(List<AttendanceEvent> events, Map<String, StaffMemberResponse> staffById) {
+        List<List<String>> rows = new ArrayList<>();
         for (AttendanceEvent e : events) {
             StaffMemberResponse staff = staffById.get(e.getStaffId());
-            sb.append(csvLine(List.of(
+            rows.add(List.of(
                     staff == null ? "" : staff.staffId(),
                     staff == null ? "" : staff.firstName() + " " + staff.lastName(),
                     e.getEventType(),
                     String.valueOf(e.getOccurredAt()),
                     e.getSource(),
-                    e.getNote() == null ? "" : e.getNote())));
+                    e.getNote() == null ? "" : e.getNote()));
+        }
+        return rows;
+    }
+
+    static String write(List<AttendanceEvent> events, Map<String, StaffMemberResponse> staffById) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(csvLine(HEADERS));
+        for (List<String> row : rows(events, staffById)) {
+            sb.append(csvLine(row));
         }
         return sb.toString();
     }
