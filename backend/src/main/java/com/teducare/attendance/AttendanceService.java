@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -209,6 +210,76 @@ public class AttendanceService {
                 actorId,
                 Instant.now());
         return AttendanceEventResponse.from(eventRepository.save(event));
+    }
+
+    /** Header + one real, currently-valid example row — see AttendanceCsv.template. */
+    public String templateCsv(String institutionId) {
+        List<StaffMemberResponse> staff = staffMemberService.list(institutionId, null, null, false);
+        return AttendanceCsv.template(staff.isEmpty() ? null : staff.get(0));
+    }
+
+    public String exportCsv(String institutionId, Instant from, Instant to) {
+        List<AttendanceEvent> events =
+                eventRepository.findByInstitutionIdAndOccurredAtBetweenOrderByOccurredAtAsc(institutionId, from, to);
+        Map<String, StaffMemberResponse> staffById = staffMemberService.list(institutionId, null, null, true).stream()
+                .collect(Collectors.toMap(StaffMemberResponse::id, s -> s));
+        return AttendanceCsv.write(events, staffById);
+    }
+
+    /**
+     * Skips rows missing a required column, naming a staff member that
+     * doesn't resolve, an unrecognized eventType, or an unparsable
+     * occurredAt — same "skip and count" convention as
+     * StaffMemberService.importCsv. Every imported row becomes a MANUAL
+     * event attributed to the importing admin, same as one typed through
+     * {@link #recordManualEvent} by hand.
+     */
+    public AttendanceImportResult importCsv(String institutionId, String actorId, String csvText) {
+        List<Map<String, String>> rows = AttendanceCsv.parse(csvText);
+        int imported = 0;
+        int skipped = 0;
+
+        for (Map<String, String> row : rows) {
+            String staffIdText = row.getOrDefault("staffid", "").trim();
+            String eventType = row.getOrDefault("eventtype", "").trim().toUpperCase();
+            String occurredAtText = row.getOrDefault("occurredat", "").trim();
+            String note = row.getOrDefault("note", "").trim();
+
+            if (staffIdText.isEmpty() || !EVENT_TYPES.contains(eventType) || occurredAtText.isEmpty()
+                    || note.isEmpty()) {
+                skipped++;
+                continue;
+            }
+
+            String staffInternalId;
+            Instant occurredAt;
+            try {
+                staffInternalId = resolveStaffInternalId(institutionId, staffIdText);
+                occurredAt = Instant.parse(occurredAtText);
+            } catch (Exception ex) {
+                skipped++;
+                continue;
+            }
+
+            AttendanceEvent event = new AttendanceEvent(
+                    "attevt-" + UUID.randomUUID(),
+                    institutionId,
+                    staffInternalId,
+                    eventType,
+                    occurredAt,
+                    null,
+                    "MANUAL",
+                    note,
+                    actorId,
+                    Instant.now());
+            eventRepository.save(event);
+            imported++;
+        }
+
+        return new AttendanceImportResult(imported, skipped);
+    }
+
+    public record AttendanceImportResult(int imported, int skipped) {
     }
 
     // --- Overview & history ---
