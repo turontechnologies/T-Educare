@@ -36,6 +36,10 @@ public class Department {
     @Column(name = "hod_signature_url", length = 500)
     private String hodSignatureUrl;
 
+    /** Nullable — the real {@link com.teducare.lecturer.Lecturer} record this department's HOD is, distinct from the free-text {@code hodName} display field. Drives self-service scoping: a lecturer logged in as this department's HOD sees every course in the department for Results, not just their own personally-taught ones. */
+    @Column(name = "hod_lecturer_id", length = 64)
+    private String hodLecturerId;
+
     @Column(name = "faculty_id", nullable = false, length = 64)
     private String facultyId;
 
@@ -100,6 +104,14 @@ public class Department {
 
     public void setHodSignatureUrl(String hodSignatureUrl) {
         this.hodSignatureUrl = hodSignatureUrl;
+    }
+
+    public String getHodLecturerId() {
+        return hodLecturerId;
+    }
+
+    public void setHodLecturerId(String hodLecturerId) {
+        this.hodLecturerId = hodLecturerId;
     }
 
     public String getFacultyId() {

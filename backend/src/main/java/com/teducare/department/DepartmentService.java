@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.faculty.FacultyService;
+import com.teducare.lecturer.LecturerService;
 import com.teducare.school.SchoolService;
 
 @Service
@@ -17,11 +18,17 @@ public class DepartmentService {
     private final DepartmentRepository repository;
     private final FacultyService facultyService;
     private final SchoolService schoolService;
+    private final LecturerService lecturerService;
 
-    public DepartmentService(DepartmentRepository repository, FacultyService facultyService, SchoolService schoolService) {
+    public DepartmentService(
+            DepartmentRepository repository,
+            FacultyService facultyService,
+            SchoolService schoolService,
+            LecturerService lecturerService) {
         this.repository = repository;
         this.facultyService = facultyService;
         this.schoolService = schoolService;
+        this.lecturerService = lecturerService;
     }
 
     public List<DepartmentResponse> list(
@@ -73,9 +80,17 @@ public class DepartmentService {
         if (isPresent(request.hodName())) {
             department.setHodName(request.hodName());
         }
-        // Unlike every other field here, a non-null-but-blank hodSignatureUrl is meaningful: it explicitly clears the signature, rather than "no change".
+        // Unlike every other field here, a non-null-but-blank hodSignatureUrl/hodLecturerId is meaningful: it explicitly clears the field, rather than "no change".
         if (request.hodSignatureUrl() != null) {
             department.setHodSignatureUrl(request.hodSignatureUrl().isBlank() ? null : request.hodSignatureUrl());
+        }
+        if (request.hodLecturerId() != null) {
+            if (request.hodLecturerId().isBlank()) {
+                department.setHodLecturerId(null);
+            } else {
+                lecturerService.requireOwnLecturer(institutionId, request.hodLecturerId());
+                department.setHodLecturerId(request.hodLecturerId());
+            }
         }
 
         return DepartmentResponse.from(repository.save(department));

@@ -3,8 +3,10 @@ package com.teducare.courseresult;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -17,6 +19,10 @@ import com.teducare.course.CourseResponse;
 import com.teducare.course.CourseService;
 import com.teducare.coursegrade.CourseGrade;
 import com.teducare.coursegrade.CourseGradeRepository;
+import com.teducare.department.DepartmentResponse;
+import com.teducare.department.DepartmentService;
+import com.teducare.lecturer.LectureAssignmentResponse;
+import com.teducare.lecturer.LectureAssignmentService;
 import com.teducare.student.StudentService;
 
 /**
@@ -37,18 +43,61 @@ public class CourseResultService {
     private final CourseGradeRepository courseGradeRepository;
     private final StudentService studentService;
     private final AcademicSemesterService academicSemesterService;
+    private final DepartmentService departmentService;
+    private final LectureAssignmentService lectureAssignmentService;
 
     public CourseResultService(
             CourseResultRepository repository,
             CourseService courseService,
             CourseGradeRepository courseGradeRepository,
             StudentService studentService,
-            AcademicSemesterService academicSemesterService) {
+            AcademicSemesterService academicSemesterService,
+            DepartmentService departmentService,
+            LectureAssignmentService lectureAssignmentService) {
         this.repository = repository;
         this.courseService = courseService;
         this.courseGradeRepository = courseGradeRepository;
         this.studentService = studentService;
         this.academicSemesterService = academicSemesterService;
+        this.departmentService = departmentService;
+        this.lectureAssignmentService = lectureAssignmentService;
+    }
+
+    /**
+     * Every course a caller may manage results for. Null means unrestricted
+     * (a pure admin/registrar caller, no {@code lecturerId} on their
+     * session) — present means a lecturer self-service caller, scoped to
+     * the courses they're personally assigned to teach, plus — if they're
+     * linked as the HOD of one or more departments ({@code
+     * Department.hodLecturerId}) — every course in those departments too,
+     * not just their own.
+     */
+    public Set<String> allowedCourseIds(String institutionId, String lecturerId) {
+        if (lecturerId == null || lecturerId.isBlank()) {
+            return null;
+        }
+        Set<String> allowed = new HashSet<>(
+                lectureAssignmentService.list(institutionId, lecturerId, false).stream()
+                        .map(LectureAssignmentResponse::courseId)
+                        .toList());
+
+        Set<String> hodDepartmentIds = departmentService.list(institutionId, null, null, false).stream()
+                .filter(d -> lecturerId.equals(d.hodLecturerId()))
+                .map(DepartmentResponse::id)
+                .collect(Collectors.toSet());
+        if (!hodDepartmentIds.isEmpty()) {
+            courseService.list(institutionId, null, null, null, false).stream()
+                    .filter(c -> hodDepartmentIds.contains(c.departmentId()))
+                    .forEach(c -> allowed.add(c.id()));
+        }
+        return allowed;
+    }
+
+    private void requireCourseInScope(Set<String> allowedCourseIds, String courseId) {
+        if (allowedCourseIds != null && !allowedCourseIds.contains(courseId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "You can only manage results for your own courses, or your department's if you're its HOD.");
+        }
     }
 
     public List<CourseResultResponse> listForStudentSemester(
@@ -59,13 +108,16 @@ public class CourseResultService {
     }
 
     public List<CourseResultResponse> listForCourseSemester(
-            String institutionId, String courseId, String academicSemesterId) {
+            String institutionId, String courseId, String academicSemesterId, Set<String> allowedCourseIds) {
         courseService.requireOwnCourse(institutionId, courseId);
+        requireCourseInScope(allowedCourseIds, courseId);
         return enrich(institutionId,
                 repository.findByInstitutionIdAndCourseIdAndAcademicSemesterId(institutionId, courseId, academicSemesterId));
     }
 
-    public CourseResultResponse create(String institutionId, CreateCourseResultRequest request) {
+    public CourseResultResponse create(
+            String institutionId, CreateCourseResultRequest request, Set<String> allowedCourseIds) {
+        requireCourseInScope(allowedCourseIds, request.courseId());
         studentService.requireOwnStudent(institutionId, request.studentId());
         courseService.requireOwnCourse(institutionId, request.courseId());
         academicSemesterService.requireOwnSemester(institutionId, request.academicSemesterId());
@@ -93,12 +145,25 @@ public class CourseResultService {
         return enrichOne(result, courseLookup(institutionId), gradeBands(institutionId));
     }
 
-    public CourseResultResponse update(String institutionId, String id, UpdateCourseResultRequest request) {
+    public CourseResultResponse update(
+            String institutionId, String id, UpdateCourseResultRequest request, Set<String> allowedCourseIds) {
         CourseResult result = requireOwnResult(institutionId, id);
+        requireCourseInScope(allowedCourseIds, result.getCourseId());
         result.setScore(request.score());
         result.setUpdatedAt(Instant.now());
         repository.save(result);
         return enrichOne(result, courseLookup(institutionId), gradeBands(institutionId));
+    }
+
+    /** The courses a lecturer self-service caller may pick from — their own assignments plus their HOD department's, if any. */
+    public List<CourseResponse> myCourses(String institutionId, String lecturerId) {
+        Set<String> allowed = allowedCourseIds(institutionId, lecturerId);
+        if (allowed == null || allowed.isEmpty()) {
+            return List.of();
+        }
+        return courseService.list(institutionId, null, null, null, false).stream()
+                .filter(c -> allowed.contains(c.id()))
+                .toList();
     }
 
     public void delete(String institutionId, String id) {
