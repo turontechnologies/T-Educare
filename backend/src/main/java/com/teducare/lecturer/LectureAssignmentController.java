@@ -78,6 +78,17 @@ public class LectureAssignmentController {
         return ResponseEntity.noContent().build();
     }
 
+    /** The caller's own current-semester courses with their rosters — {@code lecturerId} is always resolved from the caller's own session, never accepted from the client, same privacy rule as every other self-service endpoint in this backend. */
+    @GetMapping("/my/students")
+    public List<LecturerCourseRoster> myStudents(Authentication authentication) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        if (caller.lecturerId() == null || caller.lecturerId().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Only an account linked to a Lecturer record has a student roster.");
+        }
+        return service.myStudentRoster(caller.institutionId(), caller.lecturerId());
+    }
+
     @PostMapping("/change-requests")
     public ResponseEntity<TimetableChangeRequestResponse> requestChange(
             Authentication authentication, @Valid @RequestBody RequestTimetableChangeRequest request) {

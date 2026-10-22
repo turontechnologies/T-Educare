@@ -23,6 +23,14 @@ export function useLectureAssignments(
   });
 }
 
+export function useMyStudentRoster(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["my-student-roster"],
+    queryFn: () => lectureAssignmentService.myStudents(),
+    enabled: options.enabled ?? true,
+  });
+}
+
 function useInvalidateAssignments() {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: [ASSIGNMENTS_KEY] });

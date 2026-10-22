@@ -77,6 +77,21 @@ export interface LectureAssignment {
   timetableSlots: TimetableSlot[];
 }
 
+/** Deliberately minimal — a lecturer's course roster shows only the matric number and photo, by explicit request, never the full student record a registrar sees. */
+export interface RosterStudent {
+  studentId: string;
+  matricNo: string | null;
+  avatarUrl: string | null;
+}
+
+/** One of a lecturer's own courses, for the institution's current semester, with the students registered for it. */
+export interface LecturerCourseRoster {
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  students: RosterStudent[];
+}
+
 export type TimetableChangeRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 /** A lecturer's own request to move one of their timetable slots to a different day/time/venue. */

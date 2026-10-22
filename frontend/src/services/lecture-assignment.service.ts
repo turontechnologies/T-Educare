@@ -2,6 +2,7 @@ import { apiClient } from "@/lib/axios";
 import type {
   DayOfWeek,
   LectureAssignment,
+  LecturerCourseRoster,
   TimetableChangeRequest,
   TimetableSlot,
 } from "@/types/lecturer";
@@ -123,6 +124,13 @@ export const lectureAssignmentService = {
       imported: number;
       skipped: number;
     }>("/lecture-assignments/import", formData);
+    return data;
+  },
+
+  async myStudents(): Promise<LecturerCourseRoster[]> {
+    const { data } = await apiClient.get<LecturerCourseRoster[]>(
+      "/lecture-assignments/my/students",
+    );
     return data;
   },
 

@@ -16,6 +16,7 @@ import {
 } from "@/lib/lecture-schedule";
 import { useCoursesStore } from "@/store/courses.store";
 import { RequestTimeChangeDialog } from "./request-time-change-dialog";
+import { StudentRosterPanel } from "./student-roster-panel";
 import {
   WeeklyTimetableGrid,
   type TimetableBlock,

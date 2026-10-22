@@ -11,4 +11,7 @@ public interface CourseRegistrationRepository extends JpaRepository<CourseRegist
 
     void deleteByInstitutionIdAndStudentIdAndAcademicSemesterId(
             String institutionId, String studentId, String academicSemesterId);
+
+    List<CourseRegistration> findByInstitutionIdAndCourseIdAndAcademicSemesterId(
+            String institutionId, String courseId, String academicSemesterId);
 }

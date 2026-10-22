@@ -3,22 +3,32 @@ package com.teducare.lecturer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.teducare.academics.AcademicSemesterResponse;
+import com.teducare.academics.AcademicSemesterService;
 import com.teducare.academics.AcademicSessionResponse;
 import com.teducare.academics.AcademicSessionService;
+import com.teducare.course.Course;
 import com.teducare.course.CourseResponse;
 import com.teducare.course.CourseService;
 import com.teducare.department.DepartmentResponse;
 import com.teducare.department.DepartmentService;
 import com.teducare.programlevel.ProgramLevelResponse;
 import com.teducare.programlevel.ProgramLevelService;
+import com.teducare.registration.CourseRegistration;
+import com.teducare.registration.CourseRegistrationRepository;
+import com.teducare.student.StudentResponse;
+import com.teducare.student.StudentService;
 
 /**
  * "Lectures" (which {@link Lecturer} teaches which Course) and their weekly
@@ -41,8 +51,11 @@ public class LectureAssignmentService {
     private final LecturerService lecturerService;
     private final CourseService courseService;
     private final AcademicSessionService academicSessionService;
+    private final AcademicSemesterService academicSemesterService;
     private final DepartmentService departmentService;
     private final ProgramLevelService programLevelService;
+    private final CourseRegistrationRepository courseRegistrationRepository;
+    private final StudentService studentService;
 
     public LectureAssignmentService(
             LectureAssignmentRepository repository,
@@ -51,8 +64,11 @@ public class LectureAssignmentService {
             LecturerService lecturerService,
             CourseService courseService,
             AcademicSessionService academicSessionService,
+            AcademicSemesterService academicSemesterService,
             DepartmentService departmentService,
-            ProgramLevelService programLevelService) {
+            ProgramLevelService programLevelService,
+            CourseRegistrationRepository courseRegistrationRepository,
+            StudentService studentService) {
         this.repository = repository;
         this.slotRepository = slotRepository;
         this.changeRequestRepository = changeRequestRepository;
@@ -61,6 +77,59 @@ public class LectureAssignmentService {
         this.programLevelService = programLevelService;
         this.courseService = courseService;
         this.academicSessionService = academicSessionService;
+        this.academicSemesterService = academicSemesterService;
+        this.courseRegistrationRepository = courseRegistrationRepository;
+        this.studentService = studentService;
+    }
+
+    /**
+     * One lecturer's own courses for the institution's current semester,
+     * each with the students registered for it — matric number and photo
+     * only, deliberately, not the full student record. Empty if no semester
+     * is marked current yet, or if this lecturer has no active assignment
+     * in the current session. {@link LectureAssignment} is scoped per
+     * session (not semester, which doesn't exist at that layer), so the
+     * current semester's own {@code sessionId} is what actually selects
+     * which assignments count as "current."
+     */
+    public List<LecturerCourseRoster> myStudentRoster(String institutionId, String lecturerId) {
+        AcademicSemesterResponse currentSemester = academicSemesterService.current(institutionId).orElse(null);
+        if (currentSemester == null) {
+            return List.of();
+        }
+
+        List<LectureAssignment> myAssignments = repository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
+                .filter(a -> a.getArchivedAt() == null
+                        && lecturerId.equals(a.getLecturerId())
+                        && currentSemester.sessionId().equals(a.getAcademicSessionId()))
+                .toList();
+        if (myAssignments.isEmpty()) {
+            return List.of();
+        }
+
+        List<StudentResponse> allStudents = studentService.list(
+                institutionId, null, null, null, null, null, null, null, false);
+        Map<String, StudentResponse> studentsById = allStudents.stream()
+                .collect(Collectors.toMap(StudentResponse::id, s -> s));
+
+        return myAssignments.stream()
+                .map(LectureAssignment::getCourseId)
+                .distinct()
+                .map(courseId -> {
+                    Course course = courseService.requireOwnCourse(institutionId, courseId);
+                    List<RosterStudent> students = courseRegistrationRepository
+                            .findByInstitutionIdAndCourseIdAndAcademicSemesterId(
+                                    institutionId, courseId, currentSemester.id())
+                            .stream()
+                            .map(CourseRegistration::getStudentId)
+                            .distinct()
+                            .map(studentsById::get)
+                            .filter(Objects::nonNull)
+                            .map(s -> new RosterStudent(s.id(), s.matricNo(), s.avatarUrl()))
+                            .toList();
+                    return new LecturerCourseRoster(course.getId(), course.getCode(), course.getName(), students);
+                })
+                .toList();
     }
 
     public List<LectureAssignmentResponse> list(String institutionId, String lecturerId, boolean includeArchived) {

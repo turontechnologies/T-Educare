@@ -2,6 +2,7 @@ package com.teducare.academics;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,14 @@ public class AcademicSemesterService {
                 .filter(semester -> includeArchived || semester.getArchivedAt() == null)
                 .map(AcademicSemesterResponse::from)
                 .toList();
+    }
+
+    /** The institution's one currently-active semester, if an admin has marked one — empty if none has. */
+    public Optional<AcademicSemesterResponse> current(String institutionId) {
+        return repository.findByInstitutionIdOrderByFromDesc(institutionId).stream()
+                .filter(semester -> semester.getArchivedAt() == null && semester.isCurrent())
+                .findFirst()
+                .map(AcademicSemesterResponse::from);
     }
 
     public AcademicSemesterResponse create(String institutionId, CreateAcademicSemesterRequest request) {
