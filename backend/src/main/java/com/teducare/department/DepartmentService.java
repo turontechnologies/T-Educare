@@ -73,6 +73,10 @@ public class DepartmentService {
         if (isPresent(request.hodName())) {
             department.setHodName(request.hodName());
         }
+        // Unlike every other field here, a non-null-but-blank hodSignatureUrl is meaningful: it explicitly clears the signature, rather than "no change".
+        if (request.hodSignatureUrl() != null) {
+            department.setHodSignatureUrl(request.hodSignatureUrl().isBlank() ? null : request.hodSignatureUrl());
+        }
 
         return DepartmentResponse.from(repository.save(department));
     }

@@ -32,6 +32,10 @@ public class Department {
     @Column(name = "hod_name", nullable = false, length = 150)
     private String hodName;
 
+    /** Nullable — set once uploaded (via the generic {@code /uploads} endpoint, same as every other avatar/logo image in this backend), shown on this department's own Course Registration Slips only. */
+    @Column(name = "hod_signature_url", length = 500)
+    private String hodSignatureUrl;
+
     @Column(name = "faculty_id", nullable = false, length = 64)
     private String facultyId;
 
@@ -88,6 +92,14 @@ public class Department {
 
     public void setHodName(String hodName) {
         this.hodName = hodName;
+    }
+
+    public String getHodSignatureUrl() {
+        return hodSignatureUrl;
+    }
+
+    public void setHodSignatureUrl(String hodSignatureUrl) {
+        this.hodSignatureUrl = hodSignatureUrl;
     }
 
     public String getFacultyId() {
