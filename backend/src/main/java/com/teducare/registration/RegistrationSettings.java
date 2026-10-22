@@ -55,6 +55,9 @@ public class RegistrationSettings {
     @Column(name = "registration_closes_at")
     private Instant registrationClosesAt;
 
+    @Column(name = "registration_grace_period_ends_at")
+    private Instant registrationGracePeriodEndsAt;
+
     protected RegistrationSettings() {
     }
 
@@ -98,5 +101,13 @@ public class RegistrationSettings {
 
     public void setRegistrationClosesAt(Instant registrationClosesAt) {
         this.registrationClosesAt = registrationClosesAt;
+    }
+
+    public Instant getRegistrationGracePeriodEndsAt() {
+        return registrationGracePeriodEndsAt;
+    }
+
+    public void setRegistrationGracePeriodEndsAt(Instant registrationGracePeriodEndsAt) {
+        this.registrationGracePeriodEndsAt = registrationGracePeriodEndsAt;
     }
 }

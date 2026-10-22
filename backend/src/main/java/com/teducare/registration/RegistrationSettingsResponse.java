@@ -6,5 +6,6 @@ public record RegistrationSettingsResponse(
         boolean requireCarryoverClearance,
         int maxUnitsPerSemester,
         Instant registrationOpensAt,
-        Instant registrationClosesAt) {
+        Instant registrationClosesAt,
+        Instant registrationGracePeriodEndsAt) {
 }

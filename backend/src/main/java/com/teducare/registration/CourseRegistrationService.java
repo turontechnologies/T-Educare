@@ -72,6 +72,7 @@ public class CourseRegistrationService {
     /** @Transactional because the custom derived delete query below isn't auto-wrapped like save()/deleteById() already are — same reasoning as NotificationService.markAllRead, the only other place in this backend needing it explicitly. */
     @Transactional
     public List<CourseRegistrationResponse> replace(String institutionId, ReplaceCourseRegistrationsRequest request) {
+        settingsService.requireRegistrationOpen(institutionId);
         Student student = studentService.requireOwnStudent(institutionId, request.studentId());
         AcademicSemester semester =
                 academicSemesterService.requireOwnSemester(institutionId, request.academicSemesterId());
