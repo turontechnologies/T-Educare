@@ -4,6 +4,10 @@ import type { Department } from "@/types/department";
 export type DepartmentFormPayload = {
   name: string;
   hodName: string;
+  /** Omit to leave unchanged on update; "" explicitly clears it. */
+  hodSignatureUrl?: string;
+  /** Omit to leave unchanged on update; "" explicitly unlinks it. */
+  hodLecturerId?: string;
   facultyId: string;
   schoolId: string;
 };

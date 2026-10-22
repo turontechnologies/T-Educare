@@ -2,6 +2,10 @@ export interface Department {
   id: string;
   name: string;
   hodName: string;
+  /** Nullable — set once an admin uploads it (via the generic uploads endpoint), shown on this department's own Course Registration Slips. */
+  hodSignatureUrl: string | null;
+  /** Nullable — FK to `Lecturer.id`, the real account behind `hodName`. Drives self-service scoping: that lecturer sees every course in this department for Results, not just their own. Independent of `hodName`, which can still be free text if the HOD isn't in the system as a Lecturer. */
+  hodLecturerId: string | null;
   /** FK to `Faculty.id`. */
   facultyId: string;
   /**

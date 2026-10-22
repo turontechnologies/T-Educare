@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, PenTool, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +16,16 @@ import {
   NotchedField,
   NotchedSelectField,
 } from "@/components/shared/notched-field";
+import { useUploadFile } from "@/hooks/use-upload";
 import {
   useCreateDepartment,
   useUpdateDepartment,
 } from "@/hooks/use-departments";
+import { readFileAsDataUrl } from "@/lib/files";
+import { fullName } from "@/lib/lecturers";
 import { useDepartmentsStore } from "@/store/departments.store";
 import { useFacultiesStore } from "@/store/faculties.store";
+import { useLecturersStore } from "@/store/lecturers.store";
 import { useSchoolsStore } from "@/store/schools.store";
 import type { Department } from "@/types/department";
 
@@ -61,7 +65,7 @@ export function DepartmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-md gap-0 overflow-hidden p-0"
+        className="w-full max-w-lg gap-0 overflow-hidden p-0"
       >
         <div className="flex items-center justify-between bg-primary px-6 py-4">
           <DialogTitle className="text-base font-medium text-white">
@@ -98,6 +102,8 @@ function DepartmentForm({
   const updateDepartment = useUpdateDepartment();
   const faculties = useFacultiesStore((state) => state.faculties);
   const schools = useSchoolsStore((state) => state.schools);
+  const lecturers = useLecturersStore((state) => state.lecturers);
+  const uploadFile = useUploadFile();
   const activeFaculties = useMemo(
     () => faculties.filter((f) => !f.archivedAt),
     [faculties],
@@ -106,10 +112,37 @@ function DepartmentForm({
     () => schools.filter((s) => !s.archivedAt),
     [schools],
   );
+  const activeLecturers = useMemo(
+    () => lecturers.filter((l) => !l.archivedAt),
+    [lecturers],
+  );
 
   const [hodName, setHodName] = useState(department?.hodName ?? "");
+  const [hodLecturerId, setHodLecturerId] = useState(
+    department?.hodLecturerId ?? "",
+  );
+  const [hodSignatureUrl, setHodSignatureUrl] = useState<string | undefined>(
+    department?.hodSignatureUrl ?? undefined,
+  );
   const [facultyId, setFacultyId] = useState(department?.facultyId ?? "");
   const [schoolId, setSchoolId] = useState(department?.schoolId ?? "");
+  const signatureInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSignatureChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setHodSignatureUrl(await readFileAsDataUrl(file));
+    try {
+      const { url } = await uploadFile.mutateAsync(file);
+      setHodSignatureUrl(url);
+    } catch {
+      toast.error("Failed to upload signature. Please try again.");
+      setHodSignatureUrl(department?.hodSignatureUrl ?? undefined);
+    }
+  };
 
   const { register, handleSubmit, formState } = useForm<DepartmentFormValues>({
     defaultValues: {
@@ -134,7 +167,14 @@ function DepartmentForm({
       return;
     }
 
-    const payload = { name, hodName, facultyId, schoolId };
+    const payload = {
+      name,
+      hodName,
+      hodLecturerId: hodLecturerId || "",
+      hodSignatureUrl: hodSignatureUrl ?? "",
+      facultyId,
+      schoolId,
+    };
 
     try {
       if (department) {
@@ -157,7 +197,7 @@ function DepartmentForm({
       <form
         id="department-form"
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-5 p-6"
+        className="max-h-[70vh] space-y-5 overflow-y-auto p-6"
       >
         <NotchedField
           label="Department Name"
@@ -175,6 +215,64 @@ function DepartmentForm({
           searchPlaceholder="Search names…"
           emptyText="No name found."
         />
+
+        <NotchedComboboxField
+          label="Linked HOD lecturer account (optional)"
+          labelClassName="bg-popover"
+          value={hodLecturerId}
+          onValueChange={setHodLecturerId}
+          options={activeLecturers.map((l) => ({
+            label: fullName(l),
+            value: l.id,
+          }))}
+          placeholder="None — H.O.D has no lecturer account"
+          searchPlaceholder="Search lecturers…"
+          emptyText="No lecturer found."
+        />
+        <p className="-mt-3 text-xs text-muted-foreground">
+          Only needed if this HOD has a real lecturer login — lets them see
+          every course in this department for Results, not just their own.
+        </p>
+
+        <div className="flex items-center gap-4 rounded-md border border-border p-3.5">
+          <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-dashed border-border bg-muted">
+            {hodSignatureUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={hodSignatureUrl}
+                alt="HOD signature preview"
+                className="size-full object-contain p-1"
+              />
+            ) : (
+              <PenTool className="size-5 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">HOD Signature</p>
+            <p className="text-xs text-muted-foreground">
+              Shown on this department&apos;s own Course Registration Slips.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => signatureInputRef.current?.click()}
+            disabled={uploadFile.isPending}
+            className="shrink-0 gap-1.5 rounded-md"
+          >
+            Upload
+            <Upload className="size-3.5" />
+          </Button>
+          <input
+            ref={signatureInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleSignatureChange}
+            className="sr-only"
+          />
+        </div>
+
         <NotchedSelectField
           label="Faculty"
           labelClassName="bg-popover"

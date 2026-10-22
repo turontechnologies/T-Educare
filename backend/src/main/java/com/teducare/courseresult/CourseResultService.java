@@ -23,6 +23,7 @@ import com.teducare.department.DepartmentResponse;
 import com.teducare.department.DepartmentService;
 import com.teducare.lecturer.LectureAssignmentResponse;
 import com.teducare.lecturer.LectureAssignmentService;
+import com.teducare.student.StudentResponse;
 import com.teducare.student.StudentService;
 
 /**
@@ -142,7 +143,7 @@ public class CourseResultService {
                 now,
                 now);
         repository.save(result);
-        return enrichOne(result, courseLookup(institutionId), gradeBands(institutionId));
+        return enrichOne(result, courseLookup(institutionId), studentLookup(institutionId), gradeBands(institutionId));
     }
 
     public CourseResultResponse update(
@@ -152,7 +153,7 @@ public class CourseResultService {
         result.setScore(request.score());
         result.setUpdatedAt(Instant.now());
         repository.save(result);
-        return enrichOne(result, courseLookup(institutionId), gradeBands(institutionId));
+        return enrichOne(result, courseLookup(institutionId), studentLookup(institutionId), gradeBands(institutionId));
     }
 
     /** The courses a lecturer self-service caller may pick from — their own assignments plus their HOD department's, if any. */
@@ -239,18 +240,26 @@ public class CourseResultService {
                 .collect(Collectors.toMap(CourseResponse::id, c -> c));
     }
 
+    private Map<String, StudentResponse> studentLookup(String institutionId) {
+        return studentService.list(institutionId, null, null, null, null, null, null, null, true).stream()
+                .collect(Collectors.toMap(StudentResponse::id, s -> s));
+    }
+
     private List<CourseResultResponse> enrich(String institutionId, List<CourseResult> results) {
         if (results.isEmpty()) {
             return List.of();
         }
         Map<String, CourseResponse> courses = courseLookup(institutionId);
+        Map<String, StudentResponse> students = studentLookup(institutionId);
         List<CourseGrade> bands = gradeBands(institutionId);
-        return results.stream().map(r -> enrichOne(r, courses, bands)).toList();
+        return results.stream().map(r -> enrichOne(r, courses, students, bands)).toList();
     }
 
     private CourseResultResponse enrichOne(
-            CourseResult result, Map<String, CourseResponse> courses, List<CourseGrade> bands) {
+            CourseResult result, Map<String, CourseResponse> courses,
+            Map<String, StudentResponse> students, List<CourseGrade> bands) {
         CourseResponse course = courses.get(result.getCourseId());
+        StudentResponse student = students.get(result.getStudentId());
         CourseGrade band = bands.stream()
                 .filter(b -> b.getArchivedAt() == null)
                 .filter(b -> result.getScore().compareTo(b.getMinimumScore()) >= 0
@@ -260,6 +269,8 @@ public class CourseResultService {
         return new CourseResultResponse(
                 result.getId(),
                 result.getStudentId(),
+                student == null ? "—" : student.matricNo(),
+                student == null ? "—" : student.firstName() + " " + student.lastName(),
                 result.getCourseId(),
                 course == null ? "—" : course.code(),
                 course == null ? "—" : course.name(),

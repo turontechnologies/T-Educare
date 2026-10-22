@@ -7,6 +7,10 @@ import type {
 export type UpdateRegistrationSettingsPayload = {
   requireCarryoverClearance: boolean;
   maxUnitsPerSemester: number;
+  /** ISO-8601 instant strings — omit or send "" to clear. */
+  registrationOpensAt?: string;
+  registrationClosesAt?: string;
+  registrationGracePeriodEndsAt?: string;
 };
 
 export type ReplaceCourseRegistrationsPayload = {

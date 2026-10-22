@@ -7,6 +7,8 @@ import java.time.Instant;
 public record CourseResultResponse(
         String id,
         String studentId,
+        String studentMatricNo,
+        String studentName,
         String courseId,
         String courseCode,
         String courseName,
