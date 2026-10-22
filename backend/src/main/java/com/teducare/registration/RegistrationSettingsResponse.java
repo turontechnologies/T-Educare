@@ -1,4 +1,10 @@
 package com.teducare.registration;
 
-public record RegistrationSettingsResponse(boolean requireCarryoverClearance, int maxUnitsPerSemester) {
+import java.time.Instant;
+
+public record RegistrationSettingsResponse(
+        boolean requireCarryoverClearance,
+        int maxUnitsPerSemester,
+        Instant registrationOpensAt,
+        Instant registrationClosesAt) {
 }
