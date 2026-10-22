@@ -159,6 +159,48 @@ export function LectureAssignmentDetailsDialog({
                 </div>
               )}
             </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-medium text-foreground">
+                  Students{" "}
+                  {roster && roster.students.length > 0
+                    ? `(${roster.students.length})`
+                    : ""}
+                </p>
+                <span className="text-xs text-muted-foreground">
+                  Current semester
+                </span>
+              </div>
+              {!roster || roster.students.length === 0 ? (
+                <p className="rounded-md border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
+                  <Users className="mx-auto mb-1.5 size-5 text-muted-foreground/60" />
+                  No students registered for this course yet this semester.
+                </p>
+              ) : (
+                <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-6">
+                  {roster.students.map((student) => (
+                    <div
+                      key={student.studentId}
+                      className="flex flex-col items-center gap-1 rounded-md border border-border p-2 text-center"
+                    >
+                      <Avatar className="size-12">
+                        <AvatarImage
+                          src={student.avatarUrl ?? undefined}
+                          alt={student.matricNo ?? "Student"}
+                        />
+                        <AvatarFallback>
+                          <User className="size-5" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="font-mono text-[11px] font-medium text-foreground">
+                        {student.matricNo ?? "—"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </DialogContent>
