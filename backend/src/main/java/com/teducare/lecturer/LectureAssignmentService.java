@@ -107,29 +107,52 @@ public class LectureAssignmentService {
             return List.of();
         }
 
-        List<StudentResponse> allStudents = studentService.list(
-                institutionId, null, null, null, null, null, null, null, false);
-        Map<String, StudentResponse> studentsById = allStudents.stream()
-                .collect(Collectors.toMap(StudentResponse::id, s -> s));
-
+        Map<String, StudentResponse> studentsById = allActiveStudentsById(institutionId);
         return myAssignments.stream()
                 .map(LectureAssignment::getCourseId)
                 .distinct()
-                .map(courseId -> {
-                    Course course = courseService.requireOwnCourse(institutionId, courseId);
-                    List<RosterStudent> students = courseRegistrationRepository
-                            .findByInstitutionIdAndCourseIdAndAcademicSemesterId(
-                                    institutionId, courseId, currentSemester.id())
-                            .stream()
-                            .map(CourseRegistration::getStudentId)
-                            .distinct()
-                            .map(studentsById::get)
-                            .filter(Objects::nonNull)
-                            .map(s -> new RosterStudent(s.id(), s.matricNo(), s.avatarUrl()))
-                            .toList();
-                    return new LecturerCourseRoster(course.getId(), course.getCode(), course.getName(), students);
-                })
+                .map(courseId -> rosterForCourse(institutionId, courseId, currentSemester, studentsById))
                 .toList();
+    }
+
+    /**
+     * Admin-facing counterpart to {@link #myStudentRoster} — the roster for
+     * one specific lecture assignment, whichever lecturer it belongs to, so
+     * an admin reviewing the Lecture Management table can see who's in a
+     * given lecturer's class without needing to be that lecturer. Same
+     * "current semester" scoping and same minimal matric-number-and-photo
+     * shape — naturally empty if the assignment's own session isn't the one
+     * the current semester belongs to.
+     */
+    public LecturerCourseRoster rosterForAssignment(String institutionId, String assignmentId) {
+        LectureAssignment assignment = requireOwnAssignment(institutionId, assignmentId);
+        AcademicSemesterResponse currentSemester = academicSemesterService.current(institutionId).orElse(null);
+        if (currentSemester == null) {
+            Course course = courseService.requireOwnCourse(institutionId, assignment.getCourseId());
+            return new LecturerCourseRoster(course.getId(), course.getCode(), course.getName(), List.of());
+        }
+        return rosterForCourse(institutionId, assignment.getCourseId(), currentSemester, allActiveStudentsById(institutionId));
+    }
+
+    private Map<String, StudentResponse> allActiveStudentsById(String institutionId) {
+        return studentService.list(institutionId, null, null, null, null, null, null, null, false).stream()
+                .collect(Collectors.toMap(StudentResponse::id, s -> s));
+    }
+
+    private LecturerCourseRoster rosterForCourse(
+            String institutionId, String courseId, AcademicSemesterResponse currentSemester,
+            Map<String, StudentResponse> studentsById) {
+        Course course = courseService.requireOwnCourse(institutionId, courseId);
+        List<RosterStudent> students = courseRegistrationRepository
+                .findByInstitutionIdAndCourseIdAndAcademicSemesterId(institutionId, courseId, currentSemester.id())
+                .stream()
+                .map(CourseRegistration::getStudentId)
+                .distinct()
+                .map(studentsById::get)
+                .filter(Objects::nonNull)
+                .map(s -> new RosterStudent(s.id(), s.matricNo(), s.avatarUrl()))
+                .toList();
+        return new LecturerCourseRoster(course.getId(), course.getCode(), course.getName(), students);
     }
 
     public List<LectureAssignmentResponse> list(String institutionId, String lecturerId, boolean includeArchived) {

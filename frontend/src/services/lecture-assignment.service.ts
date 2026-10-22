@@ -134,6 +134,13 @@ export const lectureAssignmentService = {
     return data;
   },
 
+  async assignmentRoster(assignmentId: string): Promise<LecturerCourseRoster> {
+    const { data } = await apiClient.get<LecturerCourseRoster>(
+      `/lecture-assignments/${assignmentId}/students`,
+    );
+    return data;
+  },
+
   async exportTimetable(
     departmentId?: string,
     programLevelId?: string,

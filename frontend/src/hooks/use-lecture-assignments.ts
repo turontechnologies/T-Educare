@@ -31,6 +31,18 @@ export function useMyStudentRoster(options: { enabled?: boolean } = {}) {
   });
 }
 
+/** Admin counterpart to {@link useMyStudentRoster} — one specific assignment's roster, any lecturer. */
+export function useAssignmentRoster(
+  assignmentId: string | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: ["lecture-assignment-roster", assignmentId],
+    queryFn: () => lectureAssignmentService.assignmentRoster(assignmentId!),
+    enabled: (options.enabled ?? true) && !!assignmentId,
+  });
+}
+
 function useInvalidateAssignments() {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: [ASSIGNMENTS_KEY] });

@@ -120,6 +120,8 @@ export function MyLecturesView({ lecturerId }: { lecturerId: string }) {
         </CardContent>
       </Card>
 
+      <StudentRosterPanel />
+
       {changeRequests && changeRequests.length > 0 && (
         <Card className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-500">
           <CardHeader>

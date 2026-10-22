@@ -54,6 +54,12 @@ public class LectureAssignmentController {
                 .body(service.create(requireInstitutionId(authentication), request));
     }
 
+    /** Admin view of one lecture assignment's roster — same shape and "current semester" scoping as the lecturer's own {@code /my/students}, just not restricted to the caller's own assignments. */
+    @GetMapping("/{id}/students")
+    public LecturerCourseRoster students(Authentication authentication, @PathVariable String id) {
+        return service.rosterForAssignment(requireInstitutionId(authentication), id);
+    }
+
     @PostMapping("/{id}/archive")
     public LectureAssignmentResponse archive(Authentication authentication, @PathVariable String id) {
         return service.archive(requireInstitutionId(authentication), id);

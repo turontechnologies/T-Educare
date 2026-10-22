@@ -1,8 +1,18 @@
 "use client";
 
-import { BookOpen, CalendarRange, Clock, MapPin, User, X } from "lucide-react";
+import {
+  BookOpen,
+  CalendarRange,
+  Clock,
+  MapPin,
+  User,
+  Users,
+  X,
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useAssignmentRoster } from "@/hooks/use-lecture-assignments";
 import { DAY_LABELS, formatTimeRange } from "@/lib/lecture-schedule";
 import { fullName } from "@/lib/lecturers";
 import { useAcademicsStore } from "@/store/academics.store";
@@ -58,11 +68,15 @@ export function LectureAssignmentDetailsDialog({
     ? sessions.find((s) => s.id === assignment.academicSessionId)
     : undefined;
 
+  const { data: roster } = useAssignmentRoster(assignment?.id, {
+    enabled: open,
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="w-full max-w-lg gap-0 overflow-hidden p-0"
+        className="w-full max-w-xl gap-0 overflow-hidden p-0"
       >
         <div className="flex items-center justify-between bg-primary px-6 py-4">
           <DialogTitle className="text-base font-medium text-white">
