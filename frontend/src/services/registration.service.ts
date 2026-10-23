@@ -52,6 +52,19 @@ export const courseRegistrationService = {
     return data;
   },
 
+  async listByCourse(
+    courseId: string,
+    academicSemesterId: string,
+  ): Promise<CourseRegistration[]> {
+    const { data } = await apiClient.get<CourseRegistration[]>(
+      "/course-registrations",
+      {
+        params: { courseId, academicSemesterId },
+      },
+    );
+    return data;
+  },
+
   /** Full replace, not additive — same convention as `linkModules`/`GradingScale`'s own PUT. */
   async replace(
     payload: ReplaceCourseRegistrationsPayload,

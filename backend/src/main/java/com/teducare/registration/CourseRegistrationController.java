@@ -33,9 +33,17 @@ public class CourseRegistrationController {
     @GetMapping
     public List<CourseRegistrationResponse> list(
             Authentication authentication,
-            @RequestParam String studentId,
+            @RequestParam(required = false) String studentId,
+            @RequestParam(required = false) String courseId,
             @RequestParam String academicSemesterId) {
-        return service.list(requireInstitutionId(authentication), studentId, academicSemesterId);
+        String institutionId = requireInstitutionId(authentication);
+        if (studentId != null && !studentId.isBlank()) {
+            return service.list(institutionId, studentId, academicSemesterId);
+        }
+        if (courseId != null && !courseId.isBlank()) {
+            return service.listByCourse(institutionId, courseId, academicSemesterId);
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Either studentId or courseId is required.");
     }
 
     /** Full replace, not additive — same convention as `linkModules`/`GradingScale`'s own PUT. */

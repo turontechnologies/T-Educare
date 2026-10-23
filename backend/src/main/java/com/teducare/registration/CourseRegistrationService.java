@@ -69,6 +69,17 @@ public class CourseRegistrationService {
                 .toList();
     }
 
+    /** Every student registered for one course in one semester — backs the "which students can I enter a result for" picker in Results. */
+    public List<CourseRegistrationResponse> listByCourse(String institutionId, String courseId, String academicSemesterId) {
+        courseService.requireOwnCourse(institutionId, courseId);
+        academicSemesterService.requireOwnSemester(institutionId, academicSemesterId);
+        return repository
+                .findByInstitutionIdAndCourseIdAndAcademicSemesterId(institutionId, courseId, academicSemesterId)
+                .stream()
+                .map(CourseRegistrationResponse::from)
+                .toList();
+    }
+
     /** @Transactional because the custom derived delete query below isn't auto-wrapped like save()/deleteById() already are — same reasoning as NotificationService.markAllRead, the only other place in this backend needing it explicitly. */
     @Transactional
     public List<CourseRegistrationResponse> replace(String institutionId, ReplaceCourseRegistrationsRequest request) {

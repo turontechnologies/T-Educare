@@ -39,6 +39,19 @@ export function useCourseRegistrations(
   });
 }
 
+export function useCourseRegistrationsForCourse(
+  courseId: string | undefined,
+  academicSemesterId: string | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: ["course-registrations", "course", courseId, academicSemesterId],
+    queryFn: () =>
+      courseRegistrationService.listByCourse(courseId!, academicSemesterId!),
+    enabled: (options.enabled ?? true) && !!courseId && !!academicSemesterId,
+  });
+}
+
 export function useReplaceCourseRegistrations() {
   const queryClient = useQueryClient();
   return useMutation({
