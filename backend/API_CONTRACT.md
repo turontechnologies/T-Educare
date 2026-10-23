@@ -1571,8 +1571,8 @@ school B is accepted, and `?schoolId=A` correctly excludes it while
 | Method | Path                     | Body                                     | Notes |
 |--------|--------------------------|---------------------------------------------|-------|
 | GET    | `/departments`          | —                                             | supports `?facultyId=`, `?schoolId=`, and `?includeArchived=true` (default `false`) |
-| POST   | `/departments`          | `{ name, hodName, facultyId, schoolId }`       | `409` on a `name` that collides case-insensitively with another non-archived department; `facultyId`/`schoolId` FK to `/faculties` (7.5) / `/schools` (7.4) respectively, each independently validated — `404` if either belongs to a different institution or doesn't exist |
-| PATCH  | `/departments/:id`      | any subset of the fields above                 | for editing; reassigning either FK goes through the same independent guards as create |
+| POST   | `/departments`          | `{ name, hodName, facultyId, schoolId }`       | `409` on a `name` that collides case-insensitively with another non-archived department; `facultyId`/`schoolId` FK to `/faculties` (7.5) / `/schools` (7.4) respectively, each independently validated — `404` if either belongs to a different institution or doesn't exist; deliberately does **not** accept `hodSignatureUrl`/`hodLecturerId` — create first, set those on a follow-up `PATCH` (Jackson silently ignores unknown JSON fields, so this is safe even if a client sends them anyway) |
+| PATCH  | `/departments/:id`      | any subset of the fields above, plus `hodSignatureUrl`, `hodLecturerId` | for editing; reassigning either FK goes through the same independent guards as create |
 | POST   | `/departments/:id/archive` | —                                           | sets `archivedAt = now` |
 | POST   | `/departments/:id/restore` | —                                           | sets `archivedAt = null` |
 
@@ -1583,6 +1583,26 @@ above. `DepartmentService` injects both `FacultyService` and
 `SchoolService` and calls each one's own `requireOwnFaculty`/
 `requireOwnSchool` guard independently — neither FK is validated through
 the other, matching the independent-FK design note above.
+
+**`hodLecturerId` (nullable) is a real FK to `/lecturers` (8.2), distinct
+from `hodName`.** `hodName` stays as-is — a small curated free-text/combobox
+field, unrelated to any real account — because not every institution wants
+its HOD modeled as an actual Lecturer record. `hodLecturerId` is the new,
+separate link used when it should be: validated through
+`LecturerService.requireOwnLecturer()` on `PATCH`, blank clears it.
+`hodSignatureUrl` (nullable) is set the same way every other
+avatar/logo/signature image is — upload the file through the generic
+`POST /uploads` (3.2) first, then `PATCH` the returned URL onto the
+department. Both are **admin-managed** (the admin uploads the signature and
+picks the linked lecturer on the department's behalf) rather than a HOD
+self-service upload — there's no HOD login/self-service surface for this
+yet. This exists to back a planned printable Course Registration Slip (one
+per student, per §7.12) that embeds the issuing department's own
+`hodSignatureUrl` — a Computer Science student's slip would show whichever
+signature is set on the Computer Science department, and every other
+department's students would get their own department's signature the same
+way — but the slip-rendering endpoint itself is **not implemented yet**;
+only the signature/link storage on Department is.
 
 ### 7.7 Programs — institution admin
 
@@ -1698,6 +1718,190 @@ JSON bodies.
 
 Status codes corrected to `409`/`404` (not the original `422`), same
 real-precedent correction already made for every prior resource above.
+
+### 7.11 Lecture Assignments — which Lecturer teaches which Course
+
+**Implemented** (`backend/src/main/java/com/teducare/lecturer/`), referred to
+as "Lectures"/"Lecture Management" in the frontend nav. One
+`LectureAssignment` row is a (lecturer, course, academic session) triple —
+duplicate-checked on that full triple, not just (lecturer, course), so the
+same lecturer can teach the same course again in a later session, and a
+**course can have many lecturers** teaching it in the same session (no
+uniqueness on (course, session) alone) — confirmed with a real live test:
+assigning a second lecturer to a course already taught by another lecturer
+in the same session succeeds with zero conflict.
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/lecture-assignments?lecturerId=&includeArchived=false` | — | every assignment, optionally one lecturer's own |
+| POST | `/lecture-assignments` | `{ lecturerId, courseId, academicSessionId }` | `409` on a duplicate triple |
+| POST | `/lecture-assignments/:id/archive` \| `/restore` | — | soft delete |
+| POST | `/lecture-assignments/:id/timetable-slots` | `{ dayOfWeek, startTime, endTime, venue }` | adds one weekly recurring slot to the assignment |
+| DELETE | `/lecture-assignments/:id/timetable-slots/:slotId` | — | removes one slot |
+| GET | `/lecture-assignments/:id/students` | — | admin view of this one assignment's roster (see below) |
+| POST | `/lecture-assignments/change-requests` | `{ timetableSlotId, proposedDayOfWeek, proposedStartTime, proposedEndTime, proposedVenue?, reason }` | lecturer self-service only — proposes a different day/time/venue for one of their own slots |
+| GET | `/lecture-assignments/change-requests?lecturerId=` | — | admin sees all, or one lecturer's own |
+| POST | `/lecture-assignments/change-requests/:id/approve` \| `/reject` | — | admin resolves a pending change request |
+| POST | `/lecture-assignments/import` | multipart CSV, field `file` | `200, { "imported", "skipped" }` |
+| GET | `/lecture-assignments/export?departmentId=&programLevelId=` | — | CSV download of the timetable |
+
+**Student roster (`/lecture-assignments/:id/students` and the self-service
+`GET /lecture-assignments/my/students`) is deliberately minimal — matric
+number and photo only, by explicit request, not the full student record a
+registrar sees** (`RosterStudent { studentId, matricNo, avatarUrl }`, grouped
+per course as `LecturerCourseRoster { courseId, courseCode, courseName,
+students[] }`). Built from real `CourseRegistration` rows (§7.12), scoped to
+the institution's **current** academic session's semester — not the whole
+registration history — so a roster always reflects who's actually taking the
+course right now. `/my/students` resolves `lecturerId` from the caller's own
+session (`AuthenticatedUser.lecturerId`), never accepted from the client,
+same self-service-privacy rule used throughout this backend; a caller
+without a linked `lecturerId` gets `403`.
+
+A **lecturer self-service account is just an `institution_admin`-role User
+Manager account with a `lecturerId` linked** (§4.5) — there's no separate
+role for it. Every self-service endpoint above (`/my/students`,
+`change-requests` submission) is gated on that link being present, not on a
+different role check.
+
+### 7.12 Course Registration — settings, the registration window & replace
+
+**Implemented** (`backend/src/main/java/com/teducare/registration/`).
+`RegistrationSettings` is a single institution-wide policy row (same
+"one row per institution, upserted wholesale" shape as `GradingScale`,
+§7.9), governing three independent things:
+
+- **Carryover-first** (`requireCarryoverClearance`, default `true`) — a
+  student with outstanding carryover courses (from
+  `StudentService.latestCarryoverCourseIds`) must include every one of them
+  in the same registration submission before any new-level course is
+  accepted.
+- **Total-unit cap** (`maxUnitsPerSemester`, default `24`) — the sum of the
+  submitted courses' effective units (department-specific overrides
+  resolved via `CourseService.resolveEffectiveUnit`) can't exceed this.
+- **The registration window** (`registrationOpensAt` /
+  `registrationClosesAt` /`registrationGracePeriodEndsAt`, all nullable
+  `Instant`) — **null `opensAt`/`closesAt` means unrestricted** (the
+  original behavior, before this window existed), not locked out.
+  `registrationGracePeriodEndsAt` is a **separate, repeatedly-settable**
+  extension past `closesAt` (same "status + grace timestamp" shape as
+  `Institution.graceEndsAt`, §4.8) — an admin reopens registration after a
+  close by setting/extending the grace period to whatever date they want,
+  as many times as they want, independent of the original window; nothing
+  about "reopening" is special beyond calling `PUT /registration-settings`
+  again with a later date.
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/registration-settings` | — | `{ requireCarryoverClearance, maxUnitsPerSemester, registrationOpensAt, registrationClosesAt, registrationGracePeriodEndsAt }`; get-or-default (`true`/`24`/`null`/`null`/`null`) when no row exists yet |
+| PUT | `/registration-settings` | same shape, window fields as ISO-8601 instant strings | upserts; a blank/omitted window field clears it (same "blank is meaningful" convention as `lecturerId` on Courses) |
+| GET | `/course-registrations?studentId=&academicSemesterId=` | — | one student's registrations for a semester |
+| GET | `/course-registrations?courseId=&academicSemesterId=` | — | every student registered for one course in a semester — backs the Results (§7.13) student picker and the roster (§7.11) |
+| PUT | `/course-registrations` | `{ studentId, academicSemesterId, courseIds[] }` | **full replace, not additive** (same convention as `linkModules`/`GradingScale`'s own `PUT`) — `409` if the registration window is closed and no grace period covers `now` |
+
+Each submitted course is also validated: must be registrable by the
+student's own department (home course, or a borrowed
+`CourseDepartmentOffering` grant); a non-carryover course must match the
+student's current `programLevelId` (a carryover course is exempt — it's
+from an earlier level by definition); must match the semester's own
+`semesterNumber` when both are set; and every applicable elective group
+("choose N of these" — `com.teducare.elective.ElectiveGroupService`,
+undocumented pre-existing resource) for the student's department+level
+must have between `minSelect` and `maxSelect` of its member courses
+present in the submission. `requireRegistrationOpen` is checked **first**, before any of
+these, so a closed window short-circuits with a clear `409` rather than a
+confusing validation error further down.
+
+```json
+// GET /registration-settings
+{
+  "requireCarryoverClearance": true,
+  "maxUnitsPerSemester": 24,
+  "registrationOpensAt": "2026-09-01T00:00:00Z",
+  "registrationClosesAt": "2026-09-30T23:59:59.999Z",
+  "registrationGracePeriodEndsAt": "2026-10-10T23:59:59.999Z"
+}
+```
+
+A planned **printable Course Registration Slip** (one per student, listing
+their registered courses with units/totals per semester, embedding the
+issuing department's `hodSignatureUrl`, §7.6) is **not implemented yet** —
+only the registration data and window/grace-period enforcement it would
+read from are.
+
+### 7.13 Course Results, GPA & CGPA — minimal score entry
+
+**Implemented** (`backend/src/main/java/com/teducare/courseresult/`).
+Deliberately minimal scope, by explicit request: plain score entry per
+(student, course, semester), no approval/publish workflow and no
+deadlines/penalties — the grade and grade point are **never stored**,
+always computed live at read time from the institution's own
+`CourseGrade` bands (§7.9) against the stored `score`, same "never
+denormalize something computable" rule used throughout this backend.
+`gradeCode`/`gradeRemark`/`gradePoint` come back `null` when a score
+doesn't fall within any configured band.
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/course-results?studentId=&academicSemesterId=` | — | one student's results for a semester |
+| GET | `/course-results?courseId=&academicSemesterId=` | — | one course's results for a semester — scoped (see below) |
+| GET | `/course-results/my/courses` | — | the caller's own scoped course list for the Results course picker; **empty for a pure admin** — use the regular `/courses` (7.10) instead |
+| POST | `/course-results` | `{ studentId, courseId, academicSemesterId, score }` | `score` is `0-100`; `403` if the course is outside the caller's scope |
+| PATCH | `/course-results/:id` | `{ score }` | score-only edit |
+| DELETE | `/course-results/:id` | — | |
+| GET | `/course-results/gpa?studentId=&academicSemesterId=` | — | `{ academicSemesterId, gpa, totalUnits, courseCount }` — one semester |
+| GET | `/course-results/cgpa?studentId=` | — | `{ cgpa, totalUnits, courseCount, bySemester[] }` — cumulative across every semester the student has results for, plus the per-semester breakdown, in one call |
+
+GPA = `Σ(gradePoint × courseUnit) / Σ courseUnit` for the semester's scored
+results; CGPA is the same formula run across every semester at once
+(batched, not N queries), rounded to 2dp (`HALF_UP`). **`gpa`/`cgpa` are
+`Double`, `null` (not `0.0`) when the student has no scored results yet** —
+the frontend needs to tell "no results" apart from a real `0.00`.
+
+**Scoped to the caller when they're a lecturer** (`AuthenticatedUser
+.lecturerId` present, same self-service convention as §7.11): allowed
+course IDs are their own `LectureAssignment` courses, **union** every
+course in any department where `Department.hodLecturerId` (§7.6) equals
+their own lecturer id — an HOD sees their whole department's courses, not
+just the ones they personally teach. A **pure admin caller (no
+`lecturerId`) is unrestricted.** `allowedCourseIds` returns `null` for
+"unrestricted" vs. a real (possibly empty) `Set<String>` for a scoped
+caller; `list`/`create`/`update` all run the same `requireCourseInScope`
+check, which `403`s with "You can only manage results for your own
+courses, or your department's if you're its HOD." on violation. Live
+verified: an HOD linked to Computer Science can enter a result for a CS
+course she doesn't personally teach (department-wide access), and is
+rejected entering one for an Accounting course.
+
+```json
+// GET /course-results?courseId=...&academicSemesterId=...
+[
+  { "id": "courseresult-...", "studentId": "student-...", "studentMatricNo": "SU-10001",
+    "studentName": "Chidinma Okafor", "courseId": "course-...", "courseCode": "CSC101",
+    "courseName": "Introduction to Computer Science", "courseUnit": 3,
+    "academicSemesterId": "semester-...", "score": 85.00,
+    "gradeCode": "A", "gradeRemark": "Distinction", "gradePoint": 5.00,
+    "createdAt": "2026-10-22T14:24:09Z", "updatedAt": "2026-10-22T14:24:09Z" }
+]
+```
+
+```mermaid
+sequenceDiagram
+    participant L as Lecturer (self-service)
+    participant B as Backend
+    participant H as HOD (self-service)
+
+    L->>B: GET /course-results/my/courses
+    B-->>L: just their own assigned courses
+    L->>B: POST /course-results (own course)
+    B-->>L: 201 created
+    L->>B: POST /course-results (another department's course)
+    B-->>L: 403 — not their course, not their HOD department
+    H->>B: GET /course-results/my/courses
+    B-->>H: their own courses UNION their whole department's
+    H->>B: POST /course-results (a course in their dept they don't personally teach)
+    B-->>H: 201 created — HOD department-wide access
+```
 
 ## 8. Staff Designations — institution admin
 
@@ -2065,9 +2269,15 @@ Attendance reads Leave, Leave never reads Attendance).
   through `/attendance/manual-entries` by hand; skips rows missing a
   required column, naming a staff member that doesn't resolve, an
   unrecognized `eventType`, or an unparsable `occurredAt`.
-- `GET /attendance/manual-entries/export?from=&to=` — CSV download
-  (`staffId,staffName,eventType,occurredAt,source,note`) of every clock
-  event (device or manual) in the range.
+- `GET /attendance/manual-entries/export?from=&to=&format=csv|xlsx|pdf` —
+  download (`staffId,staffName,eventType,occurredAt,source,note` columns)
+  of every clock event (device or manual) in the range. `format` defaults
+  to `csv`; `xlsx` (Apache POI) and `pdf` (OpenPDF, landscape A4, titled
+  "Attendance Export — {from} to {to}") are the same data through
+  `com.teducare.export.TabularExport` — a generic `(headers, rows) →
+  byte[]` writer shared by any module that needs more than CSV. The other
+  CSV exports in this backend (Leave §13, Lecture Assignments §7.11,
+  Students/Courses/Staff) are CSV-only; `format` was only asked for here.
 
 ```json
 {

@@ -1151,6 +1151,76 @@ menu items)"`), and `Status` reads a new `summary.institutionStatus`
   trigger showed the department's raw UUID, not its name), not by reasoning
   about the code — fixed by passing `items={[{label, value}, ...]}` matching
   the pattern already established in `leave-requests-panel`'s status filter.
+- **A second, bigger dialog-width bug found and fixed (2026-10-20), distinct
+  from the `min-w-0` one above** — reported via four screenshots (Elective
+  Groups, Manage Borrowing ×2, Student Identification) all still overflowing
+  or truncating even after the `min-w-0` fix. Root cause this time was in
+  `components/ui/dialog.tsx` itself: `DialogContent`'s base class included
+  `max-w-[calc(100%-2rem)] ... sm:max-w-sm`, and **every one of ~52 dialogs
+  app-wide overrides width with a bare, unprefixed `className="max-w-X"`**.
+  Tailwind-merge only replaces a utility in the same "slot" as what it's
+  merged against — a bare `max-w-X` only ever replaces the base's
+  _unprefixed_ `max-w-[calc(100%-2rem)]`, never the `sm:`-prefixed one, so on
+  any screen ≥640px every custom-width dialog was silently stuck at the
+  `sm:max-w-sm` default (384px) regardless of its intended width, while
+  _below_ 640px the override applied with nothing constraining it, so it
+  could overflow the viewport instead. Confirmed by direct
+  `getComputedStyle`/`boundingBox()` measurement at 1400/609/375px before and
+  after, not just visual inspection. Fixed once, in the base component only:
+  changed the default to a real `width` (`w-[calc(100%-2rem)]`, immune to a
+  consumer's `max-w-*` override since `width` and `max-width` are different
+  Tailwind-merge slots) plus a plain `max-w-sm` (now actually replaceable).
+  **No per-dialog changes needed** — every one of the ~52 dialogs picked up
+  its real intended width immediately; verified live against "Manage
+  Borrowing" and "Leave Breakdown" rendering at full width post-fix.
+- **Student roster (2026-10-21)**: a lecturer's own course roster
+  (`StudentRosterPanel`, wired into `MyLecturesView`) and the admin-facing
+  equivalent inside `LectureAssignmentDetailsDialog`'s new "Students"
+  section — deliberately minimal by explicit request, matric number + photo
+  only (`RosterStudent`), not the full student record. Backed by
+  `useMyStudentRoster()` (self-service, scoped to the caller's own courses)
+  and `useAssignmentRoster(assignmentId)` (admin, any assignment).
+- **Registration window, grace period & HOD signature/link (2026-10-21/22)**:
+  `registration-settings-dialog.tsx` gained three `NotchedDateField`s (Opens/
+  Closes/Grace period, date-only granularity — `closesAt`/`graceEndsAt` are
+  end-of-day so "closes Jan 31" still works _through_ Jan 31) with an
+  opens-after-closes guard; "reopening" is just calling update again with a
+  later grace-period date, as many times as needed. `department-dialog.tsx`
+  gained a `NotchedComboboxField` "Linked HOD lecturer account" (real FK,
+  distinct from the pre-existing free-text `hodName`) and a signature-upload
+  block mirroring `user-manager-dialog.tsx`'s avatar-upload pattern exactly
+  (`useUploadFile` + preview + hidden file input). Both admin-managed, not a
+  HOD self-service login — confirmed via `AskUserQuestion` before building,
+  since the user's own phrasing ("the hod... will upload") suggested
+  otherwise at first.
+- **Results Management + GPA/CGPA (2026-10-22/23)**: `dashboard/results/page.tsx`
+  replaced its `ModulePlaceholder` with a real course+semester picker (scoped
+  via `useMyResultCourses()` when `user.lecturerId` is present — a lecturer
+  sees only their own assigned courses, an HOD sees their whole department's,
+  per the backend scoping in API_CONTRACT.md §7.13), an enriched results
+  table with inline edit/delete, `EnterResultDialog` (only offers students
+  genuinely registered for the course+semester via
+  `useCourseRegistrationsForCourse`, never the whole student body), and a
+  Student GPA/CGPA lookup card. Edit-in-place dialog follows the same
+  `{open && <Body key={row.id} .../>}` remount-for-fresh-state convention
+  already established in `department-dialog.tsx`, rather than reusing the
+  generic `ConfirmDialog` (which doesn't render children and always closes
+  regardless of the confirm handler's outcome — wrong fit for a form that
+  needs to stay open on validation failure). A bare `Select` showing a
+  not-yet-chosen value must pass `value={x || null}` (not `value={x}` with
+  `x` as `""`) for its placeholder to render — same root cause as the
+  `items` gotcha above, just the null-vs-empty-string half of it; mirrors
+  `NotchedSelectField`'s own `value === "" ? null : value` conversion.
+  Live-verified end to end (Playwright) as both an admin and the HOD-linked
+  `amina_lecturer` self-service login — the course picker genuinely narrows
+  to her department's 3 courses, not the full catalog.
+- **Attendance export format (2026-10-21)**: `attendance-export-dialog.tsx`
+  (date-range presets + CSV/XLSX/PDF format select) replaced the old
+  one-click CSV export, via `ImportExportBar`'s `onExportClick` override.
+  PDF correctness was checked by actually rendering the downloaded file to a
+  PNG (`npx pdf-to-png-converter`), not just by inspecting bytes — caught a
+  real off-by-one in the title's date range this way (see backend
+  `AttendanceService.export` note in `backend/CLAUDE.md`).
 
 ## Commands
 
