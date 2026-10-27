@@ -512,6 +512,22 @@ public class StudentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found."));
     }
 
+    /**
+     * Updates the plain "which hostel/room this student currently lives in"
+     * summary (see {@link Student}'s own doc comment) — called by
+     * {@code HostelAllocationService} whenever an allocation becomes
+     * ALLOCATED (both non-null) or stops being ALLOCATED (both null, e.g.
+     * moved to waitlist or removed). Deliberately a plain cached summary,
+     * not a live join against hostel allocations, same as every other
+     * "cached value" field in this entity.
+     */
+    public void assignHostel(String institutionId, String studentId, String hostelName, String roomNumber) {
+        Student student = requireOwnStudent(institutionId, studentId);
+        student.setHostelName(hostelName);
+        student.setRoomNumber(roomNumber);
+        repository.save(student);
+    }
+
     /** Newest-first history's most recent record's outstanding carryover course ids — what CourseRegistrationService needs to enforce the carryover-first rule. Empty list if the student has no history yet or nothing outstanding. */
     public List<String> latestCarryoverCourseIds(String institutionId, String studentId) {
         requireOwnStudent(institutionId, studentId);
