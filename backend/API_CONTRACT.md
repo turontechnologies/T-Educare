@@ -2407,3 +2407,66 @@ sequenceDiagram
     S->>B: POST /leave/my/requests/{id}/resume (note)
     B-->>S: 200 resumedAt set
 ```
+
+---
+
+## 14. Hostel Management
+
+**Implemented** (`backend/src/main/java/com/teducare/hostel/`). A `Hostel`
+has its `HostelRoom`s in a separate table (each room has its own bedspace
+capacity), and `HostelAllocation` is one row per student — never a history
+of past allocations, since the design has no "past allocations" view, only
+the three live states it cycles through:
+
+```
+WAITLIST --(propose: pick hostel+room, "Move to allocations")--> PENDING_ALLOCATION
+PENDING_ALLOCATION --(confirm, "Allocate")--> ALLOCATED
+ALLOCATED --(confirm, "Change room")--> ALLOCATED (new room)
+any status --(moveToWaitlist, "Move to waitlist")--> WAITLIST
+PENDING_ALLOCATION --("Reject", deleted)
+ALLOCATED --("Remove from hostel", deleted)
+```
+
+**Occupancy is never stored, always computed at read time** from
+`HostelAllocation` — same "never denormalize something computable" rule
+used throughout this backend — and **only ALLOCATED rows count as
+occupying a bedspace**; a PENDING_ALLOCATION's tentative pick doesn't
+reserve the room, so two pending proposals can point at the same bed until
+one is actually confirmed. Computed in one batched pass per request
+(load every allocation for the institution once, group by room in memory),
+not per-room/per-hostel queries.
+
+**Every transition into or out of ALLOCATED syncs `Student.hostelName`/
+`roomNumber`** (`StudentService.assignHostel`) — those two fields already
+existed on `Student` as a deliberate plain cached summary ("which
+hostel/room this student currently lives in," not a live join), added
+ahead of this module being built; PENDING_ALLOCATION never touches them,
+since it isn't confirmed yet.
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/hostels` | — | each with `totalRooms`, `totalBedspaces`, `occupiedCount`, and `rooms[]` (each room's own `capacity`/`occupiedCount`) |
+| POST | `/hostels` | `{ name, rooms: [{ roomNumber, capacity }], photoUrl? }` | `photoUrl` set the same way every other avatar/logo/signature is — upload via `POST /uploads` (3.2) first, then pass the URL |
+| PATCH | `/hostels/:id` | same shape | full replace of the rooms list — a room no longer present is removed, `409` if it still holds an ALLOCATED student |
+| GET | `/hostels/:id/roster` | — | "View Student List" — every ALLOCATED occupant (matric/name/department/room), **not** PENDING_ALLOCATION ones |
+| GET | `/hostel-allocations?status=` | — | optionally filtered to `PENDING_ALLOCATION`/`ALLOCATED`/`WAITLIST` |
+| POST | `/hostel-allocations` | `{ studentId, hostelId, roomId }` | "Add Student" — creates a new PENDING_ALLOCATION; `409` if the student already has an allocation record (one per student, enforced by a unique index) |
+| POST | `/hostel-allocations/:id/propose` | `{ hostelId, roomId }` | WAITLIST -> PENDING_ALLOCATION |
+| POST | `/hostel-allocations/:id/confirm` | `{ hostelId, roomId }` | -> ALLOCATED, syncs the student's cached summary |
+| POST | `/hostel-allocations/:id/waitlist` | — | any status -> WAITLIST, clears the room and the student's cached summary if it was ALLOCATED |
+| DELETE | `/hostel-allocations/:id` | — | "Reject"/"Remove from hostel" — same action; the record serves no further purpose once dropped, so it's a real delete, not a status/archive (no "rejected" view exists in the design) |
+
+No archive/restore on `Hostel` itself — unlike most resources in this
+backend, nothing in the design calls for soft-deleting one (no delete
+action on it at all), so one wasn't added speculatively.
+
+```json
+// GET /hostel-allocations?status=PENDING_ALLOCATION
+[
+  { "id": "hostelalloc-...", "studentId": "student-...", "studentMatricNo": "SU-1034",
+    "studentName": "Ibrahim Okonkwo", "departmentName": "Computer Science",
+    "hostelId": "hostel-...", "hostelName": "Maple Hall",
+    "roomId": "hostelroom-...", "roomNumber": "204",
+    "status": "PENDING_ALLOCATION", "createdAt": "2026-10-27T10:50:45Z" }
+]
+```

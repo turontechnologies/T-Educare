@@ -1221,6 +1221,31 @@ menu items)"`), and `Status` reads a new `summary.institutionStatus`
   PNG (`npx pdf-to-png-converter`), not just by inspecting bytes — caught a
   real off-by-one in the title's date range this way (see backend
   `AttendanceService.export` note in `backend/CLAUDE.md`).
+- **Hostel Management built (2026-10-27)**, the first of three modules built
+  from a Figma-site reference prototype (logged in and clicked through every
+  tab/dialog/action menu live via Playwright before writing any code, since
+  there was no spec doc — the mock already rendered through this app's own
+  component library pixel-for-pixel, confirming "build to this, don't
+  change our conventions" just meant implementing the same functionality,
+  not adopting different chrome). `dashboard/hostel/page.tsx` replaced its
+  `ModulePlaceholder` with the same `Tabs`/`TabsList(variant="line")`
+  three-panel pattern `staff/attendance/page.tsx` already established
+  (Hostels/Allocations/Waitlist). `hostels-panel.tsx` is a card grid, not a
+  table — `Card`/`CardHeader`(Show-entries+Search)/`CardContent` still wrap
+  it, same chrome as every table panel, just a `grid` of cards instead of
+  `<Table>` inside. `hostel-dialog.tsx`'s dynamic room rows (+ Room button,
+  per-row trash icon) are plain `useState<RoomRow[]>`, not a react-hook-form
+  field array — no precedent for the latter existed in this codebase and
+  add/remove is simpler as plain array state. `assign-room-dialog.tsx` is
+  shared by three different actions ("Allocate," "Change room," "Move to
+  allocations") via a `mode: "confirm" | "propose"` prop, rather than three
+  near-identical dialogs, since all three are the same hostel/room picker
+  against a different resulting status. Live-verified the full workflow in
+  the real browser (Playwright): create a hostel with rooms → add a student
+  → allocate → move to waitlist → move back to allocations → reject —
+  confirming each toast, status badge, and table transition matched: see
+  `backend/CLAUDE.md`'s own Hostel Management entry for what the state
+  machine means.
 
 ## Commands
 
