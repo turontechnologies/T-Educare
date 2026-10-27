@@ -4,13 +4,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,18 +17,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.auth.AuthDirectory;
 import com.teducare.auth.AuthenticatedUserDto;
-import com.teducare.course.CourseResponse;
 
 import jakarta.validation.Valid;
 
 /**
- * Institution-scoped Course Results — score entry and the GPA/CGPA
- * computed from it, always "my own institution's", resolved from the
- * caller. A caller linked to a Lecturer record (self-service, same
- * {@code institution_admin}-role-plus-linked-id convention as every other
- * self-service surface in this backend) is scoped to their own courses,
- * plus their whole department's if they're linked as its HOD — a pure
- * admin/registrar caller (no {@code lecturerId}) is unrestricted.
+ * Results Management — marking guide, grace period, score entry, and the
+ * publish workflow (API_CONTRACT.md §16). Always "my own institution's",
+ * resolved from the caller; a caller linked to a Lecturer record is scoped
+ * to their own courses (plus their HOD department's), a pure admin caller
+ * is unrestricted — see {@link CourseResultService#allowedCourseIds}.
  */
 @RestController
 @RequestMapping("/api/course-results")
@@ -44,64 +39,144 @@ public class CourseResultController {
         this.authDirectory = authDirectory;
     }
 
-    @GetMapping
-    public List<CourseResultResponse> list(
-            Authentication authentication,
-            @RequestParam(required = false) String studentId,
-            @RequestParam(required = false) String courseId,
+    // ---- Marking guide ----
+
+    @GetMapping("/marking-guide")
+    public MarkingGuideResponse getMarkingGuide(Authentication authentication) {
+        return service.getMarkingGuide(requireInstitutionId(authentication));
+    }
+
+    @PutMapping("/marking-guide")
+    public MarkingGuideResponse updateMarkingGuide(
+            Authentication authentication, @Valid @RequestBody UpdateMarkingGuideRequest request) {
+        return service.updateMarkingGuide(requireInstitutionId(authentication), request);
+    }
+
+    // ---- Grace period ----
+
+    @GetMapping("/grace-period")
+    public GracePeriodResponse getGracePeriod(Authentication authentication) {
+        return service.getGracePeriod(requireInstitutionId(authentication));
+    }
+
+    @PutMapping("/grace-period")
+    public GracePeriodResponse updateGracePeriod(
+            Authentication authentication, @Valid @RequestBody UpdateGracePeriodRequest request) {
+        return service.updateGracePeriod(requireInstitutionId(authentication), request);
+    }
+
+    // ---- Course list (admin "Courses" tab / lecturer "My Courses" tab) ----
+
+    @GetMapping("/courses")
+    public List<CourseListItemResponse> listCourses(
+            Authentication authentication, @RequestParam String academicSemesterId) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        Set<String> allowed = service.allowedCourseIds(caller.institutionId(), caller.lecturerId());
+        return service.listCourses(caller.institutionId(), allowed, academicSemesterId);
+    }
+
+    @GetMapping("/courses/{courseId}/review")
+    public CourseReviewResponse review(
+            Authentication authentication, @PathVariable String courseId, @RequestParam String academicSemesterId) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        Set<String> allowed = service.allowedCourseIds(caller.institutionId(), caller.lecturerId());
+        return service.review(caller.institutionId(), courseId, academicSemesterId, allowed);
+    }
+
+    @PostMapping("/courses/{courseId}/publish")
+    public void publish(
+            Authentication authentication, @PathVariable String courseId, @RequestParam String academicSemesterId) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        service.publish(caller.institutionId(), courseId, academicSemesterId, callerName(caller));
+    }
+
+    @PostMapping("/courses/{courseId}/unpublish")
+    public void unpublish(
+            Authentication authentication, @PathVariable String courseId, @RequestParam String academicSemesterId,
+            @Valid @RequestBody UnpublishRequest request) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        service.unpublish(caller.institutionId(), courseId, academicSemesterId, callerName(caller), request);
+    }
+
+    @GetMapping("/courses/{courseId}/history")
+    public List<CourseResultEventResponse> history(
+            Authentication authentication, @PathVariable String courseId, @RequestParam String academicSemesterId) {
+        return service.history(requireInstitutionId(authentication), courseId, academicSemesterId);
+    }
+
+    // ---- Score entry (lecturer) ----
+
+    @GetMapping("/my/courses/{courseId}")
+    public MyCourseProgressResponse myCourseProgress(
+            Authentication authentication, @PathVariable String courseId, @RequestParam String academicSemesterId) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        Set<String> allowed = service.allowedCourseIds(caller.institutionId(), caller.lecturerId());
+        return service.myCourseProgress(caller.institutionId(), courseId, academicSemesterId, allowed);
+    }
+
+    @GetMapping("/my/courses/{courseId}/components/{componentId}/scores")
+    public ComponentScoresResponse componentScores(
+            Authentication authentication, @PathVariable String courseId, @PathVariable String componentId,
             @RequestParam String academicSemesterId) {
         AuthenticatedUserDto caller = requireCaller(authentication);
-        if (studentId != null && !studentId.isBlank()) {
-            return service.listForStudentSemester(caller.institutionId(), studentId, academicSemesterId);
-        }
-        if (courseId != null && !courseId.isBlank()) {
-            Set<String> allowed = service.allowedCourseIds(caller.institutionId(), caller.lecturerId());
-            return service.listForCourseSemester(caller.institutionId(), courseId, academicSemesterId, allowed);
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Either studentId or courseId is required.");
+        Set<String> allowed = service.allowedCourseIds(caller.institutionId(), caller.lecturerId());
+        return service.componentScores(caller.institutionId(), courseId, componentId, academicSemesterId, allowed);
     }
 
-    /** The courses the caller may pick from when entering results — their own assignments, plus their HOD department's if any. Only meaningful for a lecturer self-service caller; empty for a pure admin, who isn't scoped at all and uses the plain Courses list instead. */
-    @GetMapping("/my/courses")
-    public List<CourseResponse> myCourses(Authentication authentication) {
-        AuthenticatedUserDto caller = requireCaller(authentication);
-        return service.myCourses(caller.institutionId(), caller.lecturerId());
-    }
-
-    @PostMapping
-    public ResponseEntity<CourseResultResponse> create(
-            Authentication authentication, @Valid @RequestBody CreateCourseResultRequest request) {
+    @PutMapping("/my/courses/{courseId}/components/{componentId}/scores")
+    public void saveComponentScores(
+            Authentication authentication, @PathVariable String courseId, @PathVariable String componentId,
+            @RequestParam String academicSemesterId, @Valid @RequestBody SaveComponentScoresRequest request) {
         AuthenticatedUserDto caller = requireCaller(authentication);
         Set<String> allowed = service.allowedCourseIds(caller.institutionId(), caller.lecturerId());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.create(caller.institutionId(), request, allowed));
+        service.saveComponentScores(caller.institutionId(), courseId, componentId, academicSemesterId, request, allowed);
     }
 
-    @PatchMapping("/{id}")
-    public CourseResultResponse update(
-            Authentication authentication, @PathVariable String id, @Valid @RequestBody UpdateCourseResultRequest request) {
+    @PostMapping("/my/courses/{courseId}/submit")
+    public void submit(
+            Authentication authentication, @PathVariable String courseId, @RequestParam String academicSemesterId) {
         AuthenticatedUserDto caller = requireCaller(authentication);
         Set<String> allowed = service.allowedCourseIds(caller.institutionId(), caller.lecturerId());
-        return service.update(caller.institutionId(), id, request, allowed);
+        service.submit(caller.institutionId(), courseId, academicSemesterId, callerName(caller), allowed);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable String id) {
-        service.delete(requireCaller(authentication).institutionId(), id);
-        return ResponseEntity.noContent().build();
+    // ---- Programs (admin, department x level groups) ----
+
+    @GetMapping("/departments")
+    public List<DepartmentGroupResponse> listDepartmentGroups(
+            Authentication authentication, @RequestParam String academicSemesterId) {
+        return service.listDepartmentGroups(requireInstitutionId(authentication), academicSemesterId);
     }
+
+    @GetMapping("/departments/detail")
+    public DepartmentGroupDetailResponse departmentGroupDetail(
+            Authentication authentication, @RequestParam String departmentId, @RequestParam String programLevelId,
+            @RequestParam String academicSemesterId) {
+        return service.departmentGroupDetail(
+                requireInstitutionId(authentication), departmentId, programLevelId, academicSemesterId);
+    }
+
+    // ---- GPA / CGPA ----
 
     @GetMapping("/gpa")
     public GpaResponse gpa(
-            Authentication authentication,
-            @RequestParam String studentId,
-            @RequestParam String academicSemesterId) {
-        return service.gpa(requireCaller(authentication).institutionId(), studentId, academicSemesterId);
+            Authentication authentication, @RequestParam String studentId, @RequestParam String academicSemesterId) {
+        return service.gpa(requireInstitutionId(authentication), studentId, academicSemesterId);
     }
 
     @GetMapping("/cgpa")
     public CgpaResponse cgpa(Authentication authentication, @RequestParam String studentId) {
-        return service.cgpa(requireCaller(authentication).institutionId(), studentId);
+        return service.cgpa(requireInstitutionId(authentication), studentId);
+    }
+
+    // ---- Shared guard helpers ----
+
+    private String callerName(AuthenticatedUserDto caller) {
+        return caller.firstName() + " " + caller.lastName();
+    }
+
+    private String requireInstitutionId(Authentication authentication) {
+        return requireCaller(authentication).institutionId();
     }
 
     private AuthenticatedUserDto requireCaller(Authentication authentication) {

@@ -24,4 +24,7 @@ public interface CourseResultScoreRepository extends JpaRepository<CourseResultS
 
     /** Every score across every course for one semester, in one query — the batched source {@code CourseResultService} groups by course in memory, instead of querying per course. */
     List<CourseResultScore> findByInstitutionIdAndAcademicSemesterId(String institutionId, String academicSemesterId);
+
+    /** Whether a marking guide component has ever been scored anywhere, across every course/semester — the guard on removing it from the marking guide. */
+    boolean existsByInstitutionIdAndComponentId(String institutionId, String componentId);
 }
