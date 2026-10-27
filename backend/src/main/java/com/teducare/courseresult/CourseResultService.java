@@ -290,7 +290,7 @@ public class CourseResultService {
 
     public CourseReviewResponse review(String institutionId, String courseId, String academicSemesterId, Set<String> allowedCourseIds) {
         AcademicSemester semester = requireSemester(institutionId, academicSemesterId);
-        CourseResponse course = courseService.requireOwnCourse(institutionId, courseId);
+        com.teducare.course.Course course = courseService.requireOwnCourse(institutionId, courseId);
         requireCourseInScope(allowedCourseIds, courseId);
 
         List<MarkingGuideComponentResponse> components = componentList(institutionId);
@@ -316,13 +316,13 @@ public class CourseResultService {
                 .findByInstitutionIdAndCourseIdAndAcademicSemesterId(institutionId, courseId, semester.getId())
                 .orElse(null);
         DepartmentResponse department = departmentService.list(institutionId, null, null, true).stream()
-                .filter(d -> d.id().equals(course.departmentId())).findFirst().orElse(null);
-        String levelCode = levelCode(institutionId, course.programLevelId());
+                .filter(d -> d.id().equals(course.getDepartmentId())).findFirst().orElse(null);
+        String levelCode = levelCode(institutionId, course.getProgramLevelId());
 
         return new CourseReviewResponse(
-                course.id(), course.code(), course.name(),
+                course.getId(), course.getCode(), course.getName(),
                 department == null ? "—" : department.name(),
-                schoolLookup(institutionId).getOrDefault(course.schoolId(), "—"),
+                schoolLookup(institutionId).getOrDefault(course.getSchoolId(), "—"),
                 levelCode,
                 submission == null ? CourseResultSubmission.IN_PROGRESS : submission.getStatus(),
                 registrations.stream().map(CourseRegistration::getStudentId).distinct().toList().size(),
@@ -336,7 +336,7 @@ public class CourseResultService {
 
     public MyCourseProgressResponse myCourseProgress(String institutionId, String courseId, String academicSemesterId, Set<String> allowedCourseIds) {
         AcademicSemester semester = requireSemester(institutionId, academicSemesterId);
-        CourseResponse course = courseService.requireOwnCourse(institutionId, courseId);
+        com.teducare.course.Course course = courseService.requireOwnCourse(institutionId, courseId);
         requireCourseInScope(allowedCourseIds, courseId);
 
         List<MarkingGuideComponentResponse> components = componentList(institutionId);
@@ -365,13 +365,13 @@ public class CourseResultService {
                 .findByInstitutionIdAndCourseIdAndAcademicSemesterId(institutionId, courseId, semester.getId())
                 .orElse(null);
         DepartmentResponse department = departmentService.list(institutionId, null, null, true).stream()
-                .filter(d -> d.id().equals(course.departmentId())).findFirst().orElse(null);
+                .filter(d -> d.id().equals(course.getDepartmentId())).findFirst().orElse(null);
 
         return new MyCourseProgressResponse(
-                course.id(), course.code(), course.name(),
+                course.getId(), course.getCode(), course.getName(),
                 department == null ? "—" : department.name(),
-                schoolLookup(institutionId).getOrDefault(course.schoolId(), "—"),
-                levelCode(institutionId, course.programLevelId()),
+                schoolLookup(institutionId).getOrDefault(course.getSchoolId(), "—"),
+                levelCode(institutionId, course.getProgramLevelId()),
                 submission == null ? CourseResultSubmission.IN_PROGRESS : submission.getStatus(),
                 deadlineLabel(institutionId),
                 totalStudents,
