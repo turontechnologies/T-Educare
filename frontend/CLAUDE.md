@@ -1246,6 +1246,81 @@ menu items)"`), and `Status` reads a new `summary.institutionStatus`
   confirming each toast, status badge, and table transition matched: see
   `backend/CLAUDE.md`'s own Hostel Management entry for what the state
   machine means.
+- **Announcement built (2026-10-27)**, second of the three Figma-sourced
+  modules. New route `dashboard/announcements/page.tsx` — no placeholder
+  existed to replace, this was a genuinely new page. The feed (Sent/
+  Scheduled/Draft tabs, cards grouped by month) is a card feed, not a
+  table — there's no table-chrome equivalent for this layout in the Figma
+  reference either, so it's built with the same `Card`/`Badge`/`Button`
+  components as everywhere else, just arranged as a feed. `announcement-
+dialog.tsx`'s "Schedule for later?" date/time fields use the established
+  `NotchedDateField`/`NotchedTimeField` pair, **not** a raw `<input
+type="datetime-local">`** — caught directly by the user ("calendar and
+  date picker should be consistent... match the ui") after an initial
+  version used the native input to move fast; every date/time field in
+  this app goes through the shared Notched components, no exceptions, even
+  under time pressure. **Hit the same file-sync race twice in a row while
+  fixing that**: several small sequential `Edit` calls on `announcement-
+dialog.tsx` each reported success but `pnpm typecheck` kept showing the
+  pre-edit code — only resolved by rewriting the whole file in one `Write`
+  call (see the new `feedback_verify_write_persisted` memory). The exact
+  same race separately caused `dashboard/announcements/page.tsx` itself to
+  silently keep its old placeholder content after an earlier reported-
+  successful `Write`, which the user hit directly ("i did not see
+  anything in announcement") before it was caught — **a freshly-created
+  page file that's never reopened by a later `Edit` in the same turn is
+  the highest-risk case**, since there's no subsequent read to catch a
+  silent revert; always verify with `wc -l`/`head` right after writing
+  one, not just after edits to existing files. Seeded five realistic
+  announcements spanning every status/scope combination after the user
+  asked directly ("pls calendar..." aside, they'd already asked for
+  Hostel seed data the same way) — real hostel names/program levels as
+  targets, not fabricated ones, confirming the cross-module target
+  resolution actually works against live data.
+- **Results Management rebuilt (2026-10-27/28)**, replacing the minimal
+  score-entry version from earlier this engagement. **No "View as: Admin/
+  Teacher" toggle** — even though the Figma reference showed one (and it
+  worked there regardless of the logged-in account's real role, since it's
+  just a static prototype) — `dashboard/results/page.tsx` auto-routes on
+  `user.lecturerId` instead, exactly like every other self-service surface
+  in this app (`MyAttendanceView`, `MyLeaveView`, `MyLecturesView`): a
+  lecturer-linked account sees only `TeacherResultsView` (no Programs/
+  Courses tabs, no Marking Guide/Grace Period settings buttons — those are
+  institution-wide admin configuration), a pure admin sees only
+  `AdminResultsView`. This was a direct, explicit correction from the user
+  ("every roles see what is expected") rather than a judgment call — a
+  manual toggle would have let an admin masquerade as any lecturer's view,
+  or a lecturer flip into the whole institution's admin view, undermining
+  the backend scoping that was the whole point of building it. `course-
+review-view.tsx` is one shared component for both the admin's "Review"
+  (with Publish/Unpublish) and a lecturer's read-only "View results" (a
+  `readOnly` prop hides the publish actions) — not two near-duplicate
+  components. The raw `IN_PROGRESS`/`SUBMITTED`/`PUBLISHED` status plus
+  completion counts is deliberately all the backend sends; `lib/results.ts`
+  derives both the teacher-facing label (Not Started/In Progress/Awaiting
+  Submission/Submitted/Published) and the admin-facing one (Pending
+  Completion/Awaiting Publishing/Published) client-side from the same raw
+  data, rather than the backend sending two pre-computed label fields.
+  **Found and fixed a real bug the same way the Courses-table-actions one
+  was found — the user pointing at it directly, not caught in review**:
+  the Marking Guide/Grace Period settings buttons sat in a `flex gap-2`
+  div with no `flex-wrap`, so at mobile width "Grace Period Settings" was
+  silently clipped past the viewport edge by the shell's own
+  `overflow-hidden` root (invisible in a 0px-horizontal-overflow check —
+  that check only catches page-level overflow, not content clipped by an
+  ancestor) rather than wrapping to its own line like every other
+  multi-button row in this app already does. Also found, by the user
+  pointing at a screenshot: the admin Courses table used two inline text
+  links ("Review"/"History") instead of the established `DropdownMenu` +
+  `MoreHorizontal` "…" trigger every other multi-action table row in this
+  app uses (including this same module's own Teacher "My Courses" table,
+  built correctly the first time) — fixed to match. Live-verified the
+  full admin lifecycle via Playwright (score entry already covered by
+  backend curl tests, UI covered here): Review a submitted course → see
+  the real 88%/A → Publish → Unpublish with a reason → History shows all
+  three events with real actor names — and the lecturer/HOD view
+  separately (no admin-only controls visible, "My Courses" scoped to her
+  own department).
 
 ## Commands
 
