@@ -1,4 +1,7 @@
-import type { CourseResultSubmissionStatus } from "@/types/course-result";
+import type {
+  CourseResultSubmissionStatus,
+  DepartmentGroup,
+} from "@/types/course-result";
 
 /**
  * The raw `status` plus completion counts is everything either view needs
@@ -50,4 +53,18 @@ export function statusBadgeClass(
 ): string {
   const map = variant === "admin" ? ADMIN_BADGE : TEACHER_BADGE;
   return map[label] ?? "bg-muted text-muted-foreground";
+}
+
+/** The Programs tab's (department, level) group status — already aggregated server-side to this three-value shape (not the raw course-level IN_PROGRESS/SUBMITTED/PUBLISHED enum), just needs a display label. */
+export function departmentGroupStatusLabel(
+  status: DepartmentGroup["status"],
+): string {
+  switch (status) {
+    case "PUBLISHED":
+      return "Published";
+    case "AWAITING_PUBLISHING":
+      return "Awaiting Publishing";
+    default:
+      return "Pending Completion";
+  }
 }

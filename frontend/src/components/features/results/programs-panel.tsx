@@ -27,7 +27,7 @@ import {
   useDepartmentGroupDetail,
   useDepartmentGroups,
 } from "@/hooks/use-course-results";
-import { adminStatusLabel, statusBadgeClass } from "@/lib/results";
+import { departmentGroupStatusLabel, statusBadgeClass } from "@/lib/results";
 
 const PAGE_SIZE_OPTIONS = ["5", "10", "25", "50"];
 
@@ -143,7 +143,7 @@ function ProgramsTable({
           </TableHeader>
           <TableBody>
             {paginated.map((group) => {
-              const label = adminStatusLabel(group.status);
+              const label = departmentGroupStatusLabel(group.status);
               return (
                 <TableRow
                   key={`${group.departmentId}-${group.programLevelId}`}
@@ -231,12 +231,12 @@ function DepartmentDetail({
   const [pageSize, setPageSize] = useState("5");
   const [page, setPage] = useState(1);
 
-  const students = detail?.students ?? [];
   const filtered = useMemo(() => {
+    const students = detail?.students ?? [];
     const query = search.trim().toLowerCase();
     if (!query) return students;
     return students.filter((s) => s.studentName.toLowerCase().includes(query));
-  }, [students, search]);
+  }, [detail, search]);
 
   const size = Number(pageSize);
   const totalPages = Math.max(1, Math.ceil(filtered.length / size));
@@ -252,7 +252,7 @@ function DepartmentDetail({
     return null;
   }
 
-  const label = adminStatusLabel(detail.status);
+  const label = departmentGroupStatusLabel(detail.status);
 
   return (
     <div className="space-y-4">
@@ -273,7 +273,7 @@ function DepartmentDetail({
             <Badge className={statusBadgeClass(label, "admin")}>{label}</Badge>
           </h2>
           <p className="text-sm text-muted-foreground">
-            School of {detail.schoolName} · {detail.submittedCourses} of{" "}
+            {detail.schoolName} · {detail.submittedCourses} of{" "}
             {detail.totalCourses} courses submitted
           </p>
         </div>

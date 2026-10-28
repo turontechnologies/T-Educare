@@ -77,9 +77,9 @@ export function CourseReviewView({
             <Badge className={statusBadgeClass(label, "admin")}>{label}</Badge>
           </h2>
           <p className="text-sm text-muted-foreground">
-            School of {review.schoolName} · {review.departmentName}{" "}
-            {review.levelCode} Level · {review.scoredStudents} of{" "}
-            {review.totalStudents} students scored
+            {review.schoolName} · {review.departmentName} {review.levelCode}{" "}
+            Level · {review.scoredStudents} of {review.totalStudents} students
+            scored
           </p>
         </div>
         {!readOnly && review.status === "SUBMITTED" && (
