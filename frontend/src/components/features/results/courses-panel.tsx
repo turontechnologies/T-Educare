@@ -1,9 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ClipboardCheck, History } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -186,24 +192,24 @@ function CoursesTable({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          type="button"
-                          onClick={() => onReview(course)}
-                          className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-secondary hover:underline"
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          aria-label={`Actions for ${course.courseName}`}
+                          className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-open:bg-muted data-open:text-foreground"
                         >
-                          <ClipboardCheck className="size-3.5" />
-                          Review
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setHistoryFor(course)}
-                          className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-                        >
-                          <History className="size-3.5" />
-                          History
-                        </button>
-                      </div>
+                          <MoreHorizontal className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36">
+                          <DropdownMenuItem onClick={() => onReview(course)}>
+                            Review
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setHistoryFor(course)}
+                          >
+                            History
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
