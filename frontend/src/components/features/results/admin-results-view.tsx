@@ -37,7 +37,7 @@ export function AdminResultsView() {
             Current Semester: {currentSemester?.name ?? "—"}
           </Badge>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             className="gap-1.5 rounded-md border-tertiary text-tertiary-foreground"

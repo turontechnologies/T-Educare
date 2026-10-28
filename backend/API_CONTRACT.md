@@ -2470,3 +2470,166 @@ action on it at all), so one wasn't added speculatively.
     "status": "PENDING_ALLOCATION", "createdAt": "2026-10-27T10:50:45Z" }
 ]
 ```
+
+---
+
+## 15. Announcement
+
+**Implemented** (`backend/src/main/java/com/teducare/announcement/`). A
+school-wide/students/staff/hostel-residents broadcast, with three
+lifecycle states — **DRAFT**, **SCHEDULED**, **SENT** — driven entirely by
+which of the three dialog actions created or last edited it:
+
+| `action` | Resulting status | Notes |
+|----------|-------------------|-------|
+| `SEND` | SENT, `sentAt = now` | immediate |
+| `SCHEDULE` | SCHEDULED, `scheduledFor` set | requires `scheduledFor` |
+| `DRAFT` | DRAFT | saved as-is, nothing sent |
+
+**No automatic delivery exists.** This module records and displays what
+was announced to whom — it does not fan out a real push/email/in-app
+notification to every targeted recipient (a materially larger, separate
+feature). A SCHEDULED announcement does **not** automatically flip to SENT
+when `scheduledFor` passes — there's no background sweep, since no real
+delivery mechanism exists to trigger one. "Send now" (on a SCHEDULED or
+DRAFT row) is the only path to SENT; editing or deleting a SENT
+announcement isn't offered.
+
+**`targetScope` is one of `SCHOOL_WIDE`/`STUDENTS`/`STAFF`/
+`HOSTEL_RESIDENTS`, and `targetValue`'s meaning depends on it** — resolved
+to a human `targetLabel` at read time (e.g. "100 Level students", "Maple
+Hall residents"), never stored:
+
+| Scope | `targetValue` | Resolved via |
+|-------|----------------|---------------|
+| `SCHOOL_WIDE` | ignored | always "Entire School" |
+| `STUDENTS` | `null`/`"ALL"`, or a real `ProgramLevel` id | §7.8 |
+| `STAFF` | `"ALL"` or `"LECTURERS"` | fixed two-value set |
+| `HOSTEL_RESIDENTS` | a real `Hostel` id | §14 |
+
+`GET /announcements/targets?scope=` returns the real, live options for
+whichever scope is selected in the Create Announcement dialog's dependent
+"Target" field — e.g. `HOSTEL_RESIDENTS` lists every real hostel from §14,
+so the two modules compose rather than duplicating data.
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/announcements?status=` | — | optionally filtered to `DRAFT`/`SCHEDULED`/`SENT`; each enriched with `targetLabel` and its `attachments[]` |
+| GET | `/announcements/targets?scope=` | — | `[{ value, label }]` for the Create dialog's Target field |
+| POST | `/announcements` | `{ headline, body, sendViaApp, sendViaEmail, targetScope, targetValue?, attachments[], action, scheduledFor? }` | at least one of `sendViaApp`/`sendViaEmail` is required; `attachments[]` are `{ fileName, fileUrl, fileSizeBytes }`, `fileUrl` from the existing generic `POST /uploads` (3.2) |
+| PATCH | `/announcements/:id` | same shape | editing a DRAFT or SCHEDULED announcement; `409` on a SENT one |
+| POST | `/announcements/:id/send` | — | "Send now" from DRAFT or SCHEDULED -> SENT immediately |
+| DELETE | `/announcements/:id` | — | hard delete — no "deleted" view exists in the design |
+
+`createdByName` is the real caller's name plus `", Administrator"` —
+every announcement creator in this app is an `institution_admin` caller,
+so this is a fixed literal suffix, not a per-person title field.
+
+```json
+// GET /announcements?status=SENT
+[
+  { "id": "announcement-...", "headline": "Water supply maintenance in Maple Hall on Saturday",
+    "body": "Water supply to Maple Hall will be off...", "sendViaApp": true, "sendViaEmail": false,
+    "targetScope": "HOSTEL_RESIDENTS", "targetValue": "hostel-...", "targetLabel": "Maple Hall residents",
+    "status": "SENT", "sentAt": "2026-10-27T13:19:00Z", "createdByName": "Adedara Samuel Sapok, Administrator",
+    "attachments": [], "createdAt": "2026-10-27T13:19:00Z", "updatedAt": "2026-10-27T13:19:00Z" }
+]
+```
+
+---
+
+## 16. Results Management
+
+**Implemented** (`backend/src/main/java/com/teducare/courseresult/`) —
+replaces the earlier minimal single-score module (see §7.13 in a prior
+draft, now superseded) with the full marking-guide/publish-workflow
+design. A `MarkingGuide` (one row per institution, like `GradingScale`
+§7.9) has `MarkingGuideComponent`s (e.g. "Assignment" weight 10, "CA"
+weight 30, "Exam" weight 60) — **a component's weight doubles as its max
+possible score**, so a score of 8 against a weight-10 component
+contributes exactly 8 percentage points, and "Overall %" is a plain sum
+across components, not a weighted average requiring normalization (this
+is why `PUT /marking-guide` validates every institution's components sum
+to exactly 100). Editing the guide matches existing components by name to
+preserve their ids (and therefore every already-recorded score's link),
+same reuse-by-natural-key convention as `HostelService.update`'s rooms;
+removing a component that already has recorded scores is blocked (`409`).
+
+**`CourseResultSubmission` (one row per course+semester) is the only
+real stored lifecycle state** — `IN_PROGRESS` / `SUBMITTED` /
+`PUBLISHED` — created lazily on first score entry:
+
+```
+IN_PROGRESS --(submit, only once every registered student has every component scored)--> SUBMITTED
+SUBMITTED --(publish)--> PUBLISHED
+PUBLISHED --(unpublish, with a reason)--> SUBMITTED
+```
+
+The richer labels shown in the UI are **derived, not stored** — a
+teacher's "Not Started"/"In Progress"/"Awaiting Submission" and an
+admin's "Pending Completion"/"Awaiting Publishing" are both computed from
+this one status plus live completion counts (`CourseListItemResponse`'s
+`scoredStudents`/`totalStudents`), not duplicated as separate label
+fields. `CourseResultEvent` is the append-only audit log behind "Course
+Result History" — `SUBMITTED`/`PUBLISHED`/`UNPUBLISHED`, each with a real
+actor name and (for `UNPUBLISHED` only) a required reason — same
+cached-value-plus-immutable-log shape as `InstitutionLicenseEvent` (§4.8).
+
+**Scoped to the caller exactly like Course Results' predecessor and every
+other self-service surface in this backend**: a caller linked to a
+Lecturer record is scoped to their own `LectureAssignment` courses, union
+every course in any department where `Department.hodLecturerId` (§7.6)
+equals their own lecturer id — an HOD sees and can grade their whole
+department, not just courses they personally teach. A pure admin caller
+(no `lecturerId`) is unrestricted. One endpoint, `GET /course-results
+/courses`, serves both the admin "Courses" tab and a lecturer's scoped
+"My Courses" tab — the backend scopes the same list by caller identity
+rather than exposing two near-duplicate endpoints.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET/PUT | `/course-results/marking-guide` | `{ name, components: [{ id, name, weight }], totalWeight }` |
+| GET/PUT | `/course-results/grace-period` | `{ deadlineDate, gracePeriodDays }` — purely informational (shown as "Deadline in N days" on a lecturer's course), not enforced as a score-entry lock |
+| GET | `/course-results/courses?academicSemesterId=` | scoped course list (admin: all; lecturer: own + HOD department's) |
+| GET | `/course-results/courses/:id/review?academicSemesterId=` | full student x component grid — admin "Review" and a lecturer's read-only "View results" share this |
+| POST | `/course-results/courses/:id/publish?academicSemesterId=` | SUBMITTED -> PUBLISHED |
+| POST | `/course-results/courses/:id/unpublish?academicSemesterId=` | `{ reason }` — PUBLISHED -> SUBMITTED |
+| GET | `/course-results/courses/:id/history?academicSemesterId=` | the audit log |
+| GET | `/course-results/my/courses/:id?academicSemesterId=` | a lecturer's own score-entry page — per-component progress (`NOT_STARTED`/`IN_PROGRESS`/`RECORDED`) and `canSubmit` |
+| GET/PUT | `/course-results/my/courses/:id/components/:componentId/scores?academicSemesterId=` | the "Record {Component} Scores" grid — every registered student with their current score if any; `PUT` is a batch upsert, each score validated against the component's own weight |
+| POST | `/course-results/my/courses/:id/submit?academicSemesterId=` | IN_PROGRESS -> SUBMITTED; `409` unless every component is RECORDED for every registered student |
+| GET | `/course-results/departments?academicSemesterId=` | admin "Programs" tab — one row per (department, program level) group that has real courses this semester, with `PENDING_COMPLETION`/`AWAITING_PUBLISHING`/`PUBLISHED` aggregated from its courses' own statuses |
+| GET | `/course-results/departments/detail?departmentId=&programLevelId=&academicSemesterId=` | the group's drill-in — one column per course, one row per student registered in any of them, each cell `{ score, gradeCode }`, plus `overallPercent` (plain mean of the student's per-course Overalls — not unit-weighted, that's what GPA is for), `gpa`, `cgpa` |
+| GET | `/course-results/gpa?studentId=&academicSemesterId=` / `/cgpa?studentId=` | same formula as the predecessor module, now fed by the computed per-course Overall sum instead of a stored flat score — a course only counts once every component is scored |
+
+```json
+// GET /course-results/my/courses/:id?academicSemesterId=...
+{
+  "courseId": "course-...", "courseCode": "ECO101", "status": "IN_PROGRESS",
+  "deadlineLabel": "Deadline in 15 days", "totalStudents": 32,
+  "components": [
+    { "componentId": "...", "componentName": "Assignment", "weight": 10, "scoredStudents": 18, "totalStudents": 32, "status": "IN_PROGRESS" },
+    { "componentId": "...", "componentName": "CA", "weight": 30, "scoredStudents": 32, "totalStudents": 32, "status": "RECORDED" },
+    { "componentId": "...", "componentName": "Exam", "weight": 60, "scoredStudents": 0, "totalStudents": 32, "status": "NOT_STARTED" }
+  ],
+  "canSubmit": false
+}
+```
+
+```mermaid
+sequenceDiagram
+    participant L as Lecturer
+    participant B as Backend
+    participant A as Admin
+
+    L->>B: PUT .../components/{id}/scores (batch, per component)
+    Note over B: repeats for every component
+    L->>B: POST .../submit
+    B-->>L: 409 unless every component RECORDED for every student
+    B-->>L: 200 IN_PROGRESS -> SUBMITTED, logs SUBMITTED event
+    A->>B: GET /course-results/courses (sees "Awaiting Publishing")
+    A->>B: POST .../publish
+    B-->>A: 200 SUBMITTED -> PUBLISHED, logs PUBLISHED event
+    A->>B: POST .../unpublish { reason }
+    B-->>A: 200 PUBLISHED -> SUBMITTED, logs UNPUBLISHED event with reason
+```
