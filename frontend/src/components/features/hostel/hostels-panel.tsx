@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, Plus, Pencil, Users } from "lucide-react";
+import { Building2, Eye, Plus, Pencil, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
 import { TablePagination } from "@/components/shared/table-pagination";
 import { HostelDialog } from "./hostel-dialog";
 import { HostelRosterDialog } from "./hostel-roster-dialog";
+import { HostelViewDialog } from "./hostel-view-dialog";
 import { useHostels } from "@/hooks/use-hostels";
 import type { Hostel } from "@/types/hostel";
 
@@ -28,6 +29,7 @@ export function HostelsPanel() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Hostel | undefined>();
   const [rosterFor, setRosterFor] = useState<Hostel | undefined>();
+  const [viewing, setViewing] = useState<Hostel | undefined>();
 
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState("6");
@@ -147,6 +149,14 @@ export function HostelsPanel() {
                         variant="ghost"
                         size="icon"
                         className="size-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => setViewing(hostel)}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setEditing(hostel);
                           setDialogOpen(true);
@@ -193,6 +203,10 @@ export function HostelsPanel() {
       <HostelRosterDialog
         hostel={rosterFor}
         onOpenChange={() => setRosterFor(undefined)}
+      />
+      <HostelViewDialog
+        hostel={viewing}
+        onOpenChange={() => setViewing(undefined)}
       />
     </div>
   );

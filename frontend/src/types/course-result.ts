@@ -160,6 +160,11 @@ export interface DepartmentGroupDetail {
   students: DepartmentStudentRow[];
 }
 
+export interface BulkScoreUploadResult {
+  updated: number;
+  skipped: number;
+}
+
 export interface Gpa {
   academicSemesterId: string | null;
   gpa: number | null;

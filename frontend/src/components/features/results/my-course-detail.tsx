@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle, ArrowLeft, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BulkUploadScoresDialog } from "./bulk-upload-scores-dialog";
 import { RecordScoresDialog } from "./record-scores-dialog";
 import {
   useMyCourseProgress,
@@ -47,6 +48,7 @@ export function MyCourseDetail({
   const [recordingComponent, setRecordingComponent] = useState<
     ComponentProgress | undefined
   >();
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
   if (!progress) {
     return null;
@@ -82,16 +84,27 @@ export function MyCourseDetail({
         Back to My Courses
       </Button>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold text-foreground">
-          {progress.courseCode}
-        </h2>
-        <Badge className={statusBadgeClass(label, "teacher")}>{label}</Badge>
-        {progress.deadlineLabel && (
-          <Badge variant="outline" className="rounded-md text-destructive">
-            {progress.deadlineLabel}
-          </Badge>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-semibold text-foreground">
+            {progress.courseCode}
+          </h2>
+          <Badge className={statusBadgeClass(label, "teacher")}>{label}</Badge>
+          {progress.deadlineLabel && (
+            <Badge variant="outline" className="rounded-md text-destructive">
+              {progress.deadlineLabel}
+            </Badge>
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="link"
+          className="h-auto gap-1.5 p-0 text-sm"
+          onClick={() => setBulkUploadOpen(true)}
+        >
+          <Upload className="size-4" />
+          Bulk upload
+        </Button>
       </div>
       <p className="-mt-2 text-sm text-muted-foreground">
         {progress.schoolName} · {progress.departmentName} {progress.levelCode}{" "}
@@ -180,6 +193,13 @@ export function MyCourseDetail({
         academicSemesterId={academicSemesterId}
         component={recordingComponent}
         onOpenChange={(open) => !open && setRecordingComponent(undefined)}
+      />
+      <BulkUploadScoresDialog
+        courseId={bulkUploadOpen ? course.courseId : undefined}
+        academicSemesterId={bulkUploadOpen ? academicSemesterId : undefined}
+        courseCode={progress.courseCode}
+        components={progress.components}
+        onOpenChange={setBulkUploadOpen}
       />
     </div>
   );

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -452,6 +453,134 @@ public class CourseResultService {
         }
 
         ensureSubmissionRow(institutionId, courseId, semester.getId());
+    }
+
+    /**
+     * Parses a CSV with one row per student and one column per marking
+     * guide component (matched by name, ignoring a trailing "(weight)"
+     * annotation) — the single-CSV counterpart to {@link
+     * #saveComponentScores}, used by "Bulk Upload Scores". A row whose
+     * matric number doesn't resolve to a registered student is skipped
+     * entirely; within a resolved row, a blank cell is left alone (keeps
+     * whatever score — if any — is already recorded) and an out-of-range
+     * or unparsable cell is skipped on its own rather than failing the
+     * whole upload, same "skip, don't abort" philosophy as {@code
+     * CourseService.importCsv}.
+     */
+    public BulkScoreUploadResult bulkUploadScores(
+            String institutionId, String courseId, String academicSemesterId, String csvText, Set<String> allowedCourseIds) {
+        AcademicSemester semester = requireSemester(institutionId, academicSemesterId);
+        courseService.requireOwnCourse(institutionId, courseId);
+        requireCourseInScope(allowedCourseIds, courseId);
+
+        CourseResultSubmission submission = submissionRepository
+                .findByInstitutionIdAndCourseIdAndAcademicSemesterId(institutionId, courseId, semester.getId())
+                .orElse(null);
+        if (submission != null && !CourseResultSubmission.IN_PROGRESS.equals(submission.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "This course's results have already been submitted — unpublish or contact an admin to make changes.");
+        }
+
+        List<MarkingGuideComponent> components =
+                markingGuideComponentRepository.findByInstitutionIdOrderByDisplayOrderAsc(institutionId);
+        if (components.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No marking guide components are configured yet.");
+        }
+
+        Set<String> registeredStudentIds = courseRegistrationRepository
+                .findByInstitutionIdAndCourseIdAndAcademicSemesterId(institutionId, courseId, semester.getId())
+                .stream().map(CourseRegistration::getStudentId).collect(Collectors.toSet());
+        Map<String, String> studentIdByMatricNo = studentLookup(institutionId).values().stream()
+                .filter(s -> registeredStudentIds.contains(s.id()) && s.matricNo() != null && !s.matricNo().isBlank())
+                .collect(Collectors.toMap(
+                        s -> s.matricNo().trim().toLowerCase(Locale.ROOT), StudentResponse::id, (a, b) -> a));
+
+        List<Map<String, String>> rows = CourseResultCsv.parse(csvText);
+        Instant now = Instant.now();
+        int updated = 0;
+        int skipped = 0;
+
+        for (Map<String, String> row : rows) {
+            String matricNo = row.getOrDefault("matric no", row.getOrDefault("matricno", "")).trim();
+            String studentId = studentIdByMatricNo.get(matricNo.toLowerCase(Locale.ROOT));
+            if (studentId == null) {
+                skipped++;
+                continue;
+            }
+
+            for (MarkingGuideComponent component : components) {
+                String raw = findCell(row, component.getName());
+                if (raw == null || raw.isBlank()) {
+                    continue;
+                }
+                BigDecimal score;
+                try {
+                    score = new BigDecimal(raw.trim());
+                } catch (NumberFormatException ex) {
+                    skipped++;
+                    continue;
+                }
+                if (score.compareTo(BigDecimal.ZERO) < 0 || score.compareTo(component.getWeight()) > 0) {
+                    skipped++;
+                    continue;
+                }
+
+                CourseResultScore existing = scoreRepository
+                        .findByInstitutionIdAndStudentIdAndCourseIdAndAcademicSemesterIdAndComponentId(
+                                institutionId, studentId, courseId, semester.getId(), component.getId())
+                        .orElse(null);
+                if (existing != null) {
+                    existing.setScore(score);
+                    existing.setUpdatedAt(now);
+                    scoreRepository.save(existing);
+                } else {
+                    scoreRepository.save(new CourseResultScore(
+                            "courseresultscore-" + UUID.randomUUID(), institutionId, studentId, courseId,
+                            semester.getId(), component.getId(), score, now, now));
+                }
+                updated++;
+            }
+        }
+
+        ensureSubmissionRow(institutionId, courseId, semester.getId());
+        return new BulkScoreUploadResult(updated, skipped);
+    }
+
+    public String bulkUploadTemplate(
+            String institutionId, String courseId, String academicSemesterId, Set<String> allowedCourseIds) {
+        AcademicSemester semester = requireSemester(institutionId, academicSemesterId);
+        courseService.requireOwnCourse(institutionId, courseId);
+        requireCourseInScope(allowedCourseIds, courseId);
+
+        List<MarkingGuideComponent> components =
+                markingGuideComponentRepository.findByInstitutionIdOrderByDisplayOrderAsc(institutionId);
+        Map<String, StudentResponse> students = studentLookup(institutionId);
+        List<String> matricNos = courseRegistrationRepository
+                .findByInstitutionIdAndCourseIdAndAcademicSemesterId(institutionId, courseId, semester.getId())
+                .stream()
+                .map(CourseRegistration::getStudentId)
+                .distinct()
+                .map(studentId -> {
+                    StudentResponse student = students.get(studentId);
+                    return student == null ? null : student.matricNo();
+                })
+                .filter(matricNo -> matricNo != null && !matricNo.isBlank())
+                .sorted()
+                .toList();
+
+        return CourseResultCsv.template(components, matricNos);
+    }
+
+    /** Matches a CSV header to a component by name, ignoring a trailing "(weight)" annotation like the template's own "Assignment (10)" column — e.g. a user re-exporting then re-importing the template unmodified still resolves. */
+    private static String findCell(Map<String, String> row, String componentName) {
+        String target = componentName.trim().toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, String> entry : row.entrySet()) {
+            String header = entry.getKey().replaceAll("\\(.*\\)", "").trim();
+            if (header.equals(target)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     public void submit(String institutionId, String courseId, String academicSemesterId, String actorName, Set<String> allowedCourseIds) {

@@ -179,6 +179,35 @@ export function useSaveComponentScores() {
   });
 }
 
+export function useBulkUploadScores() {
+  const invalidate = useInvalidateResults();
+  return useMutation({
+    mutationFn: ({
+      courseId,
+      academicSemesterId,
+      file,
+    }: {
+      courseId: string;
+      academicSemesterId: string;
+      file: File;
+    }) =>
+      courseResultService.bulkUploadScores(courseId, academicSemesterId, file),
+    onSuccess: invalidate,
+  });
+}
+
+export function useBulkUploadScoresTemplate() {
+  return useMutation({
+    mutationFn: ({
+      courseId,
+      academicSemesterId,
+    }: {
+      courseId: string;
+      academicSemesterId: string;
+    }) => courseResultService.bulkUploadTemplate(courseId, academicSemesterId),
+  });
+}
+
 export function useSubmitCourseResult() {
   const invalidate = useInvalidateResults();
   return useMutation({

@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/axios";
 import type {
+  BulkScoreUploadResult,
   Cgpa,
   ComponentScores,
   CourseResultEvent,
@@ -152,6 +153,34 @@ export const courseResultService = {
       { scores },
       { params: { academicSemesterId } },
     );
+  },
+
+  async bulkUploadScores(
+    courseId: string,
+    academicSemesterId: string,
+    file: File,
+  ): Promise<BulkScoreUploadResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+    // apiClient's request interceptor (src/lib/axios.ts) strips the default
+    // JSON Content-Type for any FormData body — same as course.service.ts.
+    const { data } = await apiClient.post<BulkScoreUploadResult>(
+      `/course-results/my/courses/${courseId}/bulk-upload-scores`,
+      formData,
+      { params: { academicSemesterId } },
+    );
+    return data;
+  },
+
+  async bulkUploadTemplate(
+    courseId: string,
+    academicSemesterId: string,
+  ): Promise<Blob> {
+    const { data } = await apiClient.get(
+      `/course-results/my/courses/${courseId}/bulk-upload-template`,
+      { params: { academicSemesterId }, responseType: "blob" },
+    );
+    return data;
   },
 
   async submit(courseId: string, academicSemesterId: string): Promise<void> {
