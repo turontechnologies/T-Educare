@@ -1,9 +1,13 @@
 package com.teducare.hostel;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -112,6 +116,76 @@ public class HostelService {
                 .toList();
 
         return toResponse(hostel, savedRooms, occupiedByRoomId);
+    }
+
+    /**
+     * Bulk-*creates* new hostels from a CSV of one row per room, grouped
+     * into one hostel per distinct {@code Hostel Name} (case-insensitive).
+     * A hostel name that already exists for this institution is skipped
+     * entirely (every row in that group counts toward {@code skipped}) —
+     * this creates new hostels, it never edits an existing one; a room row
+     * missing a room number or a valid capacity is skipped on its own,
+     * same "skip, don't abort" philosophy as {@code CourseService.importCsv}.
+     * {@code imported} counts hostels created, not rooms.
+     */
+    public HostelImportResult importCsv(String institutionId, String csvText) {
+        Set<String> existingNames = repository.findByInstitutionIdOrderByCreatedAtAsc(institutionId).stream()
+                .map(h -> h.getName().trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+
+        Map<String, List<Map<String, String>>> grouped = new LinkedHashMap<>();
+        int skipped = 0;
+        for (Map<String, String> row : HostelCsv.parse(csvText)) {
+            String name = row.getOrDefault("hostel name", row.getOrDefault("hostelname", "")).trim();
+            if (name.isEmpty()) {
+                skipped++;
+                continue;
+            }
+            grouped.computeIfAbsent(name, key -> new ArrayList<>()).add(row);
+        }
+
+        int imported = 0;
+        for (Map.Entry<String, List<Map<String, String>>> entry : grouped.entrySet()) {
+            String name = entry.getKey();
+            if (existingNames.contains(name.toLowerCase(Locale.ROOT))) {
+                skipped += entry.getValue().size();
+                continue;
+            }
+
+            List<HostelRoomRequest> rooms = new ArrayList<>();
+            for (Map<String, String> row : entry.getValue()) {
+                String roomNumber = row.getOrDefault("room number", row.getOrDefault("roomnumber", "")).trim();
+                String capacityText = row.getOrDefault("capacity", "").trim();
+                int capacity;
+                try {
+                    capacity = Integer.parseInt(capacityText);
+                } catch (NumberFormatException ex) {
+                    skipped++;
+                    continue;
+                }
+                if (roomNumber.isEmpty() || capacity < 1) {
+                    skipped++;
+                    continue;
+                }
+                rooms.add(new HostelRoomRequest(roomNumber, capacity));
+            }
+
+            if (rooms.isEmpty()) {
+                continue;
+            }
+
+            Hostel hostel = new Hostel("hostel-" + UUID.randomUUID(), institutionId, name, null, Instant.now());
+            repository.save(hostel);
+            saveRooms(hostel.getId(), rooms);
+            existingNames.add(name.toLowerCase(Locale.ROOT));
+            imported++;
+        }
+
+        return new HostelImportResult(imported, skipped);
+    }
+
+    public String templateCsv() {
+        return HostelCsv.template();
     }
 
     /** The "View Student List" dialog — every ALLOCATED occupant of this hostel, matric/name/department/room. */

@@ -1367,6 +1367,33 @@ review-view.tsx` is one shared component for both the admin's "Review"
   390px mobile width (0px overflow, and visually clean — labels wrap, the
   3-column room grid stays legible, no clipped buttons).
 
+- **Bulk Upload Allocations added to Hostel Management (2026-10-31)**,
+  same day as the two items above, explicitly reusing the Results
+  Management "Bulk Upload Scores" dialog's exact look as the pattern to
+  copy ("make use of the bulk upload in result management module... the
+  one that i attach"). New `bulk-upload-allocations-dialog.tsx` is close
+  to a line-for-line structural copy of `bulk-upload-scores-dialog.tsx`
+  (same header/body/footer treatment, same dashed drag-and-drop zone, same
+  `Download Template` link, same `rounded-full`+`ArrowRight` primary
+  button) — content-only differences (CSV column names, descriptive text),
+  not a shared component, matching this codebase's established
+  per-feature-file convention rather than introducing a generic
+  "BulkUploadDialog" abstraction for two call sites. Wired to a new
+  "Bulk Upload" outline button next to the existing "Add Student" button
+  in `hostel-allocations-panel.tsx`'s header (`border-tertiary
+text-tertiary-foreground`, the same secondary-outline-button convention
+  `AdminResultsView`'s Marking Guide/Grace Period buttons already use) —
+  the Allocations tab, not Hostels or Waitlist, since bulk-importing a
+  CSV of already-decided student→room assignments is literally what that
+  tab manages. Live-verified end to end via Playwright: downloaded the
+  template (4 real, not-yet-allocated matric numbers, blank Hostel
+  Name/Room Number columns), and via curl for the actual upload mechanics
+  (covered on the backend side in `backend/CLAUDE.md` — capacity
+  enforcement, upsert-on-reupload, and moving a student to free a room
+  within the same file all confirmed). Checked at 390px mobile width: 0px
+  overflow, both buttons wrap cleanly under the tab bar, dialog fits with
+  comfortable margins.
+
 ## Commands
 
 ```bash

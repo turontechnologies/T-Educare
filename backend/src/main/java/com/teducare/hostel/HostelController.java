@@ -1,8 +1,13 @@
 package com.teducare.hostel;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +16,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.auth.AuthDirectory;
@@ -48,6 +55,30 @@ public class HostelController {
     public HostelResponse update(
             Authentication authentication, @PathVariable String id, @Valid @RequestBody UpdateHostelRequest request) {
         return service.update(requireInstitutionId(authentication), id, request);
+    }
+
+    @GetMapping("/import-template")
+    public ResponseEntity<byte[]> importTemplate() {
+        byte[] body = service.templateCsv().getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename("hostels-template.csv").build().toString())
+                .body(body);
+    }
+
+    @PostMapping(value = "/import", consumes = "multipart/form-data")
+    public HostelImportResult importCsv(Authentication authentication, @RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No file provided.");
+        }
+        String institutionId = requireInstitutionId(authentication);
+        try {
+            String text = new String(file.getBytes(), StandardCharsets.UTF_8);
+            return service.importCsv(institutionId, text);
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read the uploaded file.");
+        }
     }
 
     @GetMapping("/{id}/roster")
