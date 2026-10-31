@@ -111,3 +111,17 @@ export function useRemoveAllocation() {
     onSuccess: invalidate,
   });
 }
+
+export function useBulkUploadAllocationsTemplate() {
+  return useMutation({
+    mutationFn: () => hostelAllocationService.bulkUploadTemplate(),
+  });
+}
+
+export function useBulkUploadAllocations() {
+  const invalidate = useInvalidateAllocations();
+  return useMutation({
+    mutationFn: (file: File) => hostelAllocationService.bulkUpload(file),
+    onSuccess: invalidate,
+  });
+}

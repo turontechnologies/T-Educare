@@ -1322,6 +1322,51 @@ review-view.tsx` is one shared component for both the admin's "Review"
   separately (no admin-only controls visible, "My Courses" scoped to her
   own department).
 
+- **"View Hostel" + "Bulk Upload Scores" added (2026-10-30)**, revisiting
+  the same Figma-site reference for two specific flows the user pointed at
+  again by screenshot after the three modules above shipped.
+  **`hostel-view-dialog.tsx`** is a new read-only dialog wired to an `Eye`
+  icon button on each hostel card (`hostels-panel.tsx`, ordered before the
+  existing Pencil/Users icons to match the reference's icon order) — needed
+  **no new hook or service call**, since `useHostels()` already returns
+  each room's `occupiedCount` from the original Hostel Management build;
+  this is purely a different read-only view over already-fetched data.
+  Shows a 3-column read-only grid (Room Number / Capacity / Occupied) with
+  a room at capacity rendered as `{n}/{n} · Full` in `text-destructive`,
+  outline summary badges (rooms/occupied/available/total bedspaces), and
+  the hostel photo — reusing the established disabled-`Input`-style
+  read-only cell and outline-`Badge` conventions from elsewhere in Results
+  Management rather than introducing new styling.
+  **`bulk-upload-scores-dialog.tsx`** backs a `Bulk upload` link
+  (`variant="link"`, matching the `link` Button variant already defined in
+  `button.tsx` but not yet used elsewhere) added to `my-course-detail.tsx`'s
+  header row — one upload covers **every** marking-guide component at
+  once (unlike `record-scores-dialog.tsx`'s one-component-at-a-time flow),
+  so the dialog's own descriptive text is built from the course's live
+  `components` array (`{name} ({weight})`, comma-joined), not hardcoded.
+  The CSV file itself is never parsed client-side — same convention as
+  `course.service.ts`'s existing `import()`, the raw `File` goes straight
+  into `FormData` and the backend (`CourseResultCsv`, see
+  `backend/CLAUDE.md`) does all the parsing/validation; "Download
+  Template" fetches a real pre-filled CSV the same way. The drag-and-drop
+  zone reuses the exact dashed-border/`dragOver` state pattern already
+  established in `student-dialog.tsx`/`staff-member-dialog.tsx`'s photo
+  pickers (`border-2 border-dashed`, `cn(...)` for the drag-over state),
+  not the Figma mock's own cloud-icon styling — matches this engagement's
+  standing rule that the reference dictates _what_ to build, not pixel
+  styling that would conflict with this app's own established dialog/
+  button conventions (e.g. the primary action stays the usual
+  `rounded-full` + `ArrowRight` pattern, not the mock's flat rectangular
+  button). Live-verified both dialogs end to end via Playwright — View
+  Hostel against a real hostel with one room pushed to capacity (confirms
+  the red "· Full" text), Bulk Upload Scores against a real lecturer
+  login: downloaded the template (real matric number pre-filled under
+  `Assignment (10)`/`CA (30)`/`Exam (60)` headers), edited scores in,
+  re-uploaded, got the "3 scores updated" toast, and confirmed all three
+  component cards flipped to "Recorded." Also checked both dialogs at
+  390px mobile width (0px overflow, and visually clean — labels wrap, the
+  3-column room grid stays legible, no clipped buttons).
+
 ## Commands
 
 ```bash

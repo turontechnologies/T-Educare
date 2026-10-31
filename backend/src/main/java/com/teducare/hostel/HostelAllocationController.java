@@ -1,8 +1,13 @@
 package com.teducare.hostel;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.teducare.auth.AuthDirectory;
@@ -44,6 +50,32 @@ public class HostelAllocationController {
             Authentication authentication, @Valid @RequestBody AddHostelAllocationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.addStudent(requireInstitutionId(authentication), request));
+    }
+
+    @GetMapping("/bulk-upload-template")
+    public ResponseEntity<byte[]> bulkUploadTemplate(Authentication authentication) {
+        String csv = service.bulkUploadTemplate(requireInstitutionId(authentication));
+        byte[] body = csv.getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename("hostel-allocations-template.csv").build().toString())
+                .body(body);
+    }
+
+    @PostMapping(value = "/bulk-upload", consumes = "multipart/form-data")
+    public BulkHostelAllocationResult bulkUpload(
+            Authentication authentication, @RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No file provided.");
+        }
+        String institutionId = requireInstitutionId(authentication);
+        try {
+            String text = new String(file.getBytes(), StandardCharsets.UTF_8);
+            return service.bulkUploadAllocations(institutionId, text);
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read the uploaded file.");
+        }
     }
 
     @PostMapping("/{id}/propose")

@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/axios";
 import type {
+  BulkHostelAllocationResult,
   Hostel,
   HostelAllocation,
   HostelRosterStudent,
@@ -101,5 +102,25 @@ export const hostelAllocationService = {
 
   async remove(id: string): Promise<void> {
     await apiClient.delete(`/hostel-allocations/${id}`);
+  },
+
+  async bulkUploadTemplate(): Promise<Blob> {
+    const { data } = await apiClient.get(
+      "/hostel-allocations/bulk-upload-template",
+      { responseType: "blob" },
+    );
+    return data;
+  },
+
+  async bulkUpload(file: File): Promise<BulkHostelAllocationResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+    // apiClient's request interceptor (src/lib/axios.ts) strips the default
+    // JSON Content-Type for any FormData body — same as course.service.ts.
+    const { data } = await apiClient.post<BulkHostelAllocationResult>(
+      "/hostel-allocations/bulk-upload",
+      formData,
+    );
+    return data;
   },
 };

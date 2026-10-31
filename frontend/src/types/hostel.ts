@@ -24,6 +24,11 @@ export interface HostelRosterStudent {
   roomNumber: string | null;
 }
 
+export interface BulkHostelAllocationResult {
+  updated: number;
+  skipped: number;
+}
+
 export type HostelAllocationStatus =
   "PENDING_ALLOCATION" | "ALLOCATED" | "WAITLIST";
 

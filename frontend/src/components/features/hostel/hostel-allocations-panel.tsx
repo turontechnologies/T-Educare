@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { AddStudentDialog } from "./add-student-dialog";
 import { AssignRoomDialog } from "./assign-room-dialog";
+import { BulkUploadAllocationsDialog } from "./bulk-upload-allocations-dialog";
 import {
   useHostelAllocations,
   useMoveAllocationToWaitlist,
@@ -63,6 +64,7 @@ export function HostelAllocationsPanel() {
   const removeAllocation = useRemoveAllocation();
 
   const [addOpen, setAddOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [assignFor, setAssignFor] = useState<HostelAllocation | undefined>();
   const [removeFor, setRemoveFor] = useState<HostelAllocation | undefined>();
 
@@ -103,7 +105,15 @@ export function HostelAllocationsPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          variant="outline"
+          className="gap-1.5 rounded-md border-tertiary text-tertiary-foreground"
+          onClick={() => setBulkUploadOpen(true)}
+        >
+          <Upload className="size-4" />
+          Bulk Upload
+        </Button>
         <Button className="gap-1.5 rounded-md" onClick={() => setAddOpen(true)}>
           <Plus className="size-4" />
           Add Student
@@ -256,6 +266,11 @@ export function HostelAllocationsPanel() {
         open={addOpen}
         onOpenChange={setAddOpen}
         existingAllocations={allAllocations}
+      />
+
+      <BulkUploadAllocationsDialog
+        open={bulkUploadOpen}
+        onOpenChange={setBulkUploadOpen}
       />
 
       <AssignRoomDialog
