@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, Eye, Plus, Pencil, Users } from "lucide-react";
+import { Building2, Eye, Plus, Pencil, Upload, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TablePagination } from "@/components/shared/table-pagination";
+import { BulkUploadHostelsDialog } from "./bulk-upload-hostels-dialog";
 import { HostelDialog } from "./hostel-dialog";
 import { HostelRosterDialog } from "./hostel-roster-dialog";
 import { HostelViewDialog } from "./hostel-view-dialog";
@@ -27,6 +28,7 @@ export function HostelsPanel() {
   const { data: hostels = [] } = useHostels();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [editing, setEditing] = useState<Hostel | undefined>();
   const [rosterFor, setRosterFor] = useState<Hostel | undefined>();
   const [viewing, setViewing] = useState<Hostel | undefined>();
@@ -53,7 +55,15 @@ export function HostelsPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          variant="outline"
+          className="gap-1.5 rounded-md border-tertiary text-tertiary-foreground"
+          onClick={() => setBulkUploadOpen(true)}
+        >
+          <Upload className="size-4" />
+          Bulk Upload
+        </Button>
         <Button
           className="gap-1.5 rounded-md"
           onClick={() => {

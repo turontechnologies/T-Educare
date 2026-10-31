@@ -3,6 +3,7 @@ import type {
   BulkHostelAllocationResult,
   Hostel,
   HostelAllocation,
+  HostelImportResult,
   HostelRosterStudent,
 } from "@/types/hostel";
 
@@ -47,6 +48,25 @@ export const hostelService = {
   async roster(id: string): Promise<HostelRosterStudent[]> {
     const { data } = await apiClient.get<HostelRosterStudent[]>(
       `/hostels/${id}/roster`,
+    );
+    return data;
+  },
+
+  async downloadTemplate(): Promise<Blob> {
+    const { data } = await apiClient.get("/hostels/import-template", {
+      responseType: "blob",
+    });
+    return data;
+  },
+
+  async importCsv(file: File): Promise<HostelImportResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+    // apiClient's request interceptor (src/lib/axios.ts) strips the default
+    // JSON Content-Type for any FormData body — same as course.service.ts.
+    const { data } = await apiClient.post<HostelImportResult>(
+      "/hostels/import",
+      formData,
     );
     return data;
   },

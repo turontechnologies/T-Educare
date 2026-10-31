@@ -24,6 +24,11 @@ export interface HostelRosterStudent {
   roomNumber: string | null;
 }
 
+export interface HostelImportResult {
+  imported: number;
+  skipped: number;
+}
+
 export interface BulkHostelAllocationResult {
   updated: number;
   skipped: number;

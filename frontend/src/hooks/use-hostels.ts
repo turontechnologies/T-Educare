@@ -43,6 +43,20 @@ export function useUpdateHostel() {
   });
 }
 
+export function useDownloadHostelsTemplate() {
+  return useMutation({
+    mutationFn: () => hostelService.downloadTemplate(),
+  });
+}
+
+export function useImportHostels() {
+  const invalidate = useInvalidateHostels();
+  return useMutation({
+    mutationFn: (file: File) => hostelService.importCsv(file),
+    onSuccess: invalidate,
+  });
+}
+
 export function useHostelRoster(
   hostelId: string | undefined,
   options: { enabled?: boolean } = {},
