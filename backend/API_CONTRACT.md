@@ -2449,13 +2449,15 @@ since it isn't confirmed yet.
 | POST | `/hostels` | `{ name, rooms: [{ roomNumber, capacity }], photoUrl? }` | `photoUrl` set the same way every other avatar/logo/signature is — upload via `POST /uploads` (3.2) first, then pass the URL |
 | PATCH | `/hostels/:id` | same shape | full replace of the rooms list — a room no longer present is removed, `409` if it still holds an ALLOCATED student |
 | GET | `/hostels/:id/roster` | — | "View Student List" — every ALLOCATED occupant (matric/name/department/room), **not** PENDING_ALLOCATION ones |
+| GET | `/hostels/import-template` | — | "Bulk Upload" (Hostels tab) — CSV: `Hostel Name, Room Number, Capacity`, header + two example rows for the same hostel to show the grouping convention |
+| POST | `/hostels/import` | multipart `file` | same CSV shape — **bulk-creates new hostels**, never edits an existing one; rows sharing a `Hostel Name` (case-insensitive) become one hostel with all those rooms; a name that already exists for the institution has its whole row group skipped; a room row missing a room number or a valid capacity is skipped on its own; `{ imported, skipped }` — `imported` counts hostels, not rooms |
 | GET | `/hostel-allocations?status=` | — | optionally filtered to `PENDING_ALLOCATION`/`ALLOCATED`/`WAITLIST` |
 | POST | `/hostel-allocations` | `{ studentId, hostelId, roomId }` | "Add Student" — creates a new PENDING_ALLOCATION; `409` if the student already has an allocation record (one per student, enforced by a unique index) |
 | POST | `/hostel-allocations/:id/propose` | `{ hostelId, roomId }` | WAITLIST -> PENDING_ALLOCATION |
 | POST | `/hostel-allocations/:id/confirm` | `{ hostelId, roomId }` | -> ALLOCATED, syncs the student's cached summary |
 | POST | `/hostel-allocations/:id/waitlist` | — | any status -> WAITLIST, clears the room and the student's cached summary if it was ALLOCATED |
 | DELETE | `/hostel-allocations/:id` | — | "Reject"/"Remove from hostel" — same action; the record serves no further purpose once dropped, so it's a real delete, not a status/archive (no "rejected" view exists in the design) |
-| GET | `/hostel-allocations/bulk-upload-template` | — | "Bulk Upload" — CSV: `Matric No, Hostel Name, Room Number`, one row per active student not already ALLOCATED (real matric numbers, blank Hostel Name/Room Number) |
+| GET | `/hostel-allocations/bulk-upload-template` | — | "Bulk Allocate" (Allocations tab) — CSV: `Matric No, Hostel Name, Room Number`, one row per active student not already ALLOCATED (real matric numbers, blank Hostel Name/Room Number) |
 | POST | `/hostel-allocations/bulk-upload` | multipart `file` | same CSV shape — goes straight to ALLOCATED in one step (not the one-at-a-time Add-then-Allocate flow above); a row is matched to a student by matric number and a room by name within its hostel (both case-insensitive), skipped if either doesn't resolve or the room is already at capacity; a blank Hostel Name/Room Number cell leaves that student's allocation untouched; **upserts** — a student who already has an allocation record has it updated in place, so re-uploading a corrected file is safe, and a student moved to a different room within the same file correctly frees their old room's slot before claiming the new one; `{ updated, skipped }` |
 
 No archive/restore on `Hostel` itself — unlike most resources in this
