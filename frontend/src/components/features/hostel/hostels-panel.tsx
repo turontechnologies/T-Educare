@@ -210,6 +210,10 @@ export function HostelsPanel() {
         onOpenChange={setDialogOpen}
         hostel={editing}
       />
+      <BulkUploadHostelsDialog
+        open={bulkUploadOpen}
+        onOpenChange={setBulkUploadOpen}
+      />
       <HostelRosterDialog
         hostel={rosterFor}
         onOpenChange={() => setRosterFor(undefined)}

@@ -112,7 +112,7 @@ export function HostelAllocationsPanel() {
           onClick={() => setBulkUploadOpen(true)}
         >
           <Upload className="size-4" />
-          Bulk Upload
+          Bulk Allocate
         </Button>
         <Button className="gap-1.5 rounded-md" onClick={() => setAddOpen(true)}>
           <Plus className="size-4" />

@@ -93,7 +93,7 @@ function BulkUploadAllocationsContent({
     >
       <div className="flex items-center justify-between bg-primary px-6 py-4">
         <DialogTitle className="text-base font-medium text-white">
-          Bulk Upload Allocations
+          Bulk Allocate Students
         </DialogTitle>
         <button
           type="button"
