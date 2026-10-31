@@ -1394,6 +1394,31 @@ text-tertiary-foreground`, the same secondary-outline-button convention
   overflow, both buttons wrap cleanly under the tab bar, dialog fits with
   comfortable margins.
 
+- **"Bulk Upload" corrected to mean bulk-creating new hostels, not bulk
+  allocation (2026-10-31)**, right after the item above shipped — the
+  user clarified the label was wrong, not the underlying allocate feature:
+  "the bulk upload should be on for creating new hostels not to allocate,
+  but yes they should be able to bulk allocate as well." New
+  `bulk-upload-hostels-dialog.tsx`, wired to a new "Bulk Upload" outline
+  button next to "Create Hostel" on the **Hostels** tab
+  (`hostels-panel.tsx`) — same dashed-dropzone/Download-Template/
+  `rounded-full`+`ArrowRight` structure as the other two bulk dialogs in
+  this app, reused as a pattern rather than factored into a shared
+  component (three call sites, still below the threshold where this
+  codebase extracts a generic abstraction over copying a small file). CSV
+  is `Hostel Name, Room Number, Capacity`, one row per room; the toast
+  reports hostels created (`"N hostels created"`), not rows, matching the
+  backend's per-entity counting. **Renamed the Allocations tab's existing
+  button from "Bulk Upload" to "Bulk Allocate"** (and its dialog's header
+  from "Bulk Upload Allocations" to "Bulk Allocate Students") purely to
+  keep the two actions from colliding under the same label now that "Bulk
+  Upload" means hostel creation — no behavior change to that feature, it
+  was already doing the right thing. Live-verified via Playwright:
+  downloaded the real template (header + two example rows for the same
+  example hostel, showing the row-grouping convention), uploaded a 2-row
+  CSV for a brand-new hostel, got "1 hostel created," and confirmed the
+  new card appeared in the Hostels grid alongside the three existing ones.
+
 ## Commands
 
 ```bash
