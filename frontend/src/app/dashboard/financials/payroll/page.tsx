@@ -1,13 +1,19 @@
-import { Banknote } from "lucide-react";
-import { ModulePlaceholder } from "@/components/shared/module-placeholder";
+import { PageHeader } from "@/components/shared/page-header";
+import { StaffPayrollPanel } from "@/components/features/finance/staff-payroll-panel";
 
 export default function StaffPayrollPage() {
   return (
-    <ModulePlaceholder
-      breadcrumb={["Administrator", "Financials", "Staff Payroll"]}
-      title="Staff Payroll"
-      description="Monthly payroll runs and payslips — coming next."
-      icon={Banknote}
-    />
+    <div className="space-y-6">
+      <PageHeader
+        breadcrumb={["Administrator", "Financials", "Staff Payroll"]}
+      />
+
+      <div>
+        <h1 className="text-xl font-semibold text-primary">Staff Payroll</h1>
+        <div className="mt-6">
+          <StaffPayrollPanel />
+        </div>
+      </div>
+    </div>
   );
 }
