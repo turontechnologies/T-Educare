@@ -1,9 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CreditCard, FileText } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -216,24 +222,22 @@ export function StudentBillsPanel() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setRecordingFor(bill)}
-                        className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-secondary hover:underline"
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        aria-label={`Actions for ${bill.studentName}`}
+                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-open:bg-muted data-open:text-foreground"
                       >
-                        <CreditCard className="size-3.5" />
-                        Record payment
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLedgerFor(bill)}
-                        className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:underline"
-                      >
-                        <FileText className="size-3.5" />
-                        View ledger
-                      </button>
-                    </div>
+                        <MoreHorizontal className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => setRecordingFor(bill)}>
+                          Record payment
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setLedgerFor(bill)}>
+                          View ledger
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
