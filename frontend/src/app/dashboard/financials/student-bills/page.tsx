@@ -1,13 +1,19 @@
-import { FileText } from "lucide-react";
-import { ModulePlaceholder } from "@/components/shared/module-placeholder";
+import { PageHeader } from "@/components/shared/page-header";
+import { StudentBillsPanel } from "@/components/features/finance/student-bills-panel";
 
 export default function StudentBillsPage() {
   return (
-    <ModulePlaceholder
-      breadcrumb={["Administrator", "Financials", "Student Bills"]}
-      title="Student Bills"
-      description="Per-student billing, ledgers, and payment recording — coming next."
-      icon={FileText}
-    />
+    <div className="space-y-6">
+      <PageHeader
+        breadcrumb={["Administrator", "Financials", "Student Bills"]}
+      />
+
+      <div>
+        <h1 className="text-xl font-semibold text-primary">Student Bills</h1>
+        <div className="mt-6">
+          <StudentBillsPanel />
+        </div>
+      </div>
+    </div>
   );
 }
