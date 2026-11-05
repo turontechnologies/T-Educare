@@ -208,6 +208,10 @@ public class Student {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    /** Student Portal login — BCrypt hash, null until an admin sets one via {@code POST /students/:id/set-password}; never part of the main constructor since it's set later, not at creation. */
+    @Column(name = "password_hash", length = 200)
+    private String passwordHash;
+
     protected Student() {
     }
 
@@ -716,5 +720,13 @@ public class Student {
 
     public void setArchivedAt(Instant archivedAt) {
         this.archivedAt = archivedAt;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 }
