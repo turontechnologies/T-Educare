@@ -28,7 +28,7 @@ export default function LoginPage() {
             <div className="flex flex-col items-center gap-1 text-center">
               <Logo variant="dark" size="lg" showWordmark={false} priority />
               <h1 className="mt-3 text-2xl font-semibold text-primary">
-                Student Portal
+                Staff &amp; Admin Portal
               </h1>
             </div>
 

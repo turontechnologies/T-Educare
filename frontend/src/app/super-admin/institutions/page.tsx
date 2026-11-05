@@ -6,6 +6,7 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  Link2,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -45,6 +46,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { InstitutionDetailsDialog } from "@/components/features/institutions/institution-details-dialog";
 import { InstitutionDialog } from "@/components/features/institutions/institution-dialog";
 import { PaystackSettingsDialog } from "@/components/features/institutions/paystack-settings-dialog";
+import { PortalLinksDialog } from "@/components/features/institutions/portal-links-dialog";
 import { cn } from "@/lib/utils";
 import {
   useArchiveInstitution,
@@ -110,6 +112,9 @@ export default function InstitutionsPage() {
     null,
   );
   const [paystackFor, setPaystackFor] = useState<Institution | undefined>();
+  const [portalLinksFor, setPortalLinksFor] = useState<
+    Institution | undefined
+  >();
 
   const baseList = useMemo(
     () =>
@@ -372,6 +377,12 @@ export default function InstitutionsPage() {
                               <CreditCard className="size-3.5" />
                               Paystack Settings
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setPortalLinksFor(institution)}
+                            >
+                              <Link2 className="size-3.5" />
+                              Portal Links
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               variant="destructive"
@@ -476,6 +487,11 @@ export default function InstitutionsPage() {
       <PaystackSettingsDialog
         institution={paystackFor}
         onOpenChange={(open) => !open && setPaystackFor(undefined)}
+      />
+
+      <PortalLinksDialog
+        institution={portalLinksFor}
+        onOpenChange={(open) => !open && setPortalLinksFor(undefined)}
       />
 
       <ConfirmDialog

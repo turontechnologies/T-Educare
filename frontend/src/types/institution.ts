@@ -8,6 +8,8 @@ export interface Institution {
   id: string;
   /** Short display code shown in the table (e.g. "001") — not the same as `id`, which is the real record key. */
   code: string;
+  /** URL-safe tenant identifier (e.g. "sams-university") — drives this institution's own scoped login URL on both the admin app (`/login/{slug}`) and the Student Portal (`/{slug}/login`); a login from a different institution's slug is rejected even with correct credentials. Editable by a super admin; auto-generated from `name` at creation. */
+  slug: string | null;
   name: string;
   institutionType: string;
   address: string;

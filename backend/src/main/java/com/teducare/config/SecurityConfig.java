@@ -42,7 +42,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/health", "/api/auth/login", "/api/attendance/clock-events",
                                 "/api/financials/paystack/webhook/*",
-                                "/api/public/institutions/*",
+                                "/api/public/institutions/**",
                                 "/api/student-auth/login")
                         .permitAll()
                         .anyRequest().authenticated())
