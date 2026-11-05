@@ -4,6 +4,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -120,7 +121,9 @@ public class InstitutionService {
                 null,
                 Instant.now(),
                 null);
-        institution.setSlug(generateSlug(request.name()));
+        institution.setSlug(generateSlug(
+                request.slug() != null && !request.slug().isBlank() ? request.slug() : request.name()));
+        institution.setBrandColor(normalizeBrandColor(request.brandColor()));
 
         Institution saved = repository.save(institution);
         notificationService.notifyPlatform(
@@ -152,6 +155,21 @@ public class InstitutionService {
             suffix++;
         }
         return candidate;
+    }
+
+    /** Blank means "use the platform's default navy" (stored as null); otherwise must be a 6-digit hex color. */
+    private String normalizeBrandColor(String brandColor) {
+        if (brandColor == null) {
+            return null;
+        }
+        String trimmed = brandColor.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (!trimmed.matches("^#[0-9a-fA-F]{6}$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brand color must be a hex value like #1B5E20.");
+        }
+        return trimmed.toUpperCase(Locale.ROOT);
     }
 
     /** One-time backfill for every institution created before the slug column existed — called once at startup by {@link InstitutionSlugBackfiller}. */
@@ -226,11 +244,7 @@ public class InstitutionService {
             institution.setSlug(normalized);
         }
         if (request.brandColor() != null) {
-            String trimmed = request.brandColor().trim();
-            if (!trimmed.isEmpty() && !trimmed.matches("^#[0-9a-fA-F]{6}$")) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brand color must be a hex value like #1B5E20.");
-            }
-            institution.setBrandColor(trimmed.isEmpty() ? null : trimmed);
+            institution.setBrandColor(normalizeBrandColor(request.brandColor()));
         }
 
         Institution saved = repository.save(institution);

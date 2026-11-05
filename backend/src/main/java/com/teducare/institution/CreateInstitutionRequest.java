@@ -13,5 +13,8 @@ public record CreateInstitutionRequest(
         String principalPhone,
         String adminUser,
         String adminEmail,
-        String logoUrl) {
+        String logoUrl,
+        /** Optional — a blank value auto-generates one from {@code name} (see InstitutionService#generateSlug). A supplied value is still normalized/disambiguated the same way. */
+        String slug,
+        String brandColor) {
 }

@@ -56,6 +56,7 @@ export type InstitutionFormPayload = {
   adminEmail?: string;
   logoUrl?: string;
   slug?: string;
+  brandColor?: string;
 };
 
 export const institutionService = {

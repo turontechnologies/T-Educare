@@ -42,6 +42,7 @@ export interface InstitutionBranding {
   slug: string;
   name: string;
   logoUrl: string | null;
+  brandColor: string | null;
 }
 
 export interface LoginResponse {

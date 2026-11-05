@@ -10,6 +10,8 @@ export interface Institution {
   code: string;
   /** URL-safe tenant identifier (e.g. "sams-university") — drives this institution's own scoped login URL on both the admin app (`/login/{slug}`) and the Student Portal (`/{slug}/login`); a login from a different institution's slug is rejected even with correct credentials. Editable by a super admin; auto-generated from `name` at creation. */
   slug: string | null;
+  /** Hex color (e.g. "#1B5E20") applied as the `--primary` override on this institution's own scoped login screens — null uses the platform's default navy. */
+  brandColor: string | null;
   name: string;
   institutionType: string;
   address: string;
