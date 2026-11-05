@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -57,18 +58,56 @@ public class FinanceController {
         return ResponseEntity.noContent().build();
     }
 
-    private String requireInstitutionId(Authentication authentication) {
+    // ---- Student Bills ----
+
+    @GetMapping("/student-bills")
+    public List<StudentBillSummaryResponse> listStudentBills(
+            Authentication authentication, @RequestParam(required = false) String academicSessionId) {
+        return service.listStudentBillSummaries(requireInstitutionId(authentication), academicSessionId);
+    }
+
+    @GetMapping("/student-bills/{studentId}/ledger")
+    public List<StudentLedgerLineResponse> ledger(Authentication authentication, @PathVariable String studentId) {
+        return service.ledger(requireInstitutionId(authentication), studentId);
+    }
+
+    @PostMapping("/student-bills/{studentId}/payments")
+    public ResponseEntity<Void> recordPayment(
+            Authentication authentication, @PathVariable String studentId,
+            @Valid @RequestBody RecordPaymentRequest request) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        service.recordPayment(caller.institutionId(), studentId, request, caller.firstName() + " " + caller.lastName());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/student-bills/{studentId}/paystack-link")
+    public PaystackLinkResponse initiatePaystackPayment(
+            Authentication authentication, @PathVariable String studentId,
+            @Valid @RequestBody PaystackLinkRequest request) {
+        return service.initiatePaystackPayment(requireInstitutionId(authentication), studentId, request);
+    }
+
+    // ---- Transaction Logs ----
+
+    @GetMapping("/transaction-log")
+    public List<FinanceTransactionLogResponse> listTransactionLog(Authentication authentication) {
+        return service.listTransactionLog(requireInstitutionId(authentication));
+    }
+
+    private AuthenticatedUserDto requireCaller(Authentication authentication) {
         if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
         }
-
         AuthenticatedUserDto caller = authDirectory.find(authentication.getName())
                 .map(AuthDirectory.Account::user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required."));
-
         if (!"institution_admin".equals(caller.role()) || caller.institutionId() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Institution admin access required.");
         }
-        return caller.institutionId();
+        return caller;
+    }
+
+    private String requireInstitutionId(Authentication authentication) {
+        return requireCaller(authentication).institutionId();
     }
 }
