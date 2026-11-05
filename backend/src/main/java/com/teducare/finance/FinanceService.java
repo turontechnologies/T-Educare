@@ -27,6 +27,10 @@ import com.teducare.department.DepartmentResponse;
 import com.teducare.department.DepartmentService;
 import com.teducare.programlevel.ProgramLevelResponse;
 import com.teducare.programlevel.ProgramLevelService;
+import com.teducare.staff.StaffMemberResponse;
+import com.teducare.staff.StaffMemberService;
+import com.teducare.staffdesignation.StaffDesignationResponse;
+import com.teducare.staffdesignation.StaffDesignationService;
 import com.teducare.student.Student;
 import com.teducare.student.StudentResponse;
 import com.teducare.student.StudentService;
@@ -56,6 +60,11 @@ public class FinanceService {
     private final ProgramLevelService programLevelService;
     private final AcademicSessionService academicSessionService;
     private final StudentService studentService;
+    private final StaffMemberService staffMemberService;
+    private final StaffDesignationService staffDesignationService;
+    private final StaffPayrollProfileRepository payrollProfileRepository;
+    private final PayrollRunRepository payrollRunRepository;
+    private final PayslipRepository payslipRepository;
 
     public FinanceService(
             FeeTypeRepository feeTypeRepository,
@@ -68,7 +77,12 @@ public class FinanceService {
             DepartmentService departmentService,
             ProgramLevelService programLevelService,
             AcademicSessionService academicSessionService,
-            StudentService studentService) {
+            StudentService studentService,
+            StaffMemberService staffMemberService,
+            StaffDesignationService staffDesignationService,
+            StaffPayrollProfileRepository payrollProfileRepository,
+            PayrollRunRepository payrollRunRepository,
+            PayslipRepository payslipRepository) {
         this.feeTypeRepository = feeTypeRepository;
         this.billLineRepository = billLineRepository;
         this.paymentRepository = paymentRepository;
@@ -80,6 +94,11 @@ public class FinanceService {
         this.programLevelService = programLevelService;
         this.academicSessionService = academicSessionService;
         this.studentService = studentService;
+        this.staffMemberService = staffMemberService;
+        this.staffDesignationService = staffDesignationService;
+        this.payrollProfileRepository = payrollProfileRepository;
+        this.payrollRunRepository = payrollRunRepository;
+        this.payslipRepository = payslipRepository;
     }
 
     // ================= Fee Structure =================
@@ -431,6 +450,139 @@ public class FinanceService {
                 studentId, null, amount, reference,
                 "Oldest due first: " + matricNo + " → " + linesTouched + " fee line" + (linesTouched == 1 ? "" : "s"),
                 "System (auto-allocated)", now));
+    }
+
+    // ================= Payroll =================
+
+    /** The Staff Payroll table for a given period — PENDING rows are a live projection (salary + profile, not yet persisted); once run, the same staff show their real frozen {@link Payslip}. */
+    public List<PayrollRowResponse> listPayroll(String institutionId, int periodYear, int periodMonth) {
+        List<StaffMemberResponse> staff = staffMemberService.list(institutionId, null, null, false);
+        Map<String, StaffPayrollProfile> profiles = payrollProfileRepository.findByInstitutionId(institutionId).stream()
+                .collect(Collectors.toMap(StaffPayrollProfile::getStaffId, p -> p));
+        Map<String, Payslip> payslips = payslipRepository
+                .findByInstitutionIdAndPeriodYearAndPeriodMonth(institutionId, periodYear, periodMonth).stream()
+                .collect(Collectors.toMap(Payslip::getStaffId, p -> p));
+        Map<String, String> designationNames = staffDesignationService.list(institutionId, true).stream()
+                .collect(Collectors.toMap(StaffDesignationResponse::id, StaffDesignationResponse::name));
+        Map<String, String> departmentNames = departmentLookup(institutionId);
+
+        return staff.stream()
+                .map(member -> {
+                    StaffPayrollProfile profile = profiles.get(member.id());
+                    BigDecimal allowances = profile == null ? BigDecimal.ZERO : profile.getAllowances();
+                    BigDecimal deductions = profile == null ? BigDecimal.ZERO : profile.getDeductions();
+                    boolean onHold = profile != null && profile.isOnHold();
+                    Payslip payslip = payslips.get(member.id());
+
+                    BigDecimal basicPay = payslip != null ? payslip.getBasicPay()
+                            : (member.salaryAmount() == null ? BigDecimal.ZERO : member.salaryAmount());
+                    BigDecimal rowAllowances = payslip != null ? payslip.getAllowances() : allowances;
+                    BigDecimal rowDeductions = payslip != null ? payslip.getDeductions() : deductions;
+                    BigDecimal netPay = payslip != null ? payslip.getNetPay()
+                            : basicPay.add(rowAllowances).subtract(rowDeductions);
+                    String status = payslip != null ? "PAID" : (onHold ? "ON_HOLD" : "PENDING");
+
+                    return new PayrollRowResponse(
+                            member.id(), member.staffId(), (member.firstName() + " " + member.lastName()).trim(),
+                            designationNames.getOrDefault(member.designationId(), "—"),
+                            departmentNames.getOrDefault(member.departmentId(), "—"),
+                            basicPay, rowAllowances, rowDeductions, netPay, onHold,
+                            profile == null ? null : profile.getOnHoldReason(), status);
+                })
+                .sorted(Comparator.comparing(PayrollRowResponse::staffName))
+                .toList();
+    }
+
+    public PayrollRowResponse updatePayrollProfile(String institutionId, String staffId, UpdatePayrollProfileRequest request) {
+        staffMemberService.requireOwnStaffMember(institutionId, staffId);
+        StaffPayrollProfile profile = payrollProfileRepository.findByInstitutionIdAndStaffId(institutionId, staffId)
+                .orElse(new StaffPayrollProfile(staffId, institutionId, request.allowances(), request.deductions(),
+                        request.onHold(), blankToNull(request.onHoldReason()), Instant.now()));
+        profile.setAllowances(request.allowances());
+        profile.setDeductions(request.deductions());
+        profile.setOnHold(request.onHold());
+        profile.setOnHoldReason(blankToNull(request.onHoldReason()));
+        profile.setUpdatedAt(Instant.now());
+        payrollProfileRepository.save(profile);
+
+        LocalDate now = LocalDate.now();
+        return listPayroll(institutionId, now.getYear(), now.getMonthValue()).stream()
+                .filter(r -> r.staffId().equals(staffId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Staff member not found."));
+    }
+
+    /**
+     * Calculates net pay for every non-archived, non-on-hold staff member
+     * with a configured salary and snapshots it into a real {@link
+     * Payslip}, in one new {@link PayrollRun} — rejected with `409` if
+     * this exact period was already run, matching the reference design's
+     * own "can't be undone from here." Logs one aggregate {@code
+     * PAYROLL_RUN} entry in the Transaction Log, not one per staff member
+     * (the reference design shows payroll as a single event, unlike the
+     * per-line granularity of a student payment).
+     */
+    public RunPayrollResultResponse runPayroll(String institutionId, RunPayrollRequest request, String actorName) {
+        if (payrollRunRepository.findByInstitutionIdAndPeriodYearAndPeriodMonth(
+                institutionId, request.periodYear(), request.periodMonth()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Payroll for this period has already been run.");
+        }
+
+        List<StaffMemberResponse> staff = staffMemberService.list(institutionId, null, null, false);
+        Map<String, StaffPayrollProfile> profiles = payrollProfileRepository.findByInstitutionId(institutionId).stream()
+                .collect(Collectors.toMap(StaffPayrollProfile::getStaffId, p -> p));
+
+        Instant now = Instant.now();
+        PayrollRun run = payrollRunRepository.save(new PayrollRun(
+                "payrollrun-" + UUID.randomUUID(), institutionId, request.periodYear(), request.periodMonth(),
+                actorName, now));
+
+        int staffPaid = 0;
+        int staffOnHold = 0;
+        BigDecimal netPayroll = BigDecimal.ZERO;
+        for (StaffMemberResponse member : staff) {
+            StaffPayrollProfile profile = profiles.get(member.id());
+            if (profile != null && profile.isOnHold()) {
+                staffOnHold++;
+                continue;
+            }
+            if (member.salaryAmount() == null) {
+                continue;
+            }
+            BigDecimal allowances = profile == null ? BigDecimal.ZERO : profile.getAllowances();
+            BigDecimal deductions = profile == null ? BigDecimal.ZERO : profile.getDeductions();
+            BigDecimal netPay = member.salaryAmount().add(allowances).subtract(deductions);
+
+            payslipRepository.save(new Payslip(
+                    "payslip-" + UUID.randomUUID(), institutionId, run.getId(), member.id(), request.periodYear(),
+                    request.periodMonth(), member.salaryAmount(), allowances, deductions, netPay, now));
+            staffPaid++;
+            netPayroll = netPayroll.add(netPay);
+        }
+
+        logRepository.save(new FinanceTransactionLog(
+                "financelog-" + UUID.randomUUID(), institutionId, FinanceTransactionLog.PAYROLL_RUN, null, null,
+                netPayroll, null,
+                "Payroll run for " + request.periodMonth() + "/" + request.periodYear() + " — " + staffPaid
+                        + " staff paid" + (staffOnHold > 0 ? ", " + staffOnHold + " on hold" : ""),
+                actorName, now));
+
+        return new RunPayrollResultResponse(staffPaid, staffOnHold, netPayroll);
+    }
+
+    public List<PayslipResponse> payslipHistory(String institutionId, String staffId) {
+        com.teducare.staff.StaffMember member = staffMemberService.requireOwnStaffMember(institutionId, staffId);
+        String designationName = staffDesignationService.list(institutionId, true).stream()
+                .filter(d -> d.id().equals(member.getDesignationId())).findFirst().map(StaffDesignationResponse::name).orElse("—");
+        String departmentName = departmentLookup(institutionId).getOrDefault(member.getDepartmentId(), "—");
+
+        return payslipRepository
+                .findByInstitutionIdAndStaffIdOrderByPeriodYearDescPeriodMonthDesc(institutionId, staffId).stream()
+                .map(p -> new PayslipResponse(
+                        p.getId(), p.getPeriodYear(), p.getPeriodMonth(),
+                        (member.getFirstName() + " " + member.getLastName()).trim(), designationName, departmentName,
+                        p.getBasicPay(), p.getAllowances(), p.getDeductions(), p.getNetPay(), p.getCreatedAt()))
+                .toList();
     }
 
     // ================= Transaction Logs =================

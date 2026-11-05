@@ -87,6 +87,33 @@ public class FinanceController {
         return service.initiatePaystackPayment(requireInstitutionId(authentication), studentId, request);
     }
 
+    // ---- Payroll ----
+
+    @GetMapping("/payroll")
+    public List<PayrollRowResponse> listPayroll(
+            Authentication authentication, @RequestParam int periodYear, @RequestParam int periodMonth) {
+        return service.listPayroll(requireInstitutionId(authentication), periodYear, periodMonth);
+    }
+
+    @PutMapping("/payroll/profiles/{staffId}")
+    public PayrollRowResponse updatePayrollProfile(
+            Authentication authentication, @PathVariable String staffId,
+            @Valid @RequestBody UpdatePayrollProfileRequest request) {
+        return service.updatePayrollProfile(requireInstitutionId(authentication), staffId, request);
+    }
+
+    @PostMapping("/payroll/run")
+    public RunPayrollResultResponse runPayroll(
+            Authentication authentication, @Valid @RequestBody RunPayrollRequest request) {
+        AuthenticatedUserDto caller = requireCaller(authentication);
+        return service.runPayroll(caller.institutionId(), request, caller.firstName() + " " + caller.lastName());
+    }
+
+    @GetMapping("/payroll/staff/{staffId}/payslips")
+    public List<PayslipResponse> payslipHistory(Authentication authentication, @PathVariable String staffId) {
+        return service.payslipHistory(requireInstitutionId(authentication), staffId);
+    }
+
     // ---- Transaction Logs ----
 
     @GetMapping("/transaction-log")
