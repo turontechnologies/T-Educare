@@ -132,6 +132,7 @@ function InstitutionForm({
       principalName: institution?.principalName ?? "",
       principalPhone: institution?.principalPhone ?? "",
       adminEmail: institution?.adminEmail ?? "",
+      slug: institution?.slug ?? "",
     },
   });
 
@@ -171,7 +172,14 @@ function InstitutionForm({
         toast.success(`${values.name} updated`);
       } else {
         await createInstitution.mutateAsync({
-          ...values,
+          name: values.name,
+          address: values.address,
+          principalEmail: values.principalEmail,
+          adminUser: values.adminUser,
+          city: values.city,
+          principalName: values.principalName,
+          principalPhone: values.principalPhone,
+          adminEmail: values.adminEmail,
           institutionType,
           countryState,
           logoUrl,
@@ -319,6 +327,21 @@ function InstitutionForm({
           placeholder="e.g. Solomon Odogun"
           {...register("adminUser", { required: true })}
         />
+
+        {institution && (
+          <div className="sm:col-span-2">
+            <NotchedField
+              label="Portal URL slug"
+              labelClassName="bg-popover"
+              placeholder="e.g. babcock-university"
+              {...register("slug")}
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Used in this institution&apos;s own staff/admin and Student Portal
+              sign-in links — see &quot;Portal Links&quot; in the row menu.
+            </p>
+          </div>
+        )}
       </form>
 
       <div className="flex items-center justify-end gap-4 border-t border-border bg-muted/50 px-6 py-4">
