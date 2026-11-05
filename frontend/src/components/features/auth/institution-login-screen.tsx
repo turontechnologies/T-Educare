@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Building2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LoginForm } from "@/components/features/auth/login-form";
 import { useInstitutionBranding } from "@/hooks/use-institution-branding";
 
@@ -54,15 +55,15 @@ export function InstitutionLoginScreen({ slug }: { slug: string }) {
 
       <div className="relative z-10 w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex flex-col items-center gap-2 text-center">
-          {institution.logoUrl ? (
-            <Image
-              src={institution.logoUrl}
+          <Avatar size="lg" className="ring-2 ring-primary/20">
+            <AvatarImage
+              src={institution.logoUrl ?? undefined}
               alt={institution.name}
-              width={64}
-              height={64}
-              className="size-16 rounded-full object-cover ring-2 ring-primary/20"
             />
-          ) : null}
+            <AvatarFallback>
+              <Building2 className="size-6 text-muted-foreground" />
+            </AvatarFallback>
+          </Avatar>
           <h1 className="mt-2 text-xl font-semibold text-primary">
             {institution.name}
           </h1>
