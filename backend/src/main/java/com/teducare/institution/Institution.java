@@ -21,6 +21,10 @@ public class Institution {
     @Column(name = "name", nullable = false)
     private String name;
 
+    /** URL-safe, human-readable tenant identifier (e.g. "sams-university") — drives the institution's own scoped login URL on both the admin app and the Student Portal, and the cross-tenant login guard (AuthService/StudentAuthService reject a login whose account doesn't belong to the slug's institution). Unique; nullable only until the one-time backfill seeder assigns one to a pre-existing row. */
+    @Column(name = "slug", length = 80)
+    private String slug;
+
     @Column(name = "institution_type", nullable = false, length = 50)
     private String institutionType;
 
@@ -168,6 +172,14 @@ public class Institution {
 
     public String getCode() {
         return code;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 
     public String getName() {

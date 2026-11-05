@@ -2,6 +2,7 @@ package com.teducare.institution;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +46,14 @@ public interface InstitutionRepository extends JpaRepository<Institution, String
     List<Institution> findByLicenseStatusAndGraceEndsAtBefore(String licenseStatus, Instant cutoff);
 
     boolean existsByCode(String code);
+
+    boolean existsBySlugIgnoreCase(String slug);
+
+    /** Resolves an institution's own scoped login/branding URL (admin app and Student Portal) — see {@link Institution#getSlug()}. */
+    Optional<Institution> findBySlugIgnoreCaseAndArchivedAtIsNull(String slug);
+
+    /** One-time backfill target — every pre-existing institution with no slug yet. */
+    List<Institution> findBySlugIsNull();
 
     /**
      * The highest numeric `code` currently in use, or null if none exist —

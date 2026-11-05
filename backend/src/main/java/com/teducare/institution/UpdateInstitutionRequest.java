@@ -12,5 +12,6 @@ public record UpdateInstitutionRequest(
         String principalPhone,
         String adminUser,
         String adminEmail,
-        String logoUrl) {
+        String logoUrl,
+        String slug) {
 }

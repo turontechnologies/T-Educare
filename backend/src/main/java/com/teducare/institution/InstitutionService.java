@@ -120,6 +120,7 @@ public class InstitutionService {
                 null,
                 Instant.now(),
                 null);
+        institution.setSlug(generateSlug(request.name()));
 
         Institution saved = repository.save(institution);
         notificationService.notifyPlatform(
@@ -127,6 +128,44 @@ public class InstitutionService {
                 saved.getName() + " was added to the platform.",
                 SUPER_ADMIN_HREF);
         return InstitutionResponse.from(saved);
+    }
+
+    /**
+     * Derives a unique, URL-safe slug from the institution's name (e.g. "Sam's
+     * University" -> "sams-university") — this is the tenant identifier that
+     * drives the institution's own scoped login URL on both the admin app and
+     * the Student Portal (see {@link Institution#getSlug()}'s doc comment).
+     * Appends "-2", "-3", etc. on collision, same disambiguation idiom as
+     * {@link #nextCode()}.
+     */
+    private String generateSlug(String name) {
+        String base = name.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+        if (base.isBlank()) {
+            base = "institution";
+        }
+        String candidate = base;
+        int suffix = 2;
+        while (repository.existsBySlugIgnoreCase(candidate)) {
+            candidate = base + "-" + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+    /** One-time backfill for every institution created before the slug column existed — called once at startup by {@link InstitutionSlugBackfiller}. */
+    public void backfillMissingSlugs() {
+        for (Institution institution : repository.findBySlugIsNull()) {
+            institution.setSlug(generateSlug(institution.getName()));
+            repository.save(institution);
+        }
+    }
+
+    /** Resolves an institution by its own scoped URL slug — used by the public branding lookup and the cross-tenant login guard in AuthService/StudentAuthService. Never leaks archived institutions. */
+    public Institution requireBySlug(String slug) {
+        return repository.findBySlugIgnoreCaseAndArchivedAtIsNull(slug)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Institution not found."));
     }
 
     /** See InstitutionRepository.maxNumericCode()'s doc comment for why this isn't repository.count() + 1. */
@@ -175,6 +214,16 @@ public class InstitutionService {
         }
         if (request.logoUrl() != null) {
             institution.setLogoUrl(request.logoUrl());
+        }
+        if (isPresent(request.slug())) {
+            String normalized = request.slug().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
+            if (normalized.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Slug must contain at least one letter or number.");
+            }
+            if (!normalized.equalsIgnoreCase(institution.getSlug()) && repository.existsBySlugIgnoreCase(normalized)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "That URL is already taken by another institution.");
+            }
+            institution.setSlug(normalized);
         }
 
         Institution saved = repository.save(institution);

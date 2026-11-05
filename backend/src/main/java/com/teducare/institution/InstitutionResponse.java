@@ -6,6 +6,7 @@ import java.util.List;
 public record InstitutionResponse(
         String id,
         String code,
+        String slug,
         String name,
         String institutionType,
         String address,
@@ -37,6 +38,7 @@ public record InstitutionResponse(
         return new InstitutionResponse(
                 institution.getId(),
                 institution.getCode(),
+                institution.getSlug(),
                 institution.getName(),
                 institution.getInstitutionType(),
                 institution.getAddress(),
