@@ -182,6 +182,10 @@ function InstitutionForm({
         });
         toast.success(`${values.name} updated`);
       } else {
+        if (brandColor && !/^#[0-9a-fA-F]{6}$/.test(brandColor)) {
+          toast.error("Brand color must be a hex value like #1B5E20");
+          return;
+        }
         await createInstitution.mutateAsync({
           name: values.name,
           address: values.address,
@@ -194,6 +198,8 @@ function InstitutionForm({
           institutionType,
           countryState,
           logoUrl,
+          slug: values.slug,
+          brandColor,
         });
         toast.success(`${values.name} added`);
       }
@@ -339,51 +345,53 @@ function InstitutionForm({
           {...register("adminUser", { required: true })}
         />
 
-        {institution && (
-          <div className="sm:col-span-2">
-            <NotchedField
-              label="Portal URL slug"
-              labelClassName="bg-popover"
-              placeholder="e.g. babcock-university"
-              {...register("slug")}
-            />
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Used in this institution&apos;s own staff/admin and Student Portal
-              sign-in links — see &quot;Portal Links&quot; in the row menu.
-            </p>
-          </div>
-        )}
+        <div className="sm:col-span-2">
+          <NotchedField
+            label="Portal URL slug"
+            labelClassName="bg-popover"
+            placeholder={
+              institution
+                ? "e.g. babcock-university"
+                : "Auto-generated from name if left blank"
+            }
+            {...register("slug")}
+          />
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Used in this institution&apos;s own staff/admin and Student Portal
+            sign-in links — see &quot;Portal Links&quot; in the row menu once
+            it&apos;s created.
+          </p>
+        </div>
 
-        {institution && (
-          <div className="sm:col-span-2">
-            <p className="mb-1.5 text-sm text-muted-foreground">Brand color</p>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={
-                  /^#[0-9a-fA-F]{6}$/.test(brandColor) ? brandColor : "#03045e"
-                }
-                onChange={(event) =>
-                  setBrandColor(event.target.value.toUpperCase())
-                }
-                className="size-10 shrink-0 cursor-pointer rounded-md border border-border bg-transparent p-0.5"
-                aria-label="Pick a brand color"
-              />
-              <NotchedField
-                label="Hex value"
-                labelClassName="bg-popover"
-                placeholder="e.g. #1B5E20"
-                value={brandColor}
-                onChange={(event) => setBrandColor(event.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Applied on this institution&apos;s own scoped sign-in screens.
-              Leave blank to use the platform&apos;s default navy.
-            </p>
+        <div className="sm:col-span-2">
+          <p className="mb-1.5 text-sm text-muted-foreground">Brand color</p>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={
+                /^#[0-9a-fA-F]{6}$/.test(brandColor) ? brandColor : "#03045e"
+              }
+              onChange={(event) =>
+                setBrandColor(event.target.value.toUpperCase())
+              }
+              className="size-10 shrink-0 cursor-pointer rounded-md border border-border bg-transparent p-0.5"
+              aria-label="Pick a brand color"
+            />
+            <NotchedField
+              label="Hex value"
+              labelClassName="bg-popover"
+              placeholder="e.g. #1B5E20"
+              value={brandColor}
+              onChange={(event) => setBrandColor(event.target.value)}
+              className="flex-1"
+            />
           </div>
-        )}
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Applied on this institution&apos;s own scoped sign-in screens (admin
+            and Student Portal). Leave blank to use the platform&apos;s default
+            navy.
+          </p>
+        </div>
       </form>
 
       <div className="flex items-center justify-end gap-4 border-t border-border bg-muted/50 px-6 py-4">
