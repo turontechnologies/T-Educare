@@ -15,7 +15,8 @@ public record StudentAuthProfileResponse(
         String institutionId,
         String institutionName,
         String institutionSlug,
-        String institutionLogoUrl) {
+        String institutionLogoUrl,
+        String institutionBrandColor) {
 
     static StudentAuthProfileResponse from(Student student, Institution institution) {
         return new StudentAuthProfileResponse(
@@ -29,6 +30,7 @@ public record StudentAuthProfileResponse(
                 institution.getId(),
                 institution.getName(),
                 institution.getSlug(),
-                institution.getLogoUrl());
+                institution.getLogoUrl(),
+                institution.getBrandColor());
     }
 }
