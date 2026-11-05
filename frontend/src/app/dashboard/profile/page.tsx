@@ -3,6 +3,7 @@
 import { Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CopyableUrl } from "@/components/shared/copyable-url";
 import { PageHeader } from "@/components/shared/page-header";
 import { toast } from "sonner";
 import { ChangePasswordCard } from "@/components/features/profile/change-password-card";
@@ -30,6 +31,7 @@ export default function InstitutionAdminProfilePage() {
     avatarUrl: authUser?.avatarUrl ?? "",
     institutionName: authUser?.institutionName ?? "",
     institutionLogoUrl: authUser?.institutionLogoUrl ?? "",
+    institutionSlug: authUser?.institutionSlug ?? "",
     role: authUser?.role ?? "institution_admin",
   };
   const summary = data?.summary ?? {};
@@ -145,6 +147,19 @@ export default function InstitutionAdminProfilePage() {
               </div>
             </div>
           </div>
+
+          {profile.institutionSlug && (
+            <div className="mt-5 grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
+              <CopyableUrl
+                label="Staff / Admin Portal"
+                url={`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/login/${profile.institutionSlug}`}
+              />
+              <CopyableUrl
+                label="Student Portal"
+                url={`${process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL ?? ""}/${profile.institutionSlug}/login`}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

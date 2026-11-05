@@ -5,6 +5,7 @@ import {
   ArchiveRestore,
   Download,
   Eye,
+  KeyRound,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -46,6 +47,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { StudentDetailsDialog } from "@/components/features/students/student-details-dialog";
 import { StudentDialog } from "@/components/features/students/student-dialog";
 import { StudentIdentitySettingsDialog } from "@/components/features/students/student-identity-settings-dialog";
+import { SetStudentPasswordDialog } from "@/components/features/students/set-student-password-dialog";
 import {
   DISCIPLINARY_STATUS_BADGE,
   fullName,
@@ -208,6 +210,7 @@ function StudentTable({
   const [pageSize, setPageSize] = useState("10");
   const [page, setPage] = useState(1);
   const [pendingArchive, setPendingArchive] = useState<Student | null>(null);
+  const [passwordFor, setPasswordFor] = useState<Student | undefined>();
 
   const schoolName = (id: string) =>
     schools.find((s) => s.id === id)?.name ?? "—";
@@ -445,6 +448,12 @@ function StudentTable({
                             <Pencil className="size-3.5" />
                             Edit
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setPasswordFor(student)}
+                          >
+                            <KeyRound className="size-3.5" />
+                            Set Portal Password
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
@@ -553,6 +562,11 @@ function StudentTable({
             );
           }
         }}
+      />
+
+      <SetStudentPasswordDialog
+        student={passwordFor}
+        onOpenChange={(open) => !open && setPasswordFor(undefined)}
       />
     </>
   );

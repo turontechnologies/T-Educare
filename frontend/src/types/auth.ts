@@ -11,6 +11,8 @@ export interface AuthenticatedUser {
   institutionName?: string;
   /** institution_admin only — resolved live from the real Institution record at login (see backend AuthDirectory). */
   institutionLogoUrl?: string;
+  /** institution_admin only — drives the "My Institution" card's Student Portal / admin portal links on the profile page. Empty until the institution has a slug (the one-time backfill assigns one to every pre-existing institution). */
+  institutionSlug?: string;
   /** institution_admin only — links to the real record in `useInstitutionsStore`, whose `moduleKeys` cap which menu items this user's institution can access at all (see `filterNavByModules`). */
   institutionId?: string;
   /** institution_admin only — the real Role (hooks/use-roles.ts) governing their menu access. Absent means unrestricted (the institution's own root admin). */

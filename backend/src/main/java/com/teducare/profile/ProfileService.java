@@ -47,6 +47,14 @@ public class ProfileService {
         profile.put("institutionId", user.institutionId());
         profile.put("institutionName", user.institutionName());
         profile.put("institutionLogoUrl", user.institutionLogoUrl() == null ? "" : user.institutionLogoUrl());
+        // Drives the "My Institution" card's Student Portal link on the
+        // institution_admin profile page — never shown to super_admin, who
+        // has no single institution.
+        profile.put("institutionSlug", user.institutionId() == null
+                ? ""
+                : institutionRepository.findById(user.institutionId())
+                        .map(Institution::getSlug)
+                        .orElse(""));
         profile.put("roleId", user.roleId());
         profile.put("lecturerId", user.lecturerId() == null ? "" : user.lecturerId());
         profile.put("staffId", user.staffId() == null ? "" : user.staffId());
