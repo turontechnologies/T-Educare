@@ -251,7 +251,7 @@ export function TransactionLogsPanel() {
                       {EVENT_LABEL[entry.eventType] ?? entry.eventType}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-xs text-muted-foreground">
+                  <TableCell className="max-w-xs min-w-48 whitespace-normal break-words text-muted-foreground">
                     {entry.studentName && (
                       <span className="font-medium text-foreground">
                         {entry.studentName} ({entry.studentMatricNo}) ·{" "}
