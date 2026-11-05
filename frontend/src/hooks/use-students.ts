@@ -68,6 +68,13 @@ export function useRestoreStudent() {
   });
 }
 
+export function useSetStudentPassword() {
+  return useMutation({
+    mutationFn: ({ id, password }: { id: string; password?: string }) =>
+      studentService.setPassword(id, password),
+  });
+}
+
 export function useStudentAcademicHistory(
   studentId: string | undefined,
   options: { enabled?: boolean } = {},

@@ -215,4 +215,16 @@ export const studentService = {
     );
     return data;
   },
+
+  /** Student Portal login — `password` is optional; blank/omitted generates a random one. Always returns the plaintext password once, same convention as UserManager's reset-password. */
+  async setPassword(
+    studentId: string,
+    password?: string,
+  ): Promise<{ password: string }> {
+    const { data } = await apiClient.post<{ password: string }>(
+      `/students/${studentId}/set-password`,
+      { password: password || undefined },
+    );
+    return data;
+  },
 };
