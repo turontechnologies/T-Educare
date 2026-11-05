@@ -25,6 +25,10 @@ public class Institution {
     @Column(name = "slug", length = 80)
     private String slug;
 
+    /** Hex color (e.g. "#1B5E20") applied as the `--primary` CSS override on this institution's own scoped login screens (admin app's `/login/{slug}` and the Student Portal's `/{slug}/login`) — null means "use the platform's default navy". Super-admin-set only; never derived. */
+    @Column(name = "brand_color", length = 20)
+    private String brandColor;
+
     @Column(name = "institution_type", nullable = false, length = 50)
     private String institutionType;
 
@@ -180,6 +184,14 @@ public class Institution {
 
     public void setSlug(String slug) {
         this.slug = slug;
+    }
+
+    public String getBrandColor() {
+        return brandColor;
+    }
+
+    public void setBrandColor(String brandColor) {
+        this.brandColor = brandColor;
     }
 
     public String getName() {

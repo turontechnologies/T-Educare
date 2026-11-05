@@ -13,5 +13,6 @@ public record UpdateInstitutionRequest(
         String adminUser,
         String adminEmail,
         String logoUrl,
-        String slug) {
+        String slug,
+        String brandColor) {
 }

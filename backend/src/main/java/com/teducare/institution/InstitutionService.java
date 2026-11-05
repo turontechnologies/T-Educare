@@ -225,6 +225,13 @@ public class InstitutionService {
             }
             institution.setSlug(normalized);
         }
+        if (request.brandColor() != null) {
+            String trimmed = request.brandColor().trim();
+            if (!trimmed.isEmpty() && !trimmed.matches("^#[0-9a-fA-F]{6}$")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brand color must be a hex value like #1B5E20.");
+            }
+            institution.setBrandColor(trimmed.isEmpty() ? null : trimmed);
+        }
 
         Institution saved = repository.save(institution);
         notificationService.notifyPlatform(
