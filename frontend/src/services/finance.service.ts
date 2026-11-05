@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/axios";
 import type {
   FeeType,
+  FinanceOverview,
   FinanceTransactionLogEntry,
   LatePenaltyType,
   LedgerLine,
@@ -43,6 +44,13 @@ export type PayrollProfilePayload = {
 };
 
 export const financeService = {
+  async getOverview(): Promise<FinanceOverview> {
+    const { data } = await apiClient.get<FinanceOverview>(
+      "/financials/overview",
+    );
+    return data;
+  },
+
   async listFeeTypes(): Promise<FeeType[]> {
     const { data } = await apiClient.get<FeeType[]>("/financials/fee-types");
     return data;

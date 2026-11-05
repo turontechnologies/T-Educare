@@ -82,6 +82,34 @@ export interface Payslip {
   createdAt: string;
 }
 
+export interface AgeBucket {
+  label: string;
+  amount: number;
+  studentCount: number;
+}
+
+export interface RevenuePoint {
+  weekLabel: string;
+  amount: number;
+}
+
+export interface FinanceOverview {
+  totalRevenue: number;
+  totalOutstanding: number;
+  payrollDueThisMonth: number;
+  feeCollectionRate: number;
+  outstandingByAge: AgeBucket[];
+  topDebtors: StudentBillSummary[];
+  revenueTrend: RevenuePoint[];
+}
+
+export interface PaystackSettings {
+  institutionId: string | null;
+  publicKey: string | null;
+  hasSecretKey: boolean;
+  enabled: boolean;
+}
+
 export interface FeeType {
   id: string;
   code: string;

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   ArchiveRestore,
+  CreditCard,
   Eye,
   EyeOff,
   MoreHorizontal,
@@ -43,6 +44,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { InstitutionDetailsDialog } from "@/components/features/institutions/institution-details-dialog";
 import { InstitutionDialog } from "@/components/features/institutions/institution-dialog";
+import { PaystackSettingsDialog } from "@/components/features/institutions/paystack-settings-dialog";
 import { cn } from "@/lib/utils";
 import {
   useArchiveInstitution,
@@ -107,6 +109,7 @@ export default function InstitutionsPage() {
   const [pendingArchive, setPendingArchive] = useState<Institution | null>(
     null,
   );
+  const [paystackFor, setPaystackFor] = useState<Institution | undefined>();
 
   const baseList = useMemo(
     () =>
@@ -363,6 +366,12 @@ export default function InstitutionsPage() {
                                 ? "Deactivate"
                                 : "Activate"}
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setPaystackFor(institution)}
+                            >
+                              <CreditCard className="size-3.5" />
+                              Paystack Settings
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               variant="destructive"
@@ -462,6 +471,11 @@ export default function InstitutionsPage() {
         open={!!viewingInstitution}
         onOpenChange={(open) => !open && setViewingInstitution(undefined)}
         institution={viewingInstitution}
+      />
+
+      <PaystackSettingsDialog
+        institution={paystackFor}
+        onOpenChange={(open) => !open && setPaystackFor(undefined)}
       />
 
       <ConfirmDialog

@@ -8,12 +8,20 @@ import {
   type RecordPaymentPayload,
 } from "@/services/finance.service";
 
+const OVERVIEW_KEY = "finance-overview";
 const FEE_TYPES_KEY = "finance-fee-types";
 const STUDENT_BILLS_KEY = "finance-student-bills";
 const LEDGER_KEY = "finance-ledger";
 const TRANSACTION_LOG_KEY = "finance-transaction-log";
 const PAYROLL_KEY = "finance-payroll";
 const PAYSLIP_HISTORY_KEY = "finance-payslip-history";
+
+export function useFinanceOverview() {
+  return useQuery({
+    queryKey: [OVERVIEW_KEY],
+    queryFn: () => financeService.getOverview(),
+  });
+}
 
 export function useFeeTypes() {
   return useQuery({

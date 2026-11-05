@@ -336,10 +336,17 @@ public class FinanceService {
 
     /** Super-admin only (enforced by the controller) — stores the institution's own Paystack key pair; the secret key never round-trips back out through this or any other response. */
     public PaystackSettingsResponse updatePaystackSettings(String institutionId, PaystackSettingsRequest request) {
-        PaystackSettings settings = paystackSettingsRepository.findByInstitutionId(institutionId)
-                .orElse(new PaystackSettings(institutionId, request.publicKey(), request.secretKey(), request.enabled(), Instant.now()));
+        PaystackSettings existing = paystackSettingsRepository.findByInstitutionId(institutionId).orElse(null);
+        if (existing == null && blankOrNull(request.secretKey())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Secret key is required.");
+        }
+
+        PaystackSettings settings = existing != null ? existing
+                : new PaystackSettings(institutionId, request.publicKey(), request.secretKey(), request.enabled(), Instant.now());
         settings.setPublicKey(request.publicKey());
-        settings.setSecretKey(request.secretKey());
+        if (!blankOrNull(request.secretKey())) {
+            settings.setSecretKey(request.secretKey());
+        }
         settings.setEnabled(request.enabled());
         settings.setUpdatedAt(Instant.now());
         paystackSettingsRepository.save(settings);
@@ -583,6 +590,81 @@ public class FinanceService {
                         (member.getFirstName() + " " + member.getLastName()).trim(), designationName, departmentName,
                         p.getBasicPay(), p.getAllowances(), p.getDeductions(), p.getNetPay(), p.getCreatedAt()))
                 .toList();
+    }
+
+    // ================= Overview =================
+
+    /** A read-only summary over Fee Structure/Student Bills/Payroll — computed live each call rather than cached, since this is the one page meant to always reflect "right now." */
+    public FinanceOverviewResponse getOverview(String institutionId) {
+        ensureLatePenalties(institutionId);
+
+        List<StudentBillLine> allLines = billLineRepository.findByInstitutionIdOrderByCreatedAtAsc(institutionId);
+        BigDecimal totalBilled = allLines.stream().map(StudentBillLine::getChargeAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalOutstanding = allLines.stream().map(StudentBillLine::getBalance).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        List<StudentBillPayment> allPayments = paymentRepository.findByInstitutionIdOrderByCreatedAtAsc(institutionId);
+        BigDecimal totalRevenue = allPayments.stream().map(StudentBillPayment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        double collectionRate = totalBilled.signum() == 0 ? 0
+                : totalRevenue.divide(totalBilled, 4, RoundingMode.HALF_UP).doubleValue() * 100;
+
+        LocalDate today = LocalDate.now();
+        Map<String, BigDecimal[]> ageBuckets = new java.util.LinkedHashMap<>();
+        ageBuckets.put("Not yet due", new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+        ageBuckets.put("1-30 days overdue", new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+        ageBuckets.put("31-60 days overdue", new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+        ageBuckets.put("61-90 days overdue", new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+        ageBuckets.put("90+ days overdue", new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+        for (StudentBillLine line : allLines) {
+            if (line.getBalance().signum() <= 0) {
+                continue;
+            }
+            long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(line.getDueDate(), today);
+            String bucket = daysOverdue <= 0 ? "Not yet due"
+                    : daysOverdue <= 30 ? "1-30 days overdue"
+                    : daysOverdue <= 60 ? "31-60 days overdue"
+                    : daysOverdue <= 90 ? "61-90 days overdue"
+                    : "90+ days overdue";
+            BigDecimal[] slot = ageBuckets.get(bucket);
+            slot[0] = slot[0].add(line.getBalance());
+            slot[1] = slot[1].add(BigDecimal.ONE);
+        }
+        List<FinanceOverviewResponse.AgeBucket> outstandingByAge = ageBuckets.entrySet().stream()
+                .map(e -> new FinanceOverviewResponse.AgeBucket(e.getKey(), e.getValue()[0], e.getValue()[1].intValue()))
+                .toList();
+
+        List<StudentBillSummaryResponse> topDebtors = listStudentBillSummaries(institutionId, null).stream()
+                .limit(5)
+                .toList();
+
+        LocalDate cutoff = today.minusWeeks(8);
+        Map<String, BigDecimal> weekly = new java.util.LinkedHashMap<>();
+        for (int i = 7; i >= 0; i--) {
+            LocalDate weekStart = today.minusWeeks(i).with(java.time.DayOfWeek.MONDAY);
+            weekly.put(weekStart.toString(), BigDecimal.ZERO);
+        }
+        for (StudentBillPayment payment : allPayments) {
+            LocalDate paymentDate = payment.getPaymentDate();
+            if (paymentDate.isBefore(cutoff)) {
+                continue;
+            }
+            LocalDate weekStart = paymentDate.with(java.time.DayOfWeek.MONDAY);
+            weekly.computeIfPresent(weekStart.toString(), (k, v) -> v.add(payment.getAmount()));
+        }
+        List<FinanceOverviewResponse.RevenuePoint> revenueTrend = weekly.entrySet().stream()
+                .map(e -> new FinanceOverviewResponse.RevenuePoint(
+                        LocalDate.parse(e.getKey()).format(java.time.format.DateTimeFormatter.ofPattern("d MMM")),
+                        e.getValue()))
+                .toList();
+
+        LocalDate now = LocalDate.now();
+        BigDecimal payrollDueThisMonth = listPayroll(institutionId, now.getYear(), now.getMonthValue()).stream()
+                .filter(r -> !"ON_HOLD".equals(r.status()))
+                .map(PayrollRowResponse::netPay)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new FinanceOverviewResponse(
+                totalRevenue, totalOutstanding, payrollDueThisMonth, collectionRate, outstandingByAge, topDebtors,
+                revenueTrend);
     }
 
     // ================= Transaction Logs =================

@@ -34,6 +34,11 @@ public class FinanceController {
         this.authDirectory = authDirectory;
     }
 
+    @GetMapping("/overview")
+    public FinanceOverviewResponse getOverview(Authentication authentication) {
+        return service.getOverview(requireInstitutionId(authentication));
+    }
+
     @GetMapping("/fee-types")
     public List<FeeTypeResponse> listFeeTypes(Authentication authentication) {
         return service.listFeeTypes(requireInstitutionId(authentication));
