@@ -8,7 +8,11 @@
     "dev:frontend": "pnpm --dir frontend dev",
     "build:frontend": "pnpm --dir frontend build",
     "lint:frontend": "pnpm --dir frontend lint",
-    "format:frontend": "pnpm --dir frontend format"
+    "format:frontend": "pnpm --dir frontend format",
+    "dev:student": "pnpm --dir student dev",
+    "build:student": "pnpm --dir student build",
+    "lint:student": "pnpm --dir student lint",
+    "format:student": "pnpm --dir student format"
   },
   "lint-staged": {
     "frontend/**/*.{ts,tsx}": [
@@ -17,6 +21,13 @@
     ],
     "frontend/**/*.{js,jsx,json,css,md}": [
       "pnpm --dir frontend exec prettier --write"
+    ],
+    "student/**/*.{ts,tsx}": [
+      "pnpm --dir student exec eslint --fix",
+      "pnpm --dir student exec prettier --write"
+    ],
+    "student/**/*.{js,jsx,json,css,md}": [
+      "pnpm --dir student exec prettier --write"
     ]
   },
   "devDependencies": {
