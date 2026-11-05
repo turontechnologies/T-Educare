@@ -84,6 +84,13 @@ public class StudentController {
         return service.restore(requireInstitutionId(authentication), id);
     }
 
+    @PostMapping("/{id}/set-password")
+    public SetStudentPasswordResponse setPassword(
+            Authentication authentication, @PathVariable String id, @RequestBody(required = false) SetStudentPasswordRequest request) {
+        String password = request == null ? null : request.password();
+        return new SetStudentPasswordResponse(service.setPassword(requireInstitutionId(authentication), id, password));
+    }
+
     @GetMapping("/{id}/academic-history")
     public List<StudentAcademicRecordResponse> academicHistory(Authentication authentication, @PathVariable String id) {
         return service.listAcademicHistory(requireInstitutionId(authentication), id);

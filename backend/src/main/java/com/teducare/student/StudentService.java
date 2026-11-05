@@ -1,11 +1,13 @@
 package com.teducare.student;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -51,6 +53,10 @@ public class StudentService {
     private final ProgramService programService;
     private final ProgramLevelService programLevelService;
     private final AcademicSessionService academicSessionService;
+    private final PasswordEncoder passwordEncoder;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final String PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
 
     public StudentService(
             StudentRepository repository,
@@ -62,7 +68,8 @@ public class StudentService {
             DepartmentService departmentService,
             ProgramService programService,
             ProgramLevelService programLevelService,
-            AcademicSessionService academicSessionService) {
+            AcademicSessionService academicSessionService,
+            PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.academicRecordRepository = academicRecordRepository;
         this.disciplinaryRecordRepository = disciplinaryRecordRepository;
@@ -73,6 +80,35 @@ public class StudentService {
         this.programService = programService;
         this.programLevelService = programLevelService;
         this.academicSessionService = academicSessionService;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    /**
+     * Student Portal login — admin-triggered, same "generate + return once"
+     * convention as UserManagerService.resetPassword. An explicit
+     * {@code password} may be supplied (e.g. seeding a memorable demo
+     * password); otherwise one is generated. The student's matric number
+     * doubles as their Student Portal username, so one must exist first.
+     */
+    public String setPassword(String institutionId, String id, String password) {
+        Student student = requireOwnStudent(institutionId, id);
+        if (student.getMatricNo() == null || student.getMatricNo().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This student has no matric number yet — assign one before setting a portal password.");
+        }
+        String effective = (password == null || password.isBlank()) ? generatePassword() : password;
+        student.setPasswordHash(passwordEncoder.encode(effective));
+        repository.save(student);
+        return effective;
+    }
+
+    private static String generatePassword() {
+        StringBuilder password = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            password.append(PASSWORD_ALPHABET.charAt(RANDOM.nextInt(PASSWORD_ALPHABET.length())));
+        }
+        return password.toString();
     }
 
     public List<StudentResponse> list(
