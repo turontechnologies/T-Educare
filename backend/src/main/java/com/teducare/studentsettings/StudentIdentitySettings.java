@@ -26,6 +26,10 @@ public class StudentIdentitySettings {
     @Column(name = "pre_student_identifier_preference", nullable = false, length = 30)
     private String preStudentIdentifierPreference;
 
+    /** BCrypt hash of this institution's configured default Student Portal password — null until an admin sets one. Used only by {@code StudentService#resetPasswordToDefault}, which copies this hash directly onto a student's own {@code passwordHash}; never decoded or shown back once set. */
+    @Column(name = "default_password_hash", length = 200)
+    private String defaultPasswordHash;
+
     protected StudentIdentitySettings() {
     }
 
@@ -44,5 +48,13 @@ public class StudentIdentitySettings {
 
     public void setPreStudentIdentifierPreference(String preStudentIdentifierPreference) {
         this.preStudentIdentifierPreference = preStudentIdentifierPreference;
+    }
+
+    public String getDefaultPasswordHash() {
+        return defaultPasswordHash;
+    }
+
+    public void setDefaultPasswordHash(String defaultPasswordHash) {
+        this.defaultPasswordHash = defaultPasswordHash;
     }
 }

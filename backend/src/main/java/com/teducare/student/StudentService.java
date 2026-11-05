@@ -17,6 +17,7 @@ import com.teducare.faculty.FacultyService;
 import com.teducare.program.ProgramService;
 import com.teducare.programlevel.ProgramLevelService;
 import com.teducare.school.SchoolService;
+import com.teducare.studentsettings.StudentIdentitySettingsService;
 
 /**
  * Every FK below (schoolId/facultyId/departmentId/programId/
@@ -54,6 +55,7 @@ public class StudentService {
     private final ProgramLevelService programLevelService;
     private final AcademicSessionService academicSessionService;
     private final PasswordEncoder passwordEncoder;
+    private final StudentIdentitySettingsService identitySettingsService;
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -69,7 +71,8 @@ public class StudentService {
             ProgramService programService,
             ProgramLevelService programLevelService,
             AcademicSessionService academicSessionService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            StudentIdentitySettingsService identitySettingsService) {
         this.repository = repository;
         this.academicRecordRepository = academicRecordRepository;
         this.disciplinaryRecordRepository = disciplinaryRecordRepository;
@@ -81,6 +84,7 @@ public class StudentService {
         this.programLevelService = programLevelService;
         this.academicSessionService = academicSessionService;
         this.passwordEncoder = passwordEncoder;
+        this.identitySettingsService = identitySettingsService;
     }
 
     /**
@@ -101,6 +105,22 @@ public class StudentService {
         student.setPasswordHash(passwordEncoder.encode(effective));
         repository.save(student);
         return effective;
+    }
+
+    /** Resets a student's Student Portal password back to this institution's configured default — never generates or accepts a one-off value, unlike {@link #setPassword}. */
+    public void resetPasswordToDefault(String institutionId, String id) {
+        Student student = requireOwnStudent(institutionId, id);
+        if (student.getMatricNo() == null || student.getMatricNo().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This student has no matric number yet — assign one before resetting a portal password.");
+        }
+        String defaultHash = identitySettingsService.getDefaultPasswordHash(institutionId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "No default Student Portal password is configured yet — set one in Pre-Student ID Settings."));
+        student.setPasswordHash(defaultHash);
+        repository.save(student);
     }
 
     private static String generatePassword() {
