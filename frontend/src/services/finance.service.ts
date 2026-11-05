@@ -1,5 +1,12 @@
 import { apiClient } from "@/lib/axios";
-import type { FeeType, LatePenaltyType } from "@/types/finance";
+import type {
+  FeeType,
+  FinanceTransactionLogEntry,
+  LatePenaltyType,
+  LedgerLine,
+  PaymentMethod,
+  StudentBillSummary,
+} from "@/types/finance";
 
 export type FeeTypePayload = {
   name: string;
@@ -10,6 +17,19 @@ export type FeeTypePayload = {
   dueDate: string;
   latePenaltyType: LatePenaltyType;
   latePenaltyValue?: number | null;
+};
+
+export type RecordPaymentPayload = {
+  billLineId: string;
+  amount: number;
+  method: PaymentMethod;
+  reference?: string;
+  paymentDate: string;
+  proofUrl?: string;
+};
+
+export type PaystackLinkPayload = {
+  amount: number;
 };
 
 export const financeService = {
@@ -36,5 +56,50 @@ export const financeService = {
 
   async archiveFeeType(id: string): Promise<void> {
     await apiClient.delete(`/financials/fee-types/${id}`);
+  },
+
+  async listStudentBills(
+    academicSessionId?: string,
+  ): Promise<StudentBillSummary[]> {
+    const { data } = await apiClient.get<StudentBillSummary[]>(
+      "/financials/student-bills",
+      { params: academicSessionId ? { academicSessionId } : undefined },
+    );
+    return data;
+  },
+
+  async ledger(studentId: string): Promise<LedgerLine[]> {
+    const { data } = await apiClient.get<LedgerLine[]>(
+      `/financials/student-bills/${studentId}/ledger`,
+    );
+    return data;
+  },
+
+  async recordPayment(
+    studentId: string,
+    payload: RecordPaymentPayload,
+  ): Promise<void> {
+    await apiClient.post(
+      `/financials/student-bills/${studentId}/payments`,
+      payload,
+    );
+  },
+
+  async initiatePaystackPayment(
+    studentId: string,
+    payload: PaystackLinkPayload,
+  ): Promise<{ authorizationUrl: string; reference: string }> {
+    const { data } = await apiClient.post(
+      `/financials/student-bills/${studentId}/paystack-link`,
+      payload,
+    );
+    return data;
+  },
+
+  async listTransactionLog(): Promise<FinanceTransactionLogEntry[]> {
+    const { data } = await apiClient.get<FinanceTransactionLogEntry[]>(
+      "/financials/transaction-log",
+    );
+    return data;
   },
 };
