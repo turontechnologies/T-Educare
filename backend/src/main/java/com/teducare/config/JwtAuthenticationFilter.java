@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,12 +32,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            if (jwtService.isValid(token)) {
-                String subject = jwtService.extractSubject(token);
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(subject,
-                        null, List.of());
+            try {
+                Claims claims = jwtService.parse(token);
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        claims.getSubject(), null, List.of());
+                authentication.setDetails(claims);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-            } else {
+            } catch (Exception ex) {
                 response.setStatus(HttpStatus.UNAUTHORIZED.value());
                 response.setContentType("application/json");
                 response.getWriter().write("{\"error\":\"Invalid or expired token.\"}");

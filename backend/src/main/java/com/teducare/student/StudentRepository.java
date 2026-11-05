@@ -19,4 +19,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     long countByArchivedAtIsNull();
 
     List<Student> findByInstitutionIdAndArchivedAtIsNullOrderByCreatedAtDesc(String institutionId);
+
+    /** Student Portal login — matric no is unique within an institution and, in practice, system-wide since each institution's prefix differs. */
+    Optional<Student> findFirstByMatricNoIgnoreCaseAndArchivedAtIsNull(String matricNo);
 }
