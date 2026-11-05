@@ -113,6 +113,15 @@ export function FeeStructurePanel() {
                 setPage(1);
               }
             }}
+            // Without this, <SelectValue> has no way to resolve the
+            // selected id back to its label and falls back to the raw
+            // value — a real bug here since session id and session label
+            // ("2025/2026") differ, unlike the page-size Select below
+            // where value and label happen to be the same string.
+            items={activeSessions.map((s) => ({
+              label: s.session,
+              value: s.id,
+            }))}
           >
             <SelectTrigger size="sm" className="w-36">
               <SelectValue />
