@@ -39,7 +39,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/health", "/api/auth/login", "/api/attendance/clock-events")
+                        .requestMatchers(
+                                "/api/health", "/api/auth/login", "/api/attendance/clock-events",
+                                "/api/financials/paystack/webhook/*")
                         .permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authProvider)
