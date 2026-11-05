@@ -4,6 +4,7 @@ import {
   financeService,
   type FeeTypePayload,
   type PaystackLinkPayload,
+  type PayrollProfilePayload,
   type RecordPaymentPayload,
 } from "@/services/finance.service";
 
@@ -11,6 +12,8 @@ const FEE_TYPES_KEY = "finance-fee-types";
 const STUDENT_BILLS_KEY = "finance-student-bills";
 const LEDGER_KEY = "finance-ledger";
 const TRANSACTION_LOG_KEY = "finance-transaction-log";
+const PAYROLL_KEY = "finance-payroll";
+const PAYSLIP_HISTORY_KEY = "finance-payslip-history";
 
 export function useFeeTypes() {
   return useQuery({
@@ -107,5 +110,60 @@ export function useTransactionLog() {
   return useQuery({
     queryKey: [TRANSACTION_LOG_KEY],
     queryFn: () => financeService.listTransactionLog(),
+  });
+}
+
+export function usePayroll(periodYear: number, periodMonth: number) {
+  return useQuery({
+    queryKey: [PAYROLL_KEY, periodYear, periodMonth],
+    queryFn: () => financeService.listPayroll(periodYear, periodMonth),
+  });
+}
+
+function useInvalidatePayroll() {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: [PAYROLL_KEY] });
+    queryClient.invalidateQueries({ queryKey: [TRANSACTION_LOG_KEY] });
+    queryClient.invalidateQueries({ queryKey: [PAYSLIP_HISTORY_KEY] });
+  };
+}
+
+export function useUpdatePayrollProfile() {
+  const invalidate = useInvalidatePayroll();
+  return useMutation({
+    mutationFn: ({
+      staffId,
+      payload,
+    }: {
+      staffId: string;
+      payload: PayrollProfilePayload;
+    }) => financeService.updatePayrollProfile(staffId, payload),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRunPayroll() {
+  const invalidate = useInvalidatePayroll();
+  return useMutation({
+    mutationFn: ({
+      periodYear,
+      periodMonth,
+    }: {
+      periodYear: number;
+      periodMonth: number;
+    }) => financeService.runPayroll(periodYear, periodMonth),
+    onSuccess: invalidate,
+  });
+}
+
+export function usePayslipHistory(
+  staffId: string | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [PAYSLIP_HISTORY_KEY, staffId],
+    queryFn: () => financeService.payslipHistory(staffId!),
+    enabled: (options.enabled ?? true) && !!staffId,
   });
 }

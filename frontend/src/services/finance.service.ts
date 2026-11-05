@@ -5,6 +5,9 @@ import type {
   LatePenaltyType,
   LedgerLine,
   PaymentMethod,
+  Payslip,
+  PayrollRow,
+  RunPayrollResult,
   StudentBillSummary,
 } from "@/types/finance";
 
@@ -30,6 +33,13 @@ export type RecordPaymentPayload = {
 
 export type PaystackLinkPayload = {
   amount: number;
+};
+
+export type PayrollProfilePayload = {
+  allowances: number;
+  deductions: number;
+  onHold: boolean;
+  onHoldReason?: string;
 };
 
 export const financeService = {
@@ -99,6 +109,45 @@ export const financeService = {
   async listTransactionLog(): Promise<FinanceTransactionLogEntry[]> {
     const { data } = await apiClient.get<FinanceTransactionLogEntry[]>(
       "/financials/transaction-log",
+    );
+    return data;
+  },
+
+  async listPayroll(
+    periodYear: number,
+    periodMonth: number,
+  ): Promise<PayrollRow[]> {
+    const { data } = await apiClient.get<PayrollRow[]>("/financials/payroll", {
+      params: { periodYear, periodMonth },
+    });
+    return data;
+  },
+
+  async updatePayrollProfile(
+    staffId: string,
+    payload: PayrollProfilePayload,
+  ): Promise<PayrollRow> {
+    const { data } = await apiClient.put<PayrollRow>(
+      `/financials/payroll/profiles/${staffId}`,
+      payload,
+    );
+    return data;
+  },
+
+  async runPayroll(
+    periodYear: number,
+    periodMonth: number,
+  ): Promise<RunPayrollResult> {
+    const { data } = await apiClient.post<RunPayrollResult>(
+      "/financials/payroll/run",
+      { periodYear, periodMonth },
+    );
+    return data;
+  },
+
+  async payslipHistory(staffId: string): Promise<Payslip[]> {
+    const { data } = await apiClient.get<Payslip[]>(
+      `/financials/payroll/staff/${staffId}/payslips`,
     );
     return data;
   },

@@ -45,6 +45,43 @@ export interface FinanceTransactionLogEntry {
   createdAt: string;
 }
 
+export type PayrollStatus = "ON_HOLD" | "PENDING" | "PAID";
+
+export interface PayrollRow {
+  staffId: string;
+  staffCode: string;
+  staffName: string;
+  designationName: string;
+  departmentName: string;
+  basicPay: number;
+  allowances: number;
+  deductions: number;
+  netPay: number;
+  onHold: boolean;
+  onHoldReason: string | null;
+  status: PayrollStatus;
+}
+
+export interface RunPayrollResult {
+  staffPaid: number;
+  staffOnHold: number;
+  netPayroll: number;
+}
+
+export interface Payslip {
+  id: string;
+  periodYear: number;
+  periodMonth: number;
+  staffName: string;
+  designationName: string;
+  departmentName: string;
+  basicPay: number;
+  allowances: number;
+  deductions: number;
+  netPay: number;
+  createdAt: string;
+}
+
 export interface FeeType {
   id: string;
   code: string;
