@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/axios";
 import type {
   AuthenticatedUser,
+  InstitutionBranding,
   LoginRequest,
   LoginResponse,
 } from "@/types/auth";
@@ -10,6 +11,13 @@ export const authService = {
     const { data } = await apiClient.post<LoginResponse>(
       "/auth/login",
       payload,
+    );
+    return data;
+  },
+
+  async brandingBySlug(slug: string): Promise<InstitutionBranding> {
+    const { data } = await apiClient.get<InstitutionBranding>(
+      `/public/institutions/by-slug/${encodeURIComponent(slug)}`,
     );
     return data;
   },

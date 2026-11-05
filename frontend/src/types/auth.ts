@@ -32,6 +32,16 @@ export interface AuthenticatedUser {
 export interface LoginRequest {
   username: string;
   password: string;
+  /** Present when logging in from an institution-scoped URL (`/login/[slug]`) — the backend rejects a login whose account belongs to a different institution. */
+  institutionSlug?: string;
+}
+
+/** Public, unauthenticated — just enough to brand an institution-scoped login screen (`/login/[slug]`). */
+export interface InstitutionBranding {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
 }
 
 export interface LoginResponse {
