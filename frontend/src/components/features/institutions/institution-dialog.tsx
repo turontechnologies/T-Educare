@@ -56,6 +56,7 @@ interface InstitutionFormValues {
   principalName: string;
   principalPhone: string;
   adminEmail: string;
+  slug: string;
 }
 
 interface InstitutionDialogProps {
