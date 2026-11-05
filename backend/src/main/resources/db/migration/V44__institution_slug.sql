@@ -4,6 +4,7 @@ IF NOT EXISTS (
 BEGIN
     ALTER TABLE dbo.institutions ADD slug VARCHAR(80) NULL;
 END
+GO
 
 IF NOT EXISTS (
     SELECT * FROM sys.indexes WHERE name = 'UQ_institutions_slug' AND object_id = OBJECT_ID('dbo.institutions')

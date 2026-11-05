@@ -12,7 +12,12 @@ import {
   type LoginFormValues,
 } from "@/lib/validations/auth.schema";
 
-export function LoginForm() {
+export function LoginForm({
+  institutionSlug,
+}: {
+  /** Present on `/login/[slug]` — scopes the login to that one institution; omitted on the generic `/login` (super admin / unscoped). */
+  institutionSlug?: string;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: login, isPending } = useLogin();
 
@@ -27,7 +32,7 @@ export function LoginForm() {
 
   return (
     <form
-      onSubmit={handleSubmit((values) => login(values))}
+      onSubmit={handleSubmit((values) => login({ ...values, institutionSlug }))}
       noValidate
       className="w-full space-y-6"
     >
