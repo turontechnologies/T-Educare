@@ -1419,6 +1419,38 @@ text-tertiary-foreground`, the same secondary-outline-button convention
   CSV for a brand-new hostel, got "1 hostel created," and confirmed the
   new card appeared in the Hostels grid alongside the three existing ones.
 
+- **Financials started (2026-11-05)**, Fee Structure complete — see
+  `backend/CLAUDE.md` for the full discovery/scoping story (Transport
+  Management/Requests/Support confirmed to have nothing to build against
+  since even the Figma reference has them disabled; Financials itself
+  lives in a nested iframe on that reference, which is why this and the
+  backend entry both call it out). `config/nav.ts`'s `financials` item
+  converted from a flat leaf to a parent with 5 children (Overview, Fee
+  Structure, Student Bills, Staff Payroll, Transaction Logs) — the parent
+  itself carries no `moduleKey` (matching the established "a parent is a
+  pure grouping node" rule already documented on `filterNavByModules`),
+  and all 5 children reuse the single existing `payment` module key
+  rather than minting 5 new ones, since the reference only ever exposed
+  this as one on/off toggle. `RoleService.VALID_MENU_KEYS` (backend) grew
+  the 5 new `financials.*` keys alongside the now-unused flat `financials`
+  key, which was deliberately left in place rather than removed — never
+  repurpose a key a Role might already reference. New
+  `fee-structure-panel.tsx`/`fee-dialog.tsx` follow the same table/dialog
+  conventions as every other admin table in this app (DropdownMenu + "…"
+  row actions, ConfirmDialog for delete, NotchedField/NotchedSelectField/
+  NotchedDateField form fields). **A real bug caught and fixed during live
+  verification**: the Session filter `Select` showed the raw session id
+  instead of its label ("2025/2026") — the base `Select` (Base UI, not
+  Radix) needs an `items={[{label,value}]}` prop to resolve a selected
+  value back to its label whenever value and label differ, exactly the
+  same lesson this engagement already hit once on `NotchedSelectField`;
+  the page-size `Select` right next to it never needed this only because
+  its values ("5"/"10") happen to equal their own labels. Live-verified
+  via Playwright: Add Fee → Edit Fee (scope widens, re-bills) → Delete Fee
+  confirm dialog, all rendering correctly after the fix. Student Bills,
+  Staff Payroll, Transaction Logs, and Overview are still
+  `ModulePlaceholder`s, in that build order.
+
 ## Commands
 
 ```bash

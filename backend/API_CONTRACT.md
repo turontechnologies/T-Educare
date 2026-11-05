@@ -2639,3 +2639,57 @@ sequenceDiagram
     A->>B: POST .../unpublish { reason }
     B-->>A: 200 PUBLISHED -> SUBMITTED, logs UNPUBLISHED event with reason
 ```
+
+## 17. Financials
+
+**In progress** (`backend/src/main/java/com/teducare/finance/`), built from a
+Figma-site reference (same prototype as Hostel Management/Announcement/
+Results Management) that only has Financials fleshed out among the four
+remaining placeholder nav items — Transport Management, Requests, and
+Support are themselves `aria-disabled` stubs in that reference too, so
+there's nothing to build from it for those three. Financials has 5
+sub-pages in the reference (Overview, Fee Structure, Student Bills, Staff
+Payroll, Transaction Logs); build order confirmed with the user as Fee
+Structure → Student Bills → Payroll → Transaction Logs, with Overview
+built last since it's a summary over the other four.
+
+### 17.1 Fee Structure — **Implemented**
+
+A `FeeType` is scoped by `departmentId`/`programLevelId` (either or both
+`null` = "All programmes"/"All levels", matching the reference's own
+wording) and a required `academicSessionId`. Creating or editing one
+bills every currently-active student matching that scope (via the same
+`StudentService.list` filters Course Results already uses) — one
+`StudentBillLine` (`CHARGE`) per student, idempotent (a unique index on
+`(institutionId, studentId, feeTypeId)` for `CHARGE` lines guards against
+double-billing if the regeneration pass ever runs twice). **Editing never
+retroactively changes already-generated lines**, even if the amount or
+scope changes — a charge is what was actually billed at the time, matching
+real billing-system semantics, not a live-recomputed value. "Delete fee"
+(`DELETE /financials/fee-types/:id`) archives the `FeeType` — existing
+bill lines are untouched, it only stops new billing. `code` auto-generates
+sequentially per institution (`FEE-001`, `FEE-002`, ...).
+
+`latePenaltyType` is `NONE`/`FLAT`/`PERCENTAGE`; `latePenaltyValue` is
+required (and validated `> 0`) for the latter two. Penalty *lines*
+(`StudentBillLine.lineType = PENALTY`, linked to their original charge via
+`parentLineId`) are **not yet generated** — that's part of Student Bills
+(§17.2, next), since a penalty only matters once the ledger/balance view
+exists to show it against.
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/financials/fee-types` | — | active (non-archived) fees, each with resolved `departmentName`/`levelCode`/`sessionLabel` and a live `studentsBilled` count |
+| POST | `/financials/fee-types` | `{ name, departmentId?, programLevelId?, academicSessionId, amount, dueDate, latePenaltyType, latePenaltyValue? }` | bills every matching active student immediately |
+| PUT | `/financials/fee-types/:id` | same shape | re-bills any newly-matching students; existing lines unchanged |
+| DELETE | `/financials/fee-types/:id` | — | archives; `204` |
+
+Live-verified via curl: created a department+level-scoped fee (3 students
+billed), widened its scope on edit (5 students billed, confirmed
+idempotent on a second identical edit), archived it (vanishes from the
+list, existing lines untouched), and confirmed the `400` when a
+`PERCENTAGE` penalty is submitted with no value. **Wired to the frontend
+the same day** — see `frontend/CLAUDE.md`, including a real `Select`
+label-resolution bug caught and fixed during that pass (the Session filter
+needed an `items` prop, same lesson as the earlier `NotchedSelectField`
+bug this engagement already hit once).
