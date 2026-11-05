@@ -558,7 +558,8 @@ public class InstitutionService {
                 Instant.now()));
     }
 
-    private Institution requireInstitution(String id) {
+    /** Public — reused cross-package (e.g. StudentAuthService needs a logged-in student's own institution name/logo for its login response), same promotion pattern as StudentService.requireOwnStudent. */
+    public Institution requireInstitution(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Institution not found."));
     }
