@@ -11,7 +11,15 @@ export type PreStudentIdentifierPreference =
 
 export interface StudentIdentitySettings {
   preStudentIdentifierPreference: PreStudentIdentifierPreference;
+  /** Response-only — whether an institution-wide Student Portal default password is configured. The hash itself is never returned. */
+  hasDefaultPassword: boolean;
 }
+
+export type UpdateStudentIdentitySettingsPayload = {
+  preStudentIdentifierPreference: PreStudentIdentifierPreference;
+  /** Request-only — blank/omitted leaves the currently-configured default password unchanged. */
+  defaultPassword?: string;
+};
 
 export const STUDENT_TITLES = [
   "Mr",

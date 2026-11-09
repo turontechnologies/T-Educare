@@ -96,7 +96,14 @@ export function AppHeader({ menu, onMenuClick }: AppHeaderProps) {
     } finally {
       logout();
       toast.success("You've been signed out");
-      router.replace(loginPath);
+      // A plain client-side router.replace here races DashboardLayout's own
+      // "no token -> /login" guard effect (fired by the logout() call just
+      // above) — that effect's hardcoded generic redirect would sometimes
+      // win and overwrite this slug-aware one. A full navigation sidesteps
+      // the race entirely: it tears down the whole React tree (including
+      // that effect) before landing on loginPath, same reasoning as the
+      // axios 401 handler's own window.location.href use.
+      window.location.href = loginPath;
     }
   };
 

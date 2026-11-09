@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, KeyRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,10 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { NotchedSelectField } from "@/components/shared/notched-field";
+import {
+  NotchedField,
+  NotchedSelectField,
+} from "@/components/shared/notched-field";
 import {
   useStudentIdentitySettings,
   useUpdateStudentIdentitySettings,
@@ -51,7 +54,7 @@ export function StudentIdentitySettingsDialog({
       >
         <div className="flex items-center justify-between bg-primary px-6 py-4">
           <DialogTitle className="text-base font-medium text-white">
-            Pre-Student Identification
+            Student Settings
           </DialogTitle>
           <DialogClose className="cursor-pointer text-white/80 transition-colors hover:text-white">
             <X className="size-5" />
@@ -83,13 +86,20 @@ function StudentIdentitySettingsForm({
   const [preference, setPreference] = useState<PreStudentIdentifierPreference>(
     settings.preStudentIdentifierPreference,
   );
+  const [defaultPassword, setDefaultPassword] = useState("");
 
   const handleSave = async () => {
+    if (defaultPassword && defaultPassword.trim().length < 6) {
+      toast.error("Default password must be at least 6 characters");
+      return;
+    }
+
     try {
       await updateSettings.mutateAsync({
         preStudentIdentifierPreference: preference,
+        defaultPassword: defaultPassword.trim() || undefined,
       });
-      toast.success("Pre-student identification setting saved");
+      toast.success("Student settings saved");
       onDone();
     } catch (error) {
       toast.error(
@@ -115,6 +125,29 @@ function StudentIdentitySettingsForm({
           }
           options={PREFERENCE_OPTIONS}
         />
+
+        <div className="space-y-2 border-t border-border pt-5">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+            <KeyRound className="size-3.5" />
+            Student Portal default password
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {settings.hasDefaultPassword
+              ? "A default password is configured. Resetting a student's password from Student Management sets it back to this value."
+              : 'Not configured yet — "Reset to Default" won\'t be available for students until you set one.'}
+          </p>
+          <NotchedField
+            label={
+              settings.hasDefaultPassword
+                ? "New default (leave blank to keep current)"
+                : "Default password"
+            }
+            labelClassName="bg-popover"
+            placeholder="e.g. Student@2024"
+            value={defaultPassword}
+            onChange={(event) => setDefaultPassword(event.target.value)}
+          />
+        </div>
       </div>
 
       <div className="flex items-center justify-end gap-4 border-t border-border bg-muted/50 px-6 py-4">

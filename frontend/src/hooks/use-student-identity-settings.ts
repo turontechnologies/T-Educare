@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { studentIdentitySettingsService } from "@/services/student-identity-settings.service";
-import type { StudentIdentitySettings } from "@/types/student";
+import type { UpdateStudentIdentitySettingsPayload } from "@/types/student";
 
 const STUDENT_IDENTITY_SETTINGS_KEY = "student-identity-settings";
 
@@ -19,7 +19,7 @@ export function useStudentIdentitySettings(
 export function useUpdateStudentIdentitySettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: StudentIdentitySettings) =>
+    mutationFn: (payload: UpdateStudentIdentitySettingsPayload) =>
       studentIdentitySettingsService.update(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({

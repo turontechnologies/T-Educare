@@ -1,5 +1,8 @@
 import { apiClient } from "@/lib/axios";
-import type { StudentIdentitySettings } from "@/types/student";
+import type {
+  StudentIdentitySettings,
+  UpdateStudentIdentitySettingsPayload,
+} from "@/types/student";
 
 export const studentIdentitySettingsService = {
   async get(): Promise<StudentIdentitySettings> {
@@ -10,7 +13,7 @@ export const studentIdentitySettingsService = {
   },
 
   async update(
-    payload: StudentIdentitySettings,
+    payload: UpdateStudentIdentitySettingsPayload,
   ): Promise<StudentIdentitySettings> {
     const { data } = await apiClient.put<StudentIdentitySettings>(
       "/student-identity-settings",
