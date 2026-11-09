@@ -227,4 +227,9 @@ export const studentService = {
     );
     return data;
   },
+
+  /** Resets this student's Student Portal password back to the institution's configured default (see Student Settings) — 400s if none is configured yet. */
+  async resetPasswordToDefault(studentId: string): Promise<void> {
+    await apiClient.post(`/students/${studentId}/reset-password`);
+  },
 };

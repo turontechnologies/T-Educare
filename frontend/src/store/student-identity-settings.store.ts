@@ -9,6 +9,9 @@ interface StudentIdentitySettingsState {
 
 export const useStudentIdentitySettingsStore =
   create<StudentIdentitySettingsState>()((set) => ({
-    settings: { preStudentIdentifierPreference: "PRE_ADMISSION_ID" },
+    settings: {
+      preStudentIdentifierPreference: "PRE_ADMISSION_ID",
+      hasDefaultPassword: false,
+    },
     setSettings: (settings) => set({ settings }),
   }));

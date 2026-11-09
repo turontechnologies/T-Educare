@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  RotateCcw,
   Settings,
   Trash2,
   User,
@@ -53,7 +54,11 @@ import {
   fullName,
   primaryPreStudentIdentifier,
 } from "@/lib/students";
-import { useArchiveStudent, useRestoreStudent } from "@/hooks/use-students";
+import {
+  useArchiveStudent,
+  useResetStudentPasswordToDefault,
+  useRestoreStudent,
+} from "@/hooks/use-students";
 import { useProgramLevelsStore } from "@/store/program-levels.store";
 import { useProgramsStore } from "@/store/programs.store";
 import { useSchoolsStore } from "@/store/schools.store";
@@ -197,6 +202,7 @@ function StudentTable({
   const students = useStudentsStore((state) => state.students);
   const archiveStudent = useArchiveStudent();
   const restoreStudent = useRestoreStudent();
+  const resetPasswordToDefault = useResetStudentPasswordToDefault();
   const schools = useSchoolsStore((state) => state.schools);
   const programs = useProgramsStore((state) => state.programs);
   const programLevels = useProgramLevelsStore((state) => state.programLevels);
@@ -211,6 +217,7 @@ function StudentTable({
   const [page, setPage] = useState(1);
   const [pendingArchive, setPendingArchive] = useState<Student | null>(null);
   const [passwordFor, setPasswordFor] = useState<Student | undefined>();
+  const [pendingReset, setPendingReset] = useState<Student | null>(null);
 
   const schoolName = (id: string) =>
     schools.find((s) => s.id === id)?.name ?? "—";
@@ -454,6 +461,12 @@ function StudentTable({
                             <KeyRound className="size-3.5" />
                             Set Portal Password
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setPendingReset(student)}
+                          >
+                            <RotateCcw className="size-3.5" />
+                            Reset to Default
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
@@ -567,6 +580,29 @@ function StudentTable({
       <SetStudentPasswordDialog
         student={passwordFor}
         onOpenChange={(open) => !open && setPasswordFor(undefined)}
+      />
+
+      <ConfirmDialog
+        open={!!pendingReset}
+        onOpenChange={(open) => !open && setPendingReset(null)}
+        title="Reset this student's Portal password?"
+        description={`${pendingReset ? fullName(pendingReset) : "This student"}'s Student Portal password will be reset to the institution's configured default — set it in "Pre-Student ID Settings" if you haven't yet.`}
+        confirmLabel="Reset to Default"
+        onConfirm={async () => {
+          if (!pendingReset) return;
+          try {
+            await resetPasswordToDefault.mutateAsync(pendingReset.id);
+            toast.success(
+              `${fullName(pendingReset)}'s password reset to the default`,
+            );
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Failed to reset password",
+            );
+          }
+        }}
       />
     </>
   );
