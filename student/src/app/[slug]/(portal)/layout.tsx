@@ -4,8 +4,9 @@ import { useEffect, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useStudentAuthStore } from "@/store/student-auth.store";
 import { DashboardHeader } from "@/components/features/dashboard/dashboard-header";
+import { DashboardSidebar } from "@/components/features/dashboard/dashboard-sidebar";
 
-export default function StudentDashboardLayout({
+export default function StudentPortalLayout({
   children,
 }: {
   children: ReactNode;
@@ -40,11 +41,14 @@ export default function StudentDashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted">
-      <DashboardHeader student={student} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
-        {children}
-      </main>
+    <div className="flex min-h-screen w-full bg-muted">
+      <DashboardSidebar student={student} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <DashboardHeader student={student} />
+        <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
