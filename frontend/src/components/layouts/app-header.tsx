@@ -25,6 +25,7 @@ import { NotificationsBell } from "@/components/features/notifications/notificat
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import type { NavItem } from "@/config/nav";
 import { authService } from "@/services/auth.service";
+import { resolveLoginPath } from "@/lib/auth-redirect";
 import { useAuthStore } from "@/store/auth.store";
 import { useInstitutionsStore } from "@/store/institutions.store";
 
@@ -87,6 +88,7 @@ export function AppHeader({ menu, onMenuClick }: AppHeaderProps) {
   };
 
   const handleLogout = async () => {
+    const loginPath = resolveLoginPath(user);
     try {
       await authService.logout();
     } catch {
@@ -94,7 +96,7 @@ export function AppHeader({ menu, onMenuClick }: AppHeaderProps) {
     } finally {
       logout();
       toast.success("You've been signed out");
-      router.replace("/login");
+      router.replace(loginPath);
     }
   };
 

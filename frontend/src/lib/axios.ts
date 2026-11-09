@@ -1,4 +1,5 @@
 import axios from "axios";
+import { resolveLoginPath } from "@/lib/auth-redirect";
 import { useAuthStore } from "@/store/auth.store";
 
 export const apiClient = axios.create({
@@ -54,11 +55,11 @@ apiClient.interceptors.response.use(
     ) {
       if (!redirectingToLogin) {
         redirectingToLogin = true;
+        const loginPath = resolveLoginPath(useAuthStore.getState().user);
         useAuthStore.getState().logout();
         // Outside React (axios interceptor), so no router instance is
-        // available — a full reload is the only way to get to /login here.
-        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-        window.location.href = "/login";
+        // available — a full reload is the only way to get back to login here.
+        window.location.href = loginPath;
       }
       return Promise.reject(
         new Error("Your session has expired. Please sign in again."),
