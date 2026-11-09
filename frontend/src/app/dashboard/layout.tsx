@@ -291,9 +291,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // has resolved yet.
   const brand = liveInstitution?.name ?? user?.institutionName ?? "TEduCare";
   const logoSrc = liveInstitution?.logoUrl ?? user?.institutionLogoUrl;
+  const brandColor = liveInstitution?.brandColor ?? user?.institutionBrandColor;
 
   return (
-    <AppShell menu={menu} brand={brand} logoSrc={logoSrc}>
+    <AppShell
+      menu={menu}
+      brand={brand}
+      logoSrc={logoSrc}
+      brandColor={brandColor}
+    >
       {children}
     </AppShell>
   );

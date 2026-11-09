@@ -46,16 +46,7 @@ export function DashboardSidebar({ student }: { student: StudentAuthProfile }) {
   };
 
   return (
-    <aside
-      className="flex w-60 shrink-0 flex-col bg-primary text-white"
-      style={
-        student.institutionBrandColor
-          ? ({
-              "--primary": student.institutionBrandColor,
-            } as React.CSSProperties)
-          : undefined
-      }
-    >
+    <aside className="flex w-60 shrink-0 flex-col bg-primary text-white">
       <div className="flex items-center gap-2.5 px-5 py-5">
         <Avatar size="sm" className="ring-2 ring-white/20">
           <AvatarImage

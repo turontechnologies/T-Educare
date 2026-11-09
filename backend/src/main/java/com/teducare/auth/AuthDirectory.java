@@ -93,6 +93,8 @@ public class AuthDirectory {
         private Account toAccount(UserAccount entity) {
                 String institutionName = entity.getInstitutionName();
                 String institutionLogoUrl = "";
+                String institutionSlug = null;
+                String institutionBrandColor = null;
 
                 if (entity.getInstitutionId() != null) {
                         Institution institution = institutionRepository.findById(entity.getInstitutionId())
@@ -100,13 +102,16 @@ public class AuthDirectory {
                         if (institution != null) {
                                 // Resolved live from the real Institution record rather than the
                                 // denormalized snapshot on UserAccount, so a super admin renaming an
-                                // institution or setting its logo takes effect on this user's next
-                                // login without needing to keep the two in sync by hand.
+                                // institution or setting its logo/slug/brand color takes effect on
+                                // this user's next login without needing to keep the two in sync by
+                                // hand.
                                 institutionName = institution.getName();
                                 // Normalized to "" (never null/omitted) the same way phone/avatarUrl
                                 // already are, so the frontend never has to distinguish "no logo"
                                 // from "field absent".
                                 institutionLogoUrl = institution.getLogoUrl() == null ? "" : institution.getLogoUrl();
+                                institutionSlug = institution.getSlug();
+                                institutionBrandColor = institution.getBrandColor();
                         }
                 }
 
@@ -126,6 +131,8 @@ public class AuthDirectory {
                                                 entity.getPhone(),
                                                 entity.getAvatarUrl(),
                                                 institutionLogoUrl,
+                                                institutionSlug,
+                                                institutionBrandColor,
                                                 entity.getLecturerId(),
                                                 entity.getStaffId()),
                                 entity.getStatus(),

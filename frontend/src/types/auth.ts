@@ -13,6 +13,8 @@ export interface AuthenticatedUser {
   institutionLogoUrl?: string;
   /** institution_admin only — drives the "My Institution" card's Student Portal / admin portal links on the profile page. Empty until the institution has a slug (the one-time backfill assigns one to every pre-existing institution). */
   institutionSlug?: string;
+  /** institution_admin only — hex color (e.g. "#1B5E20") applied as the dashboard's own `--primary` CSS override once logged in, so the whole authenticated app reflects it, not just the institution-scoped login screen. Null/absent uses the platform's default navy. */
+  institutionBrandColor?: string | null;
   /** institution_admin only — links to the real record in `useInstitutionsStore`, whose `moduleKeys` cap which menu items this user's institution can access at all (see `filterNavByModules`). */
   institutionId?: string;
   /** institution_admin only — the real Role (hooks/use-roles.ts) governing their menu access. Absent means unrestricted (the institution's own root admin). */

@@ -47,14 +47,13 @@ public class ProfileService {
         profile.put("institutionId", user.institutionId());
         profile.put("institutionName", user.institutionName());
         profile.put("institutionLogoUrl", user.institutionLogoUrl() == null ? "" : user.institutionLogoUrl());
-        // Drives the "My Institution" card's Student Portal link on the
-        // institution_admin profile page — never shown to super_admin, who
-        // has no single institution.
-        profile.put("institutionSlug", user.institutionId() == null
-                ? ""
-                : institutionRepository.findById(user.institutionId())
-                        .map(Institution::getSlug)
-                        .orElse(""));
+        // Drives the "My Institution" card's Portal Links on the
+        // institution_admin profile page, and (brandColor) the dashboard's
+        // own theme override — never shown to super_admin, who has no
+        // single institution. Already resolved live onto AuthenticatedUserDto
+        // by AuthDirectory, so no second lookup needed here.
+        profile.put("institutionSlug", user.institutionSlug() == null ? "" : user.institutionSlug());
+        profile.put("institutionBrandColor", user.institutionBrandColor());
         profile.put("roleId", user.roleId());
         profile.put("lecturerId", user.lecturerId() == null ? "" : user.lecturerId());
         profile.put("staffId", user.staffId() == null ? "" : user.staffId());

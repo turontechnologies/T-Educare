@@ -41,7 +41,16 @@ export default function StudentPortalLayout({
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-muted">
+    <div
+      className="flex min-h-screen w-full bg-muted"
+      style={
+        student.institutionBrandColor
+          ? ({
+              "--primary": student.institutionBrandColor,
+            } as React.CSSProperties)
+          : undefined
+      }
+    >
       <DashboardSidebar student={student} />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader student={student} />

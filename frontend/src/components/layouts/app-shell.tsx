@@ -12,6 +12,8 @@ interface AppShellProps {
   brand: string;
   brandSuffix?: string;
   logoSrc?: string;
+  /** institution_admin only — applied as a `--primary` CSS override on this whole shell (sidebar, header, and every page rendered inside it), not just the institution-scoped login screen. Absent/null for super_admin (no single institution) and uses the platform's default navy. */
+  brandColor?: string | null;
   children: ReactNode;
 }
 
@@ -21,13 +23,21 @@ export function AppShell({
   brand,
   brandSuffix,
   logoSrc,
+  brandColor,
   children,
 }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted">
+    <div
+      className="flex h-screen overflow-hidden bg-muted"
+      style={
+        brandColor
+          ? ({ "--primary": brandColor } as React.CSSProperties)
+          : undefined
+      }
+    >
       <AppSidebar
         menu={menu}
         brand={brand}
