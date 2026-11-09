@@ -2693,3 +2693,215 @@ the same day** — see `frontend/CLAUDE.md`, including a real `Select`
 label-resolution bug caught and fixed during that pass (the Session filter
 needed an `items` prop, same lesson as the earlier `NotchedSelectField`
 bug this engagement already hit once).
+
+### 17.2 Student Bills — **Implemented**
+
+The per-student ledger (`GET /financials/student-bills/:studentId/ledger`)
+lazily materializes late-penalty lines on every read
+(`FinanceService.ensureLatePenaltiesForStudent`) — a real `StudentBillLine`
+(`PENALTY`, `reference = "PEN-" + originalReference`) is generated for any
+overdue unpaid `CHARGE` line whose `FeeType.latePenaltyType != NONE`,
+guarded against duplicate generation by looking up an existing penalty
+child for that parent line first. The admin list endpoint
+(`GET /financials/student-bills`) runs the same lazy-generation pass
+institution-wide before summarizing, so the "owing" totals shown there are
+never stale relative to today's date.
+
+Payments are recorded against one specific `StudentBillLine`
+(`POST /financials/student-bills/:studentId/payments`), oldest-due-first
+within that line only — a partial payment is allowed and leaves the line's
+own `lineBalance` non-zero. `method` is `BANK_TRANSFER`/`CASH`/`POS`/
+`CHEQUE`; **`proofUrl` is required for `BANK_TRANSFER`**, optional for the
+others (upload via §3.2 first). Every payment writes a paired
+`FinanceTransactionLog` entry (`PAYMENT_RECORDED`), visible in §17.5.
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/financials/student-bills` | — | one row per student with a ledger this session; `totalBilled`/`totalPaid`/`balance`/`status` (`OWING`/`PAID`) |
+| GET | `/financials/student-bills/:studentId/ledger` | — | full chronological ledger (`CHARGE` and `PENALTY` lines), each with `runningBalance`/`lineBalance` |
+| POST | `/financials/student-bills/:studentId/payments` | `{ billLineId, amount, method, reference?, paymentDate, proofUrl? }` | `201`; `400` if `BANK_TRANSFER` with no `proofUrl` |
+
+### 17.3 Paystack — online payments — **Implemented**
+
+Server-to-server "Initialize Transaction" only — this backend never
+collects card details itself. A super admin configures each institution's
+own Paystack keys (`com.teducare.finance.PaystackSettingsController`,
+`/api/super-admin/institutions/:institutionId/paystack-settings`); the
+response's `hasSecretKey: boolean` is the only thing exposed about the
+secret — it is **never** returned in any response body to any frontend,
+only used server-side for the Initialize call and the webhook's HMAC-SHA512
+signature check. `PUT` leaves the secret key unchanged when the request's
+`secretKey` is blank/omitted (an update that touches only the public key or
+`enabled` must not accidentally blank out a working secret).
+
+`POST /financials/student-bills/:studentId/paystack-link` (institution
+admin, on a student's behalf) or `POST /student-portal/bills/pay-link`
+(the student themselves, via the Student Portal — see §19) both call
+`FinanceService.initiatePaystackPayment`, which generates a reference
+(`PSK-` + random), calls Paystack's Initialize Transaction API with the
+institution's own secret key, and returns the hosted checkout
+`authorization_url`. `409` if Paystack isn't `enabled` for that
+institution yet.
+
+The webhook (`POST /financials/paystack/webhook/:institutionId`, public,
+`permitAll` in `SecurityConfig` — the institution id is in the URL path
+specifically so the handler knows which institution's secret key to verify
+the signature against) does HMAC-SHA512 verification of the raw body
+before trusting anything in it, then runs the **same** oldest-due-first
+allocation engine a manual payment would (`allocateOldestDueFirst`),
+writing a paired `GATEWAY_PAYMENT_RECEIVED` + `PAYMENT_ALLOCATED`
+transaction log entry — matching the Figma reference's exact log pairing.
+
+| Method | Path | Auth | Body | Notes |
+|--------|------|------|------|-------|
+| GET | `/super-admin/institutions/:institutionId/paystack-settings` | super admin | — | `{ publicKey, hasSecretKey, enabled }` |
+| PUT | `/super-admin/institutions/:institutionId/paystack-settings` | super admin | `{ publicKey, secretKey?, enabled }` | blank `secretKey` keeps the current one |
+| POST | `/financials/student-bills/:studentId/paystack-link` | institution admin | `{ amount }` | `{ authorizationUrl, reference }` |
+| POST | `/student-portal/bills/pay-link` | student | `{ amount }` | same shape, scoped to the caller's own bills |
+| POST | `/financials/paystack/webhook/:institutionId` | **public** | Paystack's own payload | HMAC-verified; `200` always (Paystack retries on non-2xx) |
+
+### 17.4 Staff Payroll — **Implemented**
+
+`StaffPayrollProfile` (one per staff member, lazily created on first view)
+holds admin-entered `allowances`/`deductions` on top of
+`StaffMember.salaryAmount` — **per explicit decision, PAYE/pension are not
+auto-computed; an admin enters deductions manually**, matching the Figma
+reference's own "editable deductions" column. Running payroll
+(`POST /financials/payroll/run`) for a given `(periodYear, periodMonth)` is
+unique per institution (`409` on a second run for the same period) and
+snapshots every non-`onHold` staff member's then-current
+basic/allowances/deductions/netPay into an immutable `Payslip` row —
+**editing a profile afterward never changes historical payslips**, same
+"cached snapshot, not a live join" convention used elsewhere in this
+backend (e.g. a student's cached hostel summary).
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/financials/payroll` | — | one row per staff member: basic/allowances/deductions/netPay, `onHold`, `status` |
+| PUT | `/financials/payroll/profiles/:staffId` | `{ allowances, deductions, onHold, onHoldReason? }` | upserts the profile |
+| POST | `/financials/payroll/run` | `{ periodYear, periodMonth }` | `409` if already run for that period; returns `{ staffPaid, staffOnHold, netPayroll }` |
+| GET | `/financials/payroll/:staffId/payslips` | — | this staff member's payslip history, newest first |
+
+### 17.5 Transaction Logs — **Implemented**
+
+`FinanceTransactionLog` is append-only — there is no edit/delete endpoint,
+by design (`GET /financials/transaction-log` is read-only, matching the
+reference's "This log is read-only" banner). Every financial action in
+§17.2–§17.4 writes one entry: `PAYMENT_RECORDED` (manual), the
+`GATEWAY_PAYMENT_RECEIVED` + `PAYMENT_ALLOCATED` pair (Paystack), and
+`PAYROLL_RUN` (one entry per run, not per staff member).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/financials/transaction-log` | newest first; each entry has `eventType`, optional `studentMatricNo`/`studentName`, `amount`, `reference`, `details`, `recordedByName`, `createdAt` |
+
+### 17.6 Overview — **Implemented**
+
+A read-only summary over §17.2–§17.5, built last since it aggregates the
+other four. `outstandingByAge` buckets every unpaid line by days overdue
+(Not yet due / 1–30 / 31–60 / 61–90 / 90+); `revenueTrend` is real payments
+grouped by week (last ~8 weeks); `topDebtors` is the highest-balance
+students from §17.2's own summary list, reused rather than recomputed.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/financials/overview` | `{ totalRevenue, totalOutstanding, payrollDueThisMonth, feeCollectionRate, outstandingByAge[], topDebtors[], revenueTrend[] }` |
+
+## 18. Multi-tenancy — institution URL slugs & brand color — **Implemented**
+
+Every `Institution` has a unique, URL-safe `slug` (e.g. `sams-university`),
+auto-generated from `name` at creation (`InstitutionService.generateSlug` —
+lowercases, replaces non-alphanumerics with `-`, disambiguates a collision
+with `-2`/`-3`/...), editable by a super admin afterward, and an optional
+`brandColor` (a 6-digit hex string, validated server-side). Pre-existing
+institutions (created before this column existed) get a slug lazily from a
+startup-only backfill (`InstitutionSlugBackfiller`, runs every boot but is
+a no-op once every row has one).
+
+This drives each institution's own scoped sign-in URL — `frontend`'s
+`/login/{slug}` for staff/admin, `student`'s `/{slug}/login` for students
+(see `student/CLAUDE.md`) — resolved by both via the public,
+unauthenticated endpoint below, and enforced on login by both
+`AuthService.login` and `StudentAuthService.login`: when the request
+includes `institutionSlug`, the authenticating account/student must belong
+to **exactly** that institution, or the login fails with the same generic
+"invalid credentials" message a wrong password would give (never reveals
+*why* it failed, to avoid leaking which institution an account belongs
+to). Omitting `institutionSlug` is still accepted (the legacy/unscoped
+`/login` on `frontend` keeps working for super admin, who has no single
+institution to scope to) — the slug check is additive, not a hard
+requirement on every login.
+
+| Method | Path | Auth | Notes |
+|--------|------|------|-------|
+| GET | `/public/institutions/by-slug/:slug` | **public** | `{ id, slug, name, logoUrl, brandColor }` — just enough to brand a login screen; `404` if the slug doesn't resolve to an active institution |
+| POST | `/institutions` | super admin | now also accepts optional `slug` (blank auto-generates from `name`) and `brandColor` at creation |
+| PATCH | `/institutions/:id` | super admin | now also accepts optional `slug`/`brandColor` — same partial-update convention as every other field (§4.1) |
+| POST | `/auth/login` | — | now also accepts optional `institutionSlug` (§3) |
+
+A super admin sees each institution's two full sign-in URLs (ready to
+copy/send) via a "Portal Links" action on `/super-admin/institutions`; an
+institution admin sees their own institution's same two links on their own
+Profile page (`GET /profile`'s response now also includes
+`institutionSlug`).
+
+## 19. Student Portal — **Implemented**
+
+A student is not a `UserAccount` — there is no shared login table with
+staff/admin. `com.teducare.studentauth` is an entirely separate auth stack
+reusing only the existing `PasswordEncoder`/`JwtService` beans, and
+`com.teducare.studentportal` is a thin, read-mostly layer that re-scopes
+the *same* services the admin side already uses (`CourseResultService`,
+`CourseRegistrationService`, `FinanceService`) to exactly the calling
+student — never a second source of truth for academic/financial data.
+
+A student's matric number doubles as their Student Portal username, so
+they can't have a Portal password until an admin assigns one
+(`StudentService.setPassword`/`resetPasswordToDefault` guard this). An
+institution admin sets one two ways from Student Management: **Set Portal
+Password** (types or generates a one-off password, shown once) or **Reset
+to Default** (resets to the institution's own configured default password
+— see §7.2's Student Identity Settings extension below). Both are
+`institution_admin`-only, same auth guard as the rest of §7.2.
+
+JWT claims for a student token are `role: "student"`, `studentId`,
+`institutionId` — attached to `Authentication.getDetails()` by
+`JwtAuthenticationFilter` (a single `Claims` object for both staff and
+student tokens now, replacing the old subject-only extraction) and read by
+every student-portal endpoint via `CurrentStudentResolver`, which rejects
+a non-student token with `403` even if it's otherwise valid.
+
+| Method | Path | Auth | Body / Notes |
+|--------|------|------|------|
+| POST | `/student-auth/login` | **public** | `{ matricNo, password, institutionSlug? }` → `{ student, token }` (see §18 for the slug guard) |
+| GET | `/student-auth/me` | student | re-fetches the caller's own `StudentAuthProfileResponse` |
+| GET | `/student-portal/academic-summary` | student | `{ departmentName, levelCode, sessionLabel, cgpa, cgpaClassification, currentSemesterId, currentSemesterName, registeredCourses[], registeredUnits, resultsBySemester[] }` — `cgpaClassification` is the standard 5.0-scale band (First Class/Second Class Upper/.../Pass), computed server-side; `resultsBySemester[].cumulativeCgpa` is a *running* CGPA as of that semester in chronological order, and `isProvisional`/`resultsStillToCome` are only ever set on the institution's current semester |
+| GET | `/student-portal/hostel-status` | student | `{ hostelName, roomNumber }` — reads the same cached summary §14 keeps on `Student`, both null if not currently allocated |
+| GET | `/student-portal/bills` | student | same ledger/summary shape as §17.2, scoped to the caller |
+| POST | `/student-portal/bills/pay-link` | student | `{ amount }` → Paystack checkout link (§17.3) |
+
+Deliberately **not** built into the dashboard: per-student course
+attendance (the backend only tracks *staff* time & attendance — §12 — not
+a student-level equivalent, so there is nothing real to show), Course
+Registration, Timetable, a full Results detail page, a full Hostel
+Management (self-service apply) page, and Support — these are present in
+the Student Portal's sidebar nav for visual completeness against the
+Figma reference but intentionally not implemented yet; see
+`student/CLAUDE.md`.
+
+### 19.1 Student Identity Settings — default Portal password — **Implemented**
+
+`student_identity_settings` (§7.2, one row per institution) now also holds
+an optional `defaultPasswordHash` (BCrypt) — an institution-wide default
+Student Portal password an admin configures once and can reset any
+student back to, without re-typing it each time. The hash is never
+returned over the API (`hasDefaultPassword: boolean` only, same convention
+as §17.3's Paystack secret key); `PUT` leaves it unchanged when the
+request's `defaultPassword` is blank/omitted.
+
+| Method | Path | Body | Notes |
+|--------|------|------|-------|
+| GET | `/student-identity-settings` | — | now also returns `hasDefaultPassword` |
+| PUT | `/student-identity-settings` | `{ preStudentIdentifierPreference, defaultPassword? }` | blank `defaultPassword` keeps the current one; `400` if a new value is under 6 characters |
+| POST | `/students/:id/set-password` | `{ password? }` | **unchanged** — an admin-chosen or generated one-off password, returned once |
+| POST | `/students/:id/reset-password` | — | resets to the institution's configured default; `400` if none is configured yet or the student has no matric number yet |

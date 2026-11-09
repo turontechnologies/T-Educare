@@ -311,11 +311,16 @@ knowing about if something similar bites again:**
 
 The backend permits requests from:
 
-- `http://localhost:3000`
+- `http://localhost:3000` (`frontend/` — staff/admin app)
+- `http://localhost:3001` (`student/` — Student Portal, a separate app/URL;
+  see root `CLAUDE.md`)
 - `https://t-educare.vercel.app`
 
-This is configured in `SecurityConfig` and `application.yml` so the local app
-and deployed frontend can both reach the API.
+This is configured via `CORS_ALLOWED_ORIGINS` in `docker-compose.yml` /
+`application.yml`, consumed by `SecurityConfig`, so the local apps and
+deployed frontend can all reach the API. Adding a new frontend app or
+deploying one to a new domain means adding its origin here too — a missing
+origin fails silently as a CORS error client-side, not an obvious 403.
 
 ## Notes
 

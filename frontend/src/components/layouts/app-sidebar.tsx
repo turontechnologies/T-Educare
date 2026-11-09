@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import type { NavItem } from "@/config/nav";
 import { Logo } from "@/components/shared/logo";
 import { authService } from "@/services/auth.service";
+import { resolveLoginPath } from "@/lib/auth-redirect";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
 
@@ -158,31 +159,32 @@ export function SidebarContent({
   onNavigate,
 }: SidebarContentProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const activeKey = findActiveKey(menu, pathname);
 
   const handleLogout = () => {
+    const loginPath = resolveLoginPath(user);
     // The backend has no server-side session/token store to revoke from
     // (JWTs simply expire on their own) — this call is a formality, never
     // worth blocking the visible logout on a network round-trip for.
     authService.logout().catch(() => {});
 
     logout();
-    // The TanStack QueryClient is a singleton that outlives this navigation
-    // — without clearing it, every cached query (institutions, notifications,
-    // profile, dashboard stats, ...) survives into the next login. Since
-    // several query keys don't vary per-account (e.g. the institutions list
-    // fetch), the next person to log in in this same tab could see a flash
-    // of — or, worse, a `staleTime`-protected persistent view of — the
-    // previous account's data until an unrelated refetch happens to occur.
-    // Confirmed live: logging out of an unrestricted account and into a
-    // restricted one kept showing the first account's full nav. Clearing
-    // here guarantees every post-login fetch starts genuinely fresh.
+    // queryClient.clear() is redundant now (the window.location.href below
+    // does a full reload, which rebuilds the QueryClient from scratch
+    // anyway), but kept — harmless, and removing it would re-litigate the
+    // original "stale previous-account data" bug this line was added to fix.
     queryClient.clear();
     toast.success("You've been signed out");
-    router.replace("/login");
+    // A plain client-side router.replace here races DashboardLayout's own
+    // "no token -> /login" guard effect (fired by the logout() call just
+    // above) — that effect's hardcoded generic redirect would sometimes win
+    // and overwrite this slug-aware one. A full navigation sidesteps the
+    // race entirely — same fix and reasoning as app-header.tsx's own
+    // handleLogout.
+    window.location.href = loginPath;
   };
 
   return (

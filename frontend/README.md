@@ -101,7 +101,8 @@ pnpm dlx shadcn@latest add <component>
 
 Copy `.env.example` to `.env.local` and fill in:
 
-| Variable               | Purpose                                                    |
-| ---------------------- | ---------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL`  | Base URL for the backend API, used by `src/lib/axios.ts`   |
-| `NEXT_PUBLIC_SITE_URL` | Public site URL, used for metadata in `src/config/site.ts` |
+| Variable                         | Purpose                                                                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`            | Base URL for the backend API, used by `src/lib/axios.ts`                                                                                                                   |
+| `NEXT_PUBLIC_SITE_URL`           | Public site URL, used for metadata in `src/config/site.ts`                                                                                                                 |
+| `NEXT_PUBLIC_STUDENT_PORTAL_URL` | Base URL of the separate `student/` app — used to build each institution's Student Portal link on `/super-admin/institutions` and the institution admin's own Profile page |
